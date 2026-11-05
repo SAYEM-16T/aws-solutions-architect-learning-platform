@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 10 Route 53</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <nav><a href="../index.html">← Index</a> <a href="../mistakes.html">Mistakes</a> <a href="../09.%20AWS%20Fundamentals%20RDS%20%2B%20Aurora%20%2B%20ElastiCache/09-notes.html">‹ Sec 09</a> <a href="../11.%20Classic%20Solutions%20Architecture%20Discussions/11-notes.html">Sec 11 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+  <header>
+    <p class="eyebrow">Section 10 · study order #11</p>
+    <h1>Route 53</h1>
+    <p class="sub">Slides: <a href="10-slides-p194-227.pdf" target="_blank" rel="noopener">10-slides-p194-227.pdf</a> (full PDF p194-227). Page reference <code>PDF p. 359 (part p. 8)</code> = page 359 of the full slide PDF = page 8 of this section's PDF part; click to open the PDF at that page.</p>
+    <p class="sub">Loop: note → PDF part → exam points → Part A → Part B → mistakes again after 2 days.</p>
+  </header>
+  <nav class="card toc noprint" aria-label="On this page">
+    <h2>On this page</h2>
+    <ol><li><a href="#overview">Route 53: AWS er DNS, domain registrar ar health check</a></li><li><a href="#l1">DNS ki, ar ekta query kivabe answer pay</a></li><li><a href="#l2">Route 53: records, record types, hosted zones</a></li><li><a href="#l3">Hands-on: domain kena, prothom record, nslookup / dig, lab setup</a></li><li><a href="#l6">TTL (Time To Live): answer koto khon cache thake</a></li><li><a href="#l7">CNAME vs Alias: zone apex er khela</a></li><li><a href="#l8">Routing policy ki, ar Simple routing</a></li><li><a href="#l9">Weighted: percent hishebe traffic bhag</a></li><li><a href="#l10">Latency-based: jekhane sobcheye druto</a></li><li><a href="#l11">Health checks: endpoint, calculated, CloudWatch alarm</a></li><li><a href="#l13">Failover (Active-Passive)</a></li><li><a href="#l14">Geolocation: user kon desh e</a></li><li><a href="#l15">Geoproximity: dure + bias diye traffic shift</a></li><li><a href="#l16">IP-based: client er IP range dekhe</a></li><li><a href="#l17">Multi-Value: onek answer, shudhu healthy gulo</a></li><li><a href="#policies">Sob routing policy pasapashi</a></li><li><a href="#l18">Domain Registrar vs DNS Service (GoDaddy + Route 53)</a></li><li><a href="#hybrid">Hybrid DNS: Resolver Inbound ar Outbound Endpoint</a></li><li><a href="#pairs">Confusing pairs</a></li><li><a href="#changes">Course er por ki bodlalo</a></li><li><a href="#exam">Exam e ki mone rakhbo</a></li><li><a href="#part-a">Part A: Udemy quiz (7)</a></li><li><a href="#part-b">Part B: Practice (15)</a></li></ol>
+  </nav>
+<section class="card" id="overview">
+  <p class="num">Age ek nojore</p>
+  <h2>Route 53: AWS er DNS, domain registrar ar health check</h2>
+  <p>Section 08 e ELB ek ta <b>DNS name</b> dey dekhecho (<code>XXX.region.elb.amazonaws.com</code>). Ei section e shikhbo nijer domain (<code>example.com</code>) kivabe oi ELB, EC2, CloudFront e point kore, ar <b>DNS diye</b> user ke kon Region / kon server e pathabo. Exam e sobcheye beshi ashe: <b>CNAME vs Alias</b> (zone apex), <b>TTL</b> (purono IP e jacche keno), <b>kon routing policy</b> (weighted, latency, failover, geolocation, geoproximity, IP-based, multi-value), <b>health check</b> er 3 dhoron (private resource → CloudWatch alarm), <b>registrar vs DNS service</b> (GoDaddy + Route 53), ar <b>Resolver Inbound/Outbound endpoint</b> (hybrid DNS).</p>
+  <div class="scroll"><table>
+    <tr><th>Topic</th><th>Ek line e</th></tr>
+    <tr><td>DNS</td><td>Hostname (<code>www.google.com</code>) → IP; hierarchy: Root → TLD (.com) → SLD (example.com) → subdomain</td></tr>
+    <tr><td>Route 53</td><td>Highly available, scalable, fully managed, <b>authoritative</b> DNS + <b>domain registrar</b> + <b>health check</b>; AWS er ekmatro <b>100% availability SLA</b>; 53 = DNS port</td></tr>
+    <tr><td>Record types (must know)</td><td><b>A</b> (→ IPv4), <b>AAAA</b> (→ IPv6), <b>CNAME</b> (→ onno hostname), <b>NS</b> (hosted zone er name server)</td></tr>
+    <tr><td>Hosted zone</td><td>Record er container. <b>Public</b> (internet) ba <b>Private</b> (ek ba onek VPC er bhitore); <b>$0.50 / month</b> proti zone</td></tr>
+    <tr><td>TTL</td><td>Client / resolver koto shomoy answer <b>cache</b> korbe. High = kom query, purono record; Low = beshi query ($), druto change</td></tr>
+    <tr><td>CNAME vs Alias</td><td>CNAME: hostname → jekono hostname, <b>zone apex e na</b>. Alias: hostname → <b>AWS resource</b>, apex e-o hoy, <b>free</b>, native health check, TTL set kora jay na; <b>EC2 DNS name e na</b></td></tr>
+    <tr><td>Simple</td><td>Ek record, ek ba onek value; onek hole <b>client random</b> ekta ney; <b>health check na</b></td></tr>
+    <tr><td>Weighted</td><td>Weight diye <b>% traffic</b> bhag (70/20/10); canary / notun version test, migration</td></tr>
+    <tr><td>Latency-based</td><td>User er jonno <b>sobcheye kom latency</b> wala AWS Region</td></tr>
+    <tr><td>Failover</td><td><b>Active-passive</b>: primary (health check <b>mandatory</b>) unhealthy hole secondary (DR)</td></tr>
+    <tr><td>Geolocation</td><td>User <b>kothay</b> ache (continent / country / US state); <b>Default</b> record; localization, content restrict</td></tr>
+    <tr><td>Geoproximity</td><td>User ar resource er dure; <b>bias</b> (1..99 expand, -1..-99 shrink) diye ek Region e beshi traffic</td></tr>
+    <tr><td>IP-based</td><td>Client er <b>IP / CIDR</b> dekhe endpoint (ex: nirdishto ISP)</td></tr>
+    <tr><td>Multi-value</td><td>Onek value, shudhu <b>healthy</b> gulo, <b>max 8</b>; client-side LB, ELB er bodol na</td></tr>
+    <tr><td>Health checks</td><td>3 dhoron: <b>endpoint</b> (public), <b>calculated</b> (onek health check AND/OR/NOT), <b>CloudWatch alarm</b> (private resource)</td></tr>
+    <tr><td>Registrar vs DNS service</td><td>Domain kena (GoDaddy) ar DNS record manage (Route 53) alada hote pare: Route 53 e <b>public hosted zone</b> → registrar e <b>NS record</b> bodlao</td></tr>
+    <tr><td>Hybrid DNS (slide only)</td><td>Route 53 Resolver + on-premises: <b>Inbound endpoint</b> (on-prem → AWS naam), <b>Outbound endpoint</b> (AWS → on-prem naam)</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="l1">
+  <p class="num">Lecture 1 · What is a DNS · <a class="pg" href="10-slides-p194-227.pdf#page=2" target="_blank" rel="noopener">PDF p. 195-197</a> <span class="pg-part">(part p. 2-4)</span></p>
+  <h2>DNS ki, ar ekta query kivabe answer pay</h2>
+  <div class="idea"><p><b>Shohoj kore (phone book):</b> Bondhur naam mone ache, number mone nai. Phone book e naam khujle number pao. DNS = internet er phone book: <b>naam</b> (<code>www.google.com</code>) dile <b>IP</b> (<code>172.217.18.36</code>) dey. Browser IP chara kothao jete pare na.</p></div>
+  <ul>
+    <li><b>DNS = Domain Name System</b>: human friendly hostname → machine IP address.</li>
+    <li>DNS internet er <b>backbone</b>.</li>
+    <li><b>Hierarchical</b> naming: <code>.com</code> → <code>example.com</code> → <code>www.example.com</code>, <code>api.example.com</code>.</li>
+  </ul>
+  <h3>Terminology (<a class="pg" href="10-slides-p194-227.pdf#page=3" target="_blank" rel="noopener">PDF p. 196</a> <span class="pg-part">(part p. 3)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Shobdo</th><th>Mane</th><th>Udaharon</th></tr>
+    <tr><td><b>Domain Registrar</b></td><td>Jekhane domain naam kena / register kora hoy</td><td>Amazon Route 53, GoDaddy</td></tr>
+    <tr><td><b>DNS Records</b></td><td>Naam → value mapping</td><td>A, AAAA, CNAME, NS ...</td></tr>
+    <tr><td><b>Zone File</b></td><td>Sob DNS record ekshathe</td><td>-</td></tr>
+    <tr><td><b>Name Server</b></td><td>DNS query <b>resolve</b> kore (Authoritative ba Non-Authoritative)</td><td>-</td></tr>
+    <tr><td><b>TLD</b> (Top Level Domain)</td><td>Shesh er ongsho</td><td>.com, .us, .in, .gov, .org</td></tr>
+    <tr><td><b>SLD</b> (Second Level Domain)</td><td>Duita shobdo, majhe dot</td><td>amazon.com, google.com</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">URL er bhag (<a class="pg" href="10-slides-p194-227.pdf#page=3" target="_blank" rel="noopener">PDF p. 196</a> <span class="pg-part">(part p. 3)</span>): http://api.www.example.com.</span>
+    <div class="flow">
+      <span class="b">http://<small>Protocol</small></span>
+      <span class="b">api.www.example.com<small>FQDN</small></span>
+      <span class="b">www.example.com<small>Sub Domain</small></span>
+      <span class="b">example.com<small>SLD</small></span>
+      <span class="b">.com<small>TLD</small></span>
+      <span class="b hl">. (shesh dot)<small>Root</small></span>
+    </div>
+  </div>
+  <p class="cap">Shob mile = URL. Shesher dot ta Root; sob domain er shuru oikhan theke.</p>
+  <h3>DNS kivabe kaj kore (<a class="pg" href="10-slides-p194-227.pdf#page=4" target="_blank" rel="noopener">PDF p. 197</a> <span class="pg-part">(part p. 4)</span>)</h3>
+  <p>Web server <code>example.com</code>, public IP <code>9.10.11.12</code>. Browser jante chay <code>example.com</code> er IP:</p>
+  <div class="fig">
+    <span class="lbl">Recursive lookup</span>
+    <div class="flow">
+      <span class="b">Web Browser<small>example.com?</small></span><span class="a">→</span>
+      <span class="b hl">Local DNS Server<small>company ba ISP er</small></span><span class="a">→ <small>1</small></span>
+      <span class="b">Root DNS Server<small>ICANN; ".com NS 1.2.3.4"</small></span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Local DNS Server</span><span class="a">→ <small>2</small></span>
+      <span class="b">TLD DNS Server (.com)<small>IANA (ICANN er branch); "example.com NS 5.6.7.8"</small></span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Local DNS Server</span><span class="a">→ <small>3</small></span>
+      <span class="b">SLD DNS Server (example.com)<small>Domain Registrar er (ex: Amazon Registrar); "A 9.10.11.12"</small></span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Local DNS Server<small>answer cache kore (TTL)</small></span><span class="a">→</span>
+      <span class="b">Browser<small>9.10.11.12 (cache, TTL)</small></span><span class="a">→</span>
+      <span class="b">Web Server</span>
+    </div>
+  </div>
+  <ul>
+    <li>Local DNS server prothome kokhono na dekha query hole <b>Root</b> ke jigges kore. Root bole "ami jani na, kintu <b>.com</b> er NS ei IP te".</li>
+    <li>.com TLD server bole "<b>example.com</b> er NS ei IP te". Shesh e SLD server ashol <b>A record</b> dey.</li>
+    <li>Local DNS server answer <b>cache</b> kore (TTL porjonto), porer bar sathe sathe answer dey.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Eta background lecture. Mone rakho: <b>Root → TLD → SLD</b>, ar answer <b>TTL</b> porjonto cache hoy (Lecture 6 e TTL er trap).</div>
+</section>
+
+<section class="card" id="l2">
+  <p class="num">Lecture 2 · Route 53 Overview · <a class="pg" href="10-slides-p194-227.pdf#page=5" target="_blank" rel="noopener">PDF p. 198-202</a> <span class="pg-part">(part p. 5-9)</span></p>
+  <h2>Route 53: records, record types, hosted zones</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Route 53 holo tomar nijer <b>phone book office</b>. Tumi nije entry likhte paro (authoritative), office kokhono bondho hoy na (100% SLA), domain o ekhan theke kinte paro (registrar), ar je number e pathaccho sei manush beche ache kina check o kore (health check).</p></div>
+  <h3>Route 53 ki (<a class="pg" href="10-slides-p194-227.pdf#page=5" target="_blank" rel="noopener">PDF p. 198</a> <span class="pg-part">(part p. 5)</span>)</h3>
+  <ul>
+    <li><b>Highly available, scalable, fully managed</b> ar <b>Authoritative</b> DNS.</li>
+    <li><b>Authoritative</b> = customer (tumi) DNS record <b>update</b> korte paro; DNS er upor puro control.</li>
+    <li>Route 53 <b>Domain Registrar</b> o.</li>
+    <li>Resource er <b>health check</b> korte pare.</li>
+    <li>AWS er <b>ekmatro service</b> ja <b>100% availability SLA</b> dey.</li>
+    <li>Naam "53": traditional <b>DNS port 53</b>.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Basic use (<a class="pg" href="10-slides-p194-227.pdf#page=5" target="_blank" rel="noopener">PDF p. 198</a> <span class="pg-part">(part p. 5)</span>)</span>
+    <div class="flow">
+      <span class="b">Client<small>example.com?</small></span><span class="a">→</span>
+      <span class="b hl">Amazon Route 53<small>answer: 54.22.33.44</small></span><span class="a">→ <small>client sorashori connect</small></span>
+      <span class="b">EC2 Instance<small>Public IP 54.22.33.44</small></span>
+    </div>
+  </div>
+  <p class="cap">Traffic Route 53 er bhitor diye jay na; Route 53 shudhu IP bole dey, client nije EC2 te jay.</p>
+  <h3>Record e ki thake (<a class="pg" href="10-slides-p194-227.pdf#page=6" target="_blank" rel="noopener">PDF p. 199</a> <span class="pg-part">(part p. 6)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Field</th><th>Mane</th><th>Udaharon</th></tr>
+    <tr><td>Domain / subdomain Name</td><td>Kon naam er jonno</td><td>example.com</td></tr>
+    <tr><td>Record Type</td><td>Ki dhoroner mapping</td><td>A, AAAA</td></tr>
+    <tr><td>Value</td><td>Answer</td><td>12.34.56.78</td></tr>
+    <tr><td>Routing Policy</td><td>Route 53 query te <b>kivabe</b> answer dibe</td><td>Simple, Weighted ...</td></tr>
+    <tr><td>TTL</td><td>DNS Resolver e record koto shomoy <b>cache</b> thakbe</td><td>300 s</td></tr>
+  </table></div>
+  <ul>
+    <li>Supported record types: <b>must know</b> = <b>A / AAAA / CNAME / NS</b>.</li>
+    <li><b>Advanced</b> (exam e janar dorkar nai bole course): CAA / DS / MX / NAPTR / PTR / SOA / TXT / SPF / SRV.</li>
+  </ul>
+  <h3>Record types (<a class="pg" href="10-slides-p194-227.pdf#page=7" target="_blank" rel="noopener">PDF p. 200</a> <span class="pg-part">(part p. 7)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Type</th><th>Map kore</th><th>Note</th></tr>
+    <tr><td><b>A</b></td><td>hostname → <b>IPv4</b></td><td>example.com → 1.2.3.4</td></tr>
+    <tr><td><b>AAAA</b></td><td>hostname → <b>IPv6</b></td><td>A er moto, kintu IPv6</td></tr>
+    <tr><td><b>CNAME</b></td><td>hostname → <b>onno hostname</b></td><td>Target naam er <b>A ba AAAA</b> record thakte hobe. <b>Zone Apex</b> (DNS namespace er top node) e CNAME <b>na</b>: <code>example.com</code> e na, <code>www.example.com</code> e hoy</td></tr>
+    <tr><td><b>NS</b></td><td>Hosted zone er <b>Name Servers</b></td><td>Domain er traffic kivabe route hobe ta control kore; DNS name ba IP of servers ja query answer dey</td></tr>
+  </table></div>
+  <h3>Hosted Zones (<a class="pg" href="10-slides-p194-227.pdf#page=8" target="_blank" rel="noopener">PDF p. 201-202</a> <span class="pg-part">(part p. 8-9)</span>)</h3>
+  <ul>
+    <li><b>Hosted zone</b> = record er <b>container</b>; domain ar tar subdomain e traffic kivabe jabe define kore.</li>
+    <li>Dam: proti hosted zone <b>$0.50 / month</b>. Domain register: kompokkhe <b>$12 / year</b> (lecture). Mane Route 53 <b>free na</b>.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th></th><th>Public Hosted Zone</th><th>Private Hosted Zone</th></tr>
+    <tr><td>Kar jonno</td><td>Internet e traffic (public domain name)</td><td>Ek ba <b>onek VPC</b> er bhitore traffic (private domain name)</td></tr>
+    <tr><td>Udaharon</td><td><code>application1.mypublicdomain.com</code></td><td><code>application1.company.internal</code></td></tr>
+    <tr><td>Ke query korte pare</td><td>Internet er <b>jekeu</b> (browser)</td><td>Shudhu tomar <b>VPC er bhitorer</b> resource</td></tr>
+    <tr><td>Answer e ki thake</td><td>Public IP / AWS resource (S3, CloudFront, EC2 public IP, ALB)</td><td>Private IP (10.0.0.x)</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Private hosted zone (<a class="pg" href="10-slides-p194-227.pdf#page=9" target="_blank" rel="noopener">PDF p. 202</a> <span class="pg-part">(part p. 9)</span>)</span>
+    <div class="flow">
+      <span class="b">EC2<small>webapp.example.internal</small></span><span class="a">→ <small>api.example.internal?</small></span>
+      <span class="b hl">Private Hosted Zone<small>10.0.0.10</small></span><span class="a">→</span>
+      <span class="b">EC2<small>api.example.internal</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">EC2<small>api.example.internal</small></span><span class="a">→ <small>db.example.internal?</small></span>
+      <span class="b hl">Private Hosted Zone<small>10.0.0.35</small></span><span class="a">→</span>
+      <span class="b">DB Instance<small>private IP</small></span>
+    </div>
+  </div>
+  <p class="cap">Duita zone ek-i bhabe kaj kore; parthokko shudhu ke query korte pare (internet vs VPC).</p>
+  <ul>
+    <li>Private hosted zone kaj korte VPC te <b>DNS hostnames</b> ar <b>DNS resolution</b> (<code>enableDnsHostnames</code>, <code>enableDnsSupport</code>) duto-i <b>true</b> lagbe. Course e nai, AWS docs e ache: <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-considerations.html">Private hosted zone considerations</a>. <span class="pill">course e nai</span></li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Route 53 er kaj: <b>DNS routing</b> (internet traffic ke domain er resource e), <b>domain registration</b>, <b>health check</b>. <b>Duita VPC er moddhe private routing</b> Route 53 er kaj <b>na</b> (seta VPC peering, Section 27) (B4-Q45). Supported record type: A, AAAA, CNAME, <b>MX</b>, <b>SRV</b> sob-i; "SPF (session policy forwarder)" bhul naam, SPF = Sender Policy Framework (B6-Q55). Internal custom domain private hosted zone diye → VPC te <b>enableDnsHostnames + enableDnsSupport</b>; "enableVpcSupport / enableVpcHostnames / enableDnsDomain" bole kichu nai (S1-Q63). Private hosted zone banalam, naam resolve hoy na → <b>DNS hostnames ar DNS resolution</b> on koro (S5-Q20). RDS Multi-AZ failover e Route 53 er <b>CNAME</b> record bodlay, endpoint ek-i thake (Section 09) (B4-Q16).</div>
+</section>
+
+<section class="card" id="l3">
+  <p class="num">Lecture 3 + 4 + 5 (hands-on) · Registering a domain, first records, EC2 setup · <a class="pg" href="10-slides-p194-227.pdf#page=6" target="_blank" rel="noopener">PDF p. 199-201</a> <span class="pg-part">(part p. 6-8)</span></p>
+  <h2>Hands-on: domain kena, prothom record, nslookup / dig, lab setup</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Prothome naam kino (domain), tarpor phone book e ekta entry likho (A record), tarpor terminal e <code>dig</code> diye dekho entry thik kaj korche kina. Shesh e porer lecture er jonno 3 Region e 3 ta server banao.</p></div>
+  <h3>Lecture 3: domain register</h3>
+  <ul>
+    <li>Route 53 console → <b>Register domains</b> → naam khujo (jeta keu age neyni) → checkout. Instructor er example: <b>US $13 / year</b>.</li>
+    <li><b>Duration</b> (ex: 1 year) ar <b>auto-renew</b>: domain rakhte chaile auto-renew on, na hole onno keu kine nite pare.</li>
+    <li>Contact info (registrant, admin, tech) ar <b>privacy protection</b> on: tomar address, phone internet e lukano thake, spam kom.</li>
+    <li>Register hote kichu minute theke kichu ghonta.</li>
+    <li>Domain register korle Route 53 nije ekta <b>hosted zone</b> banay, tate default <b>NS</b> ar <b>SOA</b> record thake. NS bole: ei domain er DNS query <b>Route 53</b> answer dibe; Route 53-i ekhon <b>source of truth</b>.</li>
+  </ul>
+  <h3>Lecture 4: prothom record</h3>
+  <ul>
+    <li>Hosted zone → Create record: name <code>test.&lt;domain&gt;</code>, type <b>A</b>, value <code>11.22.33.44</code> (random IP), <b>TTL 300 s</b>, routing policy <b>Simple</b>.</li>
+    <li>Browser e khulle kichu ashe na (oi IP te server nai), kintu DNS thik kaj korche.</li>
+    <li>Proman: <b>CloudShell</b> e <code>sudo yum install -y bind-utils</code> (nslookup ar dig er jonno), tarpor <code>nslookup test.&lt;domain&gt;</code> ba <code>dig test.&lt;domain&gt;</code>.</li>
+    <li><code>dig</code> instructor er pochondo: ANSWER section e <b>record type (A)</b>, value ar <b>TTL</b> dekhay.</li>
+  </ul>
+  <h3>Lecture 5: lab setup</h3>
+  <div class="scroll"><table>
+    <tr><th>Ki</th><th>Kothay</th><th>Setting</th></tr>
+    <tr><td>EC2 ×3</td><td><b>eu-central-1</b> (Frankfurt), <b>us-east-1</b> (N. Virginia), <b>ap-southeast-1</b> (Singapore)</td><td>Amazon Linux 2, t2.micro, key pair na (EC2 Instance Connect), SG e SSH + <b>HTTP</b> anywhere, user data: "Hello World" + <b>AZ naam</b></td></tr>
+    <tr><td>ALB ×1</td><td>Frankfurt</td><td>Internet-facing, IPv4, 3 subnet, oi SG, listener 80 → notun target group (Frankfurt er instance)</td></tr>
+  </table></div>
+  <ul>
+    <li>Protita instance er public IP ar Region ekta text file e likhe rakho; porer lecture e record er value hobe.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Register korle hosted zone e <b>NS + SOA</b> nije ashe. <code>dig</code> output e <b>TTL</b> dekha jay. Hands-on er click mukhostho dorkar nai.</div>
+  <p class="src">Subtitle e "Group 53" = Route 53, "CloudTrail environments" = CloudShell, "VNS lookup" = nslookup, "institute instance" = EC2 instance, "GNS" = DNS; thik kore likhechi.</p>
+</section>
+
+<section class="card" id="l6">
+  <p class="num">Lecture 6 · Route 53 - TTL · <a class="pg" href="10-slides-p194-227.pdf#page=10" target="_blank" rel="noopener">PDF p. 203</a> <span class="pg-part">(part p. 10)</span></p>
+  <h2>TTL (Time To Live): answer koto khon cache thake</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Bondhur notun phone number tumi notebook e likhe rakhle, 1 din porjonto ar phone book dekho na. Bondhu majhe number bodlale-o tumi 1 din purono number e call korbe. TTL = notebook e likhe rakhar meyad.</p></div>
+  <div class="fig">
+    <span class="lbl">TTL flow (<a class="pg" href="10-slides-p194-227.pdf#page=10" target="_blank" rel="noopener">PDF p. 203</a> <span class="pg-part">(part p. 10)</span>)</span>
+    <div class="flow">
+      <span class="b">Client<small>myapp.example.com?</small></span><span class="a">→</span>
+      <span class="b hl">Route 53<small>A 12.34.56.78 (TTL 300 s)</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">Client<small>TTL porjonto result cache</small></span><span class="a">→ <small>HTTP request / response</small></span>
+      <span class="b">Web Server</span>
+    </div>
+  </div>
+  <p class="cap">TTL er bhitore abar request korle client DNS e jay na, cache theke-i IP ney.</p>
+  <div class="scroll"><table>
+    <tr><th></th><th>High TTL (ex: 24 hr)</th><th>Low TTL (ex: 60 s)</th></tr>
+    <tr><td>Route 53 e traffic</td><td><b>Kom</b></td><td><b>Beshi ($$)</b>: Route 53 er dam request er sonkhya diye</td></tr>
+    <tr><td>Record purono thakar shomoy</td><td>Beshi: change korle sobar kache pouchate 24 hr porjonto</td><td>Kom</td></tr>
+    <tr><td>Record change</td><td>Kothin</td><td><b>Shohoj</b></td></tr>
+  </table></div>
+  <ul>
+    <li>Strategy: record bodlanor plan thakle age TTL <b>komao</b> (ex: 24 hr dhore), sobar kache low TTL pouchale value bodlao, tarpor TTL abar <b>barao</b>.</li>
+    <li><b>Alias record chara</b> protita record e TTL <b>mandatory</b>.</li>
+  </ul>
+  <h3>Hands-on</h3>
+  <ul>
+    <li><code>demo.&lt;domain&gt;</code> A record → eu-central-1 er IP, <b>TTL 120 s</b>.</li>
+    <li><code>dig</code> e TTL count down: 115 → 98 → ... (cache er baki shomoy).</li>
+    <li>Record ap-southeast-1 e edit korlam, kintu dig ar Chrome dutoi <b>purono</b> eu-central-1 dekhalo, karon cache. TTL shesh hole notun IP (ap-southeast-1b) ar dig e TTL abar 120.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Record notun ELB e point korlam, tobu user purono ELB e jacche → <b>TTL</b> (Alias, CNAME, health check na) (U10-Q3). Simple record update er por user purono LB e → <b>TTL still in effect</b> (simple e health check-i nai) (S4-Q3). "Beshi query, beshi khoroch" → low TTL; "druto change" → low TTL.</div>
+  <p class="src">Subtitle e ekta jayga bujha jay ni ("IPO menu server"), bad diyechi.</p>
+</section>
+
+<section class="card" id="l7">
+  <p class="num">Lecture 7 · Route 53 CNAME vs Alias · <a class="pg" href="10-slides-p194-227.pdf#page=11" target="_blank" rel="noopener">PDF p. 204-206</a> <span class="pg-part">(part p. 11-13)</span></p>
+  <h2>CNAME vs Alias: zone apex er khela</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> ALB er naam <code>lb1-1234.us-east-2.elb.amazonaws.com</code>, eta user ke dewa jay na. Tumi chao <code>myapp.mydomain.com</code> ba shudhu <code>mydomain.com</code>. <b>CNAME</b> = "oi naam e jao" (jekono naam, kintu root e na). <b>Alias</b> = Route 53 er nijer special pointer AWS resource er dike (root e-o chole, free).</p></div>
+  <h3>Tulona (<a class="pg" href="10-slides-p194-227.pdf#page=11" target="_blank" rel="noopener">PDF p. 204</a> <span class="pg-part">(part p. 11)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th></th><th>CNAME</th><th>Alias</th></tr>
+    <tr><td>Point kore</td><td>Hostname → <b>jekono</b> hostname (<code>app.mydomain.com</code> → <code>blabla.anything.com</code>)</td><td>Hostname → <b>AWS resource</b> (<code>app.mydomain.com</code> → <code>blabla.amazonaws.com</code>)</td></tr>
+    <tr><td>Root domain / Zone Apex (<code>mydomain.com</code>)</td><td><b>Na</b>, shudhu non-root (<code>something.mydomain.com</code>)</td><td><b>Hoy</b>: root ar non-root dutoi</td></tr>
+    <tr><td>Dam</td><td>Normal query charge</td><td><b>Free</b> (query free)</td></tr>
+    <tr><td>Health check</td><td>-</td><td><b>Native</b> health check ("Evaluate target health")</td></tr>
+    <tr><td>Record type</td><td>CNAME</td><td>Sob shomoy <b>A / AAAA</b> (AWS resource er IPv4 / IPv6)</td></tr>
+    <tr><td>TTL</td><td>Tumi set koro</td><td><b>Set kora jay na</b>, Route 53 nije dey</td></tr>
+    <tr><td>DNS standard</td><td>Sob DNS e ache</td><td>Route 53 specific, DNS er <b>extension</b></td></tr>
+  </table></div>
+  <h3>Alias record (<a class="pg" href="10-slides-p194-227.pdf#page=12" target="_blank" rel="noopener">PDF p. 205</a> <span class="pg-part">(part p. 12)</span>)</h3>
+  <ul>
+    <li>Hostname → AWS resource map kore; DNS functionality er <b>extension</b>.</li>
+    <li>Resource er <b>IP change</b> hole (ALB er IP AWS-managed, bodlay) Alias <b>nije bujhe nay</b>.</li>
+    <li>Example: <code>example.com</code> <b>A</b> (Alias enabled) → <code>MyALB-123456789.us-east-1.elb.amazonaws.com</code>.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Alias at zone apex</span>
+    <div class="flow">
+      <span class="b">example.com<small>A, Alias = Yes</small></span><span class="a">→</span>
+      <span class="b hl">MyALB-123456789.us-east-1.elb.amazonaws.com<small>AWS-managed, IP bodlate pare</small></span><span class="a">→</span>
+      <span class="b">Application Load Balancer</span>
+    </div>
+  </div>
+  <p class="cap">Apex e CNAME dile error; A + Alias dile hoy, ar ALB er IP bodlaleo kaj kore.</p>
+  <h3>Alias targets (<a class="pg" href="10-slides-p194-227.pdf#page=13" target="_blank" rel="noopener">PDF p. 206</a> <span class="pg-part">(part p. 13)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Alias target hote pare</th><th>Hote pare na</th></tr>
+    <tr><td>
+      <b>Elastic Load Balancers</b><br>
+      <b>CloudFront Distributions</b><br>
+      <b>API Gateway</b><br>
+      <b>Elastic Beanstalk environments</b><br>
+      <b>S3 Websites</b> (S3 bucket na; website hishebe enable kora bucket)<br>
+      <b>VPC Interface Endpoints</b><br>
+      <b>Global Accelerator</b> accelerator<br>
+      <b>Route 53 record in the same hosted zone</b>
+    </td><td><b>EC2 DNS name</b> (ei ta mone rakho)</td></tr>
+  </table></div>
+  <h3>Hands-on</h3>
+  <ul>
+    <li><code>myapp.&lt;domain&gt;</code> <b>CNAME</b> → ALB DNS name: kaj kore (Hello World from eu-central-1c), kintu "AWS native na".</li>
+    <li><code>myalias.&lt;domain&gt;</code> <b>A</b> + Alias → "Alias to Application and Classic Load Balancer" → Region eu-central-1 → ALB; <b>Evaluate target health = Yes</b>. Query free.</li>
+    <li>Apex (name khali) e <b>CNAME</b> → error: <b>"CNAME is not permitted at apex of this zone"</b>. Apex e <b>A + Alias</b> → accepted, <code>&lt;domain&gt;</code> khulle ALB er page.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Apex (<code>mycoolcompany.com</code>) → ELB: <b>Alias</b>, CNAME na (U10-Q1). Domain → ALB: <b>Alias with type A</b>; "Alias with CNAME", "non-Alias A" bhul (B2-Q1). Zone apex → LB: <b>A record aliased to LB DNS name</b>; LB er IP diye A na (IP bodlay), CNAME na (B5-Q13). <code>covid19survey.com</code> → <code>www.covid19survey.com</code>, cost-effective → <b>Alias</b> (same hosted zone er record e alias hoy; apex e CNAME na; MX / NS bhul) (S3-Q19). "EC2 DNS name e Alias" → hoy na. Alias e TTL set kora jay na.</div>
+</section>
+
+<section class="card" id="l8">
+  <p class="num">Lecture 8 · Routing Policy - Simple · <a class="pg" href="10-slides-p194-227.pdf#page=14" target="_blank" rel="noopener">PDF p. 207-208</a> <span class="pg-part">(part p. 14-15)</span></p>
+  <h2>Routing policy ki, ar Simple routing</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Routing policy = phone book office er <b>niyom</b>: ke jiggesh korle kon number bolbe. Office nije call connect kore na, shudhu number bole dey. Tai "routing" shobdo e bhul bujho na: <b>DNS traffic route kore na</b>, shudhu query er answer dey.</p></div>
+  <h3>Routing policies (<a class="pg" href="10-slides-p194-227.pdf#page=14" target="_blank" rel="noopener">PDF p. 207</a> <span class="pg-part">(part p. 14)</span>)</h3>
+  <ul>
+    <li>Define kore Route 53 DNS query te <b>kivabe answer dibe</b>.</li>
+    <li>Load balancer er routing er moto <b>na</b>: LB traffic nije pathay; DNS shudhu answer dey, client nije jay.</li>
+    <li>Supported: <b>Simple, Weighted, Failover, Latency based, Geolocation, Multi-Value Answer, Geoproximity</b> (slide: Traffic Flow diye). IP-based Lecture 16 e.</li>
+  </ul>
+  <h3>Simple (<a class="pg" href="10-slides-p194-227.pdf#page=15" target="_blank" rel="noopener">PDF p. 208</a> <span class="pg-part">(part p. 15)</span>)</h3>
+  <ul>
+    <li>Sadharonoto <b>ekta resource</b> e traffic (ex: <code>foo.example.com</code> → A 11.22.33.44).</li>
+    <li>Ek-i record e <b>onek value</b> dewa jay. Onek value ferot gele <b>client random ekta</b> bechhe ney.</li>
+    <li><b>Alias</b> enable thakle shudhu <b>ekta AWS resource</b> target.</li>
+    <li><b>Health check associate kora jay na</b>.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Simple: multiple value (<a class="pg" href="10-slides-p194-227.pdf#page=15" target="_blank" rel="noopener">PDF p. 208</a> <span class="pg-part">(part p. 15)</span>)</span>
+    <div class="flow">
+      <span class="b">Client<small>foo.example.com?</small></span><span class="a">→</span>
+      <span class="b hl">Route 53<small>A 11.22.33.44, A 55.66.77.88, A 99.11.22.33</small></span><span class="a">→</span>
+      <span class="b">Client<small>random ekta bechhe ney</small></span>
+    </div>
+  </div>
+  <p class="cap">Unhealthy IP o answer e thakte pare, karon simple e health check nai.</p>
+  <h3>Hands-on</h3>
+  <ul>
+    <li><code>simple.&lt;domain&gt;</code> A → ap-southeast-1 IP, <b>TTL 20 s</b>. Console e routing policy option: 6 ta dekhay, ar ekta (geoproximity) UI er onno jaygay.</li>
+    <li>Edit kore duita IP (ap-southeast-1 + us-east-1): <code>dig</code> e <b>2 ta answer</b>; browser refresh e kokhono Singapore, kokhono Virginia = <b>client side choice</b>.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "DNS traffic route kore" → bhul, DNS shudhu answer dey. Simple + onek value → <b>client random</b>; simple e <b>health check na</b> (tai unhealthy IP o ferot jete pare; Lecture 17 er multi-value er sathe tulona).</div>
+</section>
+
+<section class="card" id="l9">
+  <p class="num">Lecture 9 · Routing Policy - Weighted · <a class="pg" href="10-slides-p194-227.pdf#page=16" target="_blank" rel="noopener">PDF p. 209</a> <span class="pg-part">(part p. 16)</span></p>
+  <h2>Weighted: percent hishebe traffic bhag</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> 10 ta customer ashle 7 jon ke shop A, 2 jon ke shop B, 1 jon ke notun shop C te pathao. Notun shop thik chole kina dekhte prothome alpo customer pathano: eta weighted.</p></div>
+  <ul>
+    <li>Protita resource e koto % request jabe <b>control</b> kora.</li>
+    <li>Protita record e <b>relative weight</b>:
+      <code>traffic (%) = ei record er weight / sob record er weight er jogfol</code>.</li>
+    <li>Weight er jogfol <b>100 hote hobe na</b> (70 + 20 + 10 sudhu example).</li>
+    <li>DNS records er <b>same name ar same type</b> hote hobe.</li>
+    <li><b>Health check</b> associate kora jay.</li>
+    <li>Use case: <b>Region er moddhe load balancing</b>, <b>notun app version test</b> (alpo traffic).</li>
+    <li>Weight <b>0</b> → oi resource e traffic <b>bondho</b> (dhire dhire weight shift kora jay).</li>
+    <li><b>Sob</b> record weight 0 → sob record <b>shoman bhabe</b> ferot.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Weighted (<a class="pg" href="10-slides-p194-227.pdf#page=16" target="_blank" rel="noopener">PDF p. 209</a> <span class="pg-part">(part p. 16)</span>)</span>
+    <div class="flow">
+      <span class="b hl">Route 53</span><span class="a">→ <small>70%</small></span><span class="b">EC2<small>Weight 70</small></span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Route 53</span><span class="a">→ <small>20%</small></span><span class="b">EC2<small>Weight 20</small></span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Route 53</span><span class="a">→ <small>10%</small></span><span class="b">EC2<small>Weight 10</small></span>
+    </div>
+  </div>
+  <p class="cap">Protita alada record, protita te ekta value ar ekta weight; DNS response er 70% prothom ta te.</p>
+  <h3>Hands-on</h3>
+  <ul>
+    <li><code>weighted.&lt;domain&gt;</code>: 3 ta alada A record: ap-southeast-1 <b>10</b>, us-east-1 <b>70</b>, eu-central-1 <b>20</b>; TTL <b>3 s</b> (shudhu demo; real e eto kom na).</li>
+    <li>Protita record e <b>Record ID</b> (ex: "southeast", "US East", "EU") lage: weighted set er bhitore record chinte.</li>
+    <li>Simple er sathe parthokko: simple e <b>ek record, onek value</b>; weighted e <b>onek record, protita te ek value + weight</b>.</li>
+    <li><code>dig</code> / refresh: beshirbhag us-east-1, majhe majhe onno Region.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Notun Beanstalk environment e <b>5%</b> production traffic → <b>Weighted</b> (U10-Q2). Duita EC2 te nirdishto <b>percentage</b>, ELB er bodole Route 53 → <b>Weighted</b> (B5-Q20). On-prem theke AWS migration e <b>50/50</b>, pore 100% AWS → <b>Route 53 Weighted</b>; Failover active-passive, % bhag kore na (B5-Q40). Elasticity barate → <b>2 EC2 + ELB</b> ba <b>2 EC2 + Route 53 weighted</b>; S3 cache, DynamoDB na (B2-Q8). "Canary / blue-green / % / test new version" → Weighted.</div>
+  <p class="src">Subtitle e ekta jayga "(indistinct)" chhilo, bad diyechi.</p>
+</section>
+
+<section class="card" id="l10">
+  <p class="num">Lecture 10 · Routing Policy - Latency · <a class="pg" href="10-slides-p194-227.pdf#page=17" target="_blank" rel="noopener">PDF p. 210</a> <span class="pg-part">(part p. 17)</span></p>
+  <h2>Latency-based: jekhane sobcheye druto</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Tumi jei shop e sobcheye <b>kom shomoye</b> pouchao, sekhane pathano hoy. Shob shomoy kache-r ta na-o hote pare: rasta bhalo hole durer shop e druto pouchano jay.</p></div>
+  <ul>
+    <li>User ke <b>sobcheye kom latency</b> er resource e pathay.</li>
+    <li>Jokhon user er jonno <b>latency priority</b>, tokhon khub kaje lage.</li>
+    <li>Latency mapa hoy <b>user ar AWS Region er moddhe traffic</b> diye.</li>
+    <li><b>Germany</b> er user <b>US</b> e jete pare, jodi oita-i lowest latency hoy (geography na, latency).</li>
+    <li><b>Health check</b> associate kora jay (tai failover capability ache).</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Latency (<a class="pg" href="10-slides-p194-227.pdf#page=17" target="_blank" rel="noopener">PDF p. 210</a> <span class="pg-part">(part p. 17)</span>)</span>
+    <div class="flow">
+      <span class="b">America er user</span><span class="a">→ <small>lowest latency</small></span><span class="b hl">ALB<small>us-east-1</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">Asia er user</span><span class="a">→ <small>lowest latency</small></span><span class="b hl">ALB<small>ap-southeast-1</small></span>
+    </div>
+  </div>
+  <p class="cap">Route 53 sara prithibir user er latency mape; jar jonno je Region druto, se sekhane.</p>
+  <h3>Hands-on</h3>
+  <ul>
+    <li><code>latency.&lt;domain&gt;</code>: 3 ta A record (3 Region er IP), policy <b>Latency</b>.</li>
+    <li>IP dile <b>Region nije bolte hoy</b> (ex: ap-southeast-1): Route 53 jane na ekta IP kon Region er.</li>
+    <li>Europe theke → eu-central-1. VPN e <b>Canada</b> → us-east-1. <b>Hong Kong</b> → ap-southeast-1.</li>
+    <li>VPN e location bodlale laptop er DNS cache clear hoy, tai sathe sathe notun answer. CloudShell (eu-central-1 e) <code>dig</code> korle ek-i answer, karon tar latency bodlay ni.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Duita Region, user er <b>response time kom</b> / best experience → <b>Latency</b> (geolocation na) (U10-Q4). us-east-1 e sob, Europe e slow → <b>eu-west-1 e web tier + latency routing</b> ar <b>Aurora read replica eu-west-1 e</b>; geolocation (content er jonno), failover (active-passive), Multi-AZ standby (read serve kore na) na (S2-Q6).</div>
+  <p class="src">Subtitle e "Alias is not smart enough" = console / Route 53 IP theke Region bujhte pare na; ei bhabe likhechi.</p>
+</section>
+
+<section class="card" id="l11">
+  <p class="num">Lecture 11 + 12 (hands-on) · Route 53 - Health Checks · <a class="pg" href="10-slides-p194-227.pdf#page=18" target="_blank" rel="noopener">PDF p. 211-214</a> <span class="pg-part">(part p. 18-21)</span></p>
+  <h2>Health checks: endpoint, calculated, CloudWatch alarm</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Duita branch office (us-east-1, eu-west-1). Prithibir 15 ta jaygay pahara-dar ache, ora bar bar phone kore dekhe office khola kina. Ekta office bondho hole phone book office oi number dewa bondho kore: eta <b>automated DNS failover</b>.</p></div>
+  <h3>Overview (<a class="pg" href="10-slides-p194-227.pdf#page=18" target="_blank" rel="noopener">PDF p. 211</a> <span class="pg-part">(part p. 18)</span>)</h3>
+  <ul>
+    <li><b>HTTP health check shudhu public resource</b> er jonno (private er upay niche).</li>
+    <li>Health check → <b>Automated DNS Failover</b>: multi-Region setup e ek Region down hole user ke sekhane pathabe na. Record e (latency, geoproximity ...) health check jure dao.</li>
+    <li>Health check er metric <b>CloudWatch metrics</b> e dekha jay.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>#</th><th>Dhoron</th><th>Ki monitor kore</th><th>Kokhon</th></tr>
+    <tr><td>1</td><td><b>Endpoint</b></td><td>Application, server, onno AWS resource (public)</td><td>Public ALB / EC2 / website</td></tr>
+    <tr><td>2</td><td><b>Calculated</b></td><td><b>Onno health check</b> gulo (child)</td><td>Onek check mile ek result; maintenance</td></tr>
+    <tr><td>3</td><td><b>CloudWatch Alarm</b></td><td>CloudWatch alarm er state ("full control"): DynamoDB throttles, RDS alarm, custom metric</td><td><b>Private resource</b> (VPC, on-premises)</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Multi-Region health check (<a class="pg" href="10-slides-p194-227.pdf#page=18" target="_blank" rel="noopener">PDF p. 211</a> <span class="pg-part">(part p. 18)</span>)</span>
+    <div class="flow">
+      <span class="b hl">Route 53 DNS Record<small>latency, geoproximity ...</small></span><span class="a">→</span>
+      <span class="b">Health Check</span><span class="a">→</span>
+      <span class="b">ALB us-east-1<small>ASG → EC2</small></span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Route 53 DNS Record</span><span class="a">→</span>
+      <span class="b">Health Check</span><span class="a">→</span>
+      <span class="b">ALB eu-west-1<small>ASG → EC2</small></span>
+    </div>
+  </div>
+  <p class="cap">Ek Region er health check fail korle tar record answer e ar ashe na.</p>
+  <h3>1. Endpoint monitor (<a class="pg" href="10-slides-p194-227.pdf#page=19" target="_blank" rel="noopener">PDF p. 212</a> <span class="pg-part">(part p. 19)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Setting</th><th>Value</th></tr>
+    <tr><td>Health checker</td><td>Prithibi jure <b>prai 15 ta</b> global health checker</td></tr>
+    <tr><td>Healthy / Unhealthy Threshold</td><td><b>3</b> (default)</td></tr>
+    <tr><td>Interval</td><td><b>30 s</b> (standard) ba <b>10 s</b> (fast, <b>beshi khoroch</b>)</td></tr>
+    <tr><td>Protocol</td><td><b>HTTP, HTTPS, TCP</b></td></tr>
+    <tr><td>Healthy kokhon</td><td><b>&gt; 18%</b> health checker healthy bolle healthy, na hole unhealthy</td></tr>
+    <tr><td>Location</td><td>Kon location theke check hobe <b>bechhe neya</b> jay</td></tr>
+    <tr><td>Pass kore</td><td>Endpoint <b>2xx ba 3xx</b> status code dile</td></tr>
+    <tr><td>Text check</td><td>Response er <b>prothom 5120 bytes</b> e nirdishto text dekhe pass / fail</td></tr>
+    <tr><td>Network</td><td>Router / firewall (SG) e <b>Route 53 Health Checkers er IP range</b> theke incoming allow koro (<code>ip-ranges.amazonaws.com/ip-ranges.json</code>)</td></tr>
+  </table></div>
+  <h3>2. Calculated health check (<a class="pg" href="10-slides-p194-227.pdf#page=20" target="_blank" rel="noopener">PDF p. 213</a> <span class="pg-part">(part p. 20)</span>)</h3>
+  <ul>
+    <li>Onek health check er result <b>ekta</b> health check e jora.</li>
+    <li>Condition: <b>OR, AND, NOT</b>.</li>
+    <li>Child health check: slide bole <b>up to 255</b>, lecture bole 256; AWS docs bole <b>256</b> (<a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-creating-values.html">health check values</a>).</li>
+    <li>Koyta child pass korle parent pass, ta bole dewa jay.</li>
+    <li>Use: website <b>maintenance</b> korbe kintu sob health check fail korabe na.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Calculated (<a class="pg" href="10-slides-p194-227.pdf#page=20" target="_blank" rel="noopener">PDF p. 213</a> <span class="pg-part">(part p. 20)</span>)</span>
+    <div class="flow">
+      <span class="b hl">Health Check (Parent)</span><span class="a">→ <small>monitor</small></span>
+      <span class="b">Child 1<small>EC2</small></span><span class="b">Child 2<small>EC2</small></span><span class="b">Child 3<small>EC2</small></span>
+    </div>
+  </div>
+  <h3>3. Private resource: CloudWatch alarm (<a class="pg" href="10-slides-p194-227.pdf#page=21" target="_blank" rel="noopener">PDF p. 214</a> <span class="pg-part">(part p. 21)</span>)</h3>
+  <ul>
+    <li>Route 53 health checker <b>VPC er baire</b> (public web e) thake, tai <b>private endpoint</b> (private VPC ba on-premises) e pouchate pare na.</li>
+    <li>Upay: <b>CloudWatch Metric</b> banao → tar upor <b>CloudWatch Alarm</b> → <b>health check ta alarm ke-i monitor kore</b>. Alarm ALARM state e gele health check unhealthy.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Private health check (<a class="pg" href="10-slides-p194-227.pdf#page=21" target="_blank" rel="noopener">PDF p. 214</a> <span class="pg-part">(part p. 21)</span>)</span>
+    <div class="flow">
+      <span class="b">EC2<small>private subnet, VPC</small></span><span class="a">→ <small>metric</small></span>
+      <span class="b">CloudWatch Alarm</span><span class="a">← <small>monitor</small></span>
+      <span class="b hl">Route 53 Health Checker<small>VPC er baire</small></span>
+    </div>
+  </div>
+  <p class="cap">Health checker sorashori private EC2 dekhte pare na; alarm er state dekhe.</p>
+  <h3>Hands-on (Lecture 12)</h3>
+  <ul>
+    <li>3 ta <b>endpoint</b> health check (us-east-1, ap-southeast-1, eu-central-1): IP address, port <b>80</b>, path <code>/</code> (real app e prai <code>/health</code>).</li>
+    <li>Advanced: <b>Standard 30 s</b> / Fast 10 s, failure threshold, <b>string matching</b> (prothom 5120 bytes), <b>latency graph</b>, <b>invert health check status</b>, disable, health checker Region customize ba recommended, fail hole <b>alarm / notification</b>.</li>
+    <li>Singapore instance er SG theke HTTP rule muchlam → oi check <b>unhealthy</b>; "View last failed check" e <b>connection timeout</b> (SG = firewall).</li>
+    <li><b>Calculated</b> health check: 3 ta child, "sob healthy hole healthy" (AND) / ek ba beshi (OR) / koyta. Ekta child unhealthy, tai parent-o <b>unhealthy</b>.</li>
+    <li>CloudWatch alarm type banate Region ar alarm lage (demo te alarm chilo na).</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Valid health check <b>na</b> → "<b>SQS queue</b> monitor"; valid: endpoint, onno health check, CloudWatch alarm (U10-Q7). Private subnet / on-prem resource er health → <b>CloudWatch metric + alarm, health check alarm ke monitor kore</b>. Health check fail → firewall / SG e <b>Route 53 health checker IP</b> allow koro. Pass = <b>2xx / 3xx</b>; healthy = <b>&gt; 18%</b> checker. Warm standby er manual DNS alias change automate → <b>Route 53 health check</b> (+ failover record); ALB / EC2 health check DNS bodlate pare na, Trusted Advisor na (S5-Q51).</div>
+</section>
+
+<section class="card" id="l13">
+  <p class="num">Lecture 13 · Routing Policy - Failover · <a class="pg" href="10-slides-p194-227.pdf#page=22" target="_blank" rel="noopener">PDF p. 215</a> <span class="pg-part">(part p. 22)</span></p>
+  <h2>Failover (Active-Passive)</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Main generator ar backup generator. Main thik thakle shudhu main; main bondho hole sathe sathe backup chalu. Ekta main, ekta backup: er beshi na.</p></div>
+  <div class="fig">
+    <span class="lbl">Failover (<a class="pg" href="10-slides-p194-227.pdf#page=22" target="_blank" rel="noopener">PDF p. 215</a> <span class="pg-part">(part p. 22)</span>)</span>
+    <div class="flow">
+      <span class="b">Client<small>DNS request</small></span><span class="a">→</span>
+      <span class="b hl">Route 53</span><span class="a">→ <small>healthy?</small></span>
+      <span class="b">EC2 Primary<small>Health Check (mandatory)</small></span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Route 53</span><span class="a">→ <small>primary unhealthy hole</small></span>
+      <span class="b">EC2 Secondary<small>Disaster Recovery</small></span>
+    </div>
+  </div>
+  <ul>
+    <li><b>Primary</b> record e health check <b>mandatory</b>.</li>
+    <li>Primary unhealthy → Route 53 <b>automatic</b> secondary er answer dey.</li>
+    <li>Secondary te health check <b>optional</b>.</li>
+    <li><b>Ekta primary, ekta secondary</b> shudhu.</li>
+    <li>Client DNS request korle shob shomoy <b>healthy</b> resource pay.</li>
+  </ul>
+  <h3>Hands-on</h3>
+  <ul>
+    <li><code>failover.&lt;domain&gt;</code>: eu-central-1 = <b>Primary</b> (health check eu-central-1 jora, bad deya jay na), us-east-1 = <b>Secondary</b> (health check optional); TTL <b>60 s</b>; Record ID dewa.</li>
+    <li>eu-central-1 er SG theke port 80 rule muchlam → health check unhealthy (Monitoring tab e healthy checker % 1 theke 0) → refresh e <b>us-east-1</b>.</li>
+    <li>Rule ferot dile health check pass, abar primary te <b>fail back</b>.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "Active-passive", "DR Region e automatic DNS failover", "primary down hole secondary" → <b>Failover + health check</b> (S5-Q51). Failover <b>% bhag kore na</b> (seta weighted) (B5-Q40). Primary e health check <b>mandatory</b>.</div>
+  <p class="src">Subtitle e "(indistinct)" ar "port A" (= port 80) chhilo; port 80 likhechi, baki bad.</p>
+</section>
+
+<section class="card" id="l14">
+  <p class="num">Lecture 14 · Routing Policy - Geolocation · <a class="pg" href="10-slides-p194-227.pdf#page=23" target="_blank" rel="noopener">PDF p. 216</a> <span class="pg-part">(part p. 23)</span></p>
+  <h2>Geolocation: user kon desh e</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Passport dekhe pathano: German user → German version er server, French user → French version. Baki sobai → default (English). Latency na, <b>user er location</b>.</p></div>
+  <ul>
+    <li><b>Latency-based theke alada!</b> Routing hoy <b>user er location</b> dekhe.</li>
+    <li>Location: <b>Continent</b>, <b>Country</b>, ba <b>US State</b>. Overlap hole <b>sobcheye precise</b> location bachai.</li>
+    <li>Ekta <b>"Default"</b> record banano uchit (location match na hole).</li>
+    <li>Use case: <b>website localization</b>, <b>restrict content distribution</b>, load balancing.</li>
+    <li><b>Health check</b> associate kora jay.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Geolocation (<a class="pg" href="10-slides-p194-227.pdf#page=23" target="_blank" rel="noopener">PDF p. 216</a> <span class="pg-part">(part p. 23)</span>)</span>
+    <div class="flow">
+      <span class="b">Germany user</span><span class="a">→</span><span class="b hl">A 11.22.33.44<small>German version</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">France user</span><span class="a">→</span><span class="b hl">A 55.66.77.88<small>French version</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">Onno sobai</span><span class="a">→</span><span class="b">Default: A 99.11.22.33<small>English version</small></span>
+    </div>
+  </div>
+  <h3>Hands-on</h3>
+  <ul>
+    <li><code>geo.&lt;domain&gt;</code>: <b>Asia</b> (continent) → ap-southeast-1; <b>United States</b> (country) → us-east-1; <b>Default</b> → eu-central-1.</li>
+    <li>Europe theke → default (eu-central-1). VPN <b>India</b> → prothome <b>timeout</b>: ager lecture e SG theke HTTP muchhechilam; "timeout dekhle SG check" → rule ferot dile ap-southeast-1.</li>
+    <li>VPN <b>US</b> → us-east-1. <b>Mexico</b> (US er pashe, kintu rule e nai) → <b>default</b> eu-central-1.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Aine bole <b>France chara onno desh</b> e website jabe na → <b>Geolocation</b> (shudhu France er record, default na) (U10-Q5). "Desh / continent / localization / content restrict / compliance" → Geolocation. "Response time / fastest" → Latency, Geolocation na (S2-Q6). Match na hole answer pete <b>Default</b> record.</div>
+</section>
+
+<section class="card" id="l15">
+  <p class="num">Lecture 15 · Routing Policy - Geoproximity · <a class="pg" href="10-slides-p194-227.pdf#page=24" target="_blank" rel="noopener">PDF p. 217-219</a> <span class="pg-part">(part p. 24-26)</span></p>
+  <h2>Geoproximity: dure + bias diye traffic shift</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Duita dokan, majhe ekta seemana-rekha: jar kache je dokan, se oikhane jay. Ekta dokan "bias" barale tar <b>chumbok</b> shokti bare, rekha onno dokan er dike sore jay, tai beshi customer tar kache ashe.</p></div>
+  <ul>
+    <li>Traffic route hoy <b>user ar resource</b> duitar <b>geographic location</b> dekhe.</li>
+    <li><b>Bias</b> diye kono resource e <b>beshi traffic shift</b> kora jay.</li>
+    <li>Geographic region er size bodlate bias:
+      <ul>
+        <li><b>Expand</b>: <b>1 to 99</b> → resource e <b>beshi</b> traffic.</li>
+        <li><b>Shrink</b>: <b>-1 to -99</b> → <b>kom</b> traffic.</li>
+      </ul>
+    </li>
+    <li>Resource: <b>AWS resource</b> (AWS <b>Region</b> bolo) ba <b>non-AWS</b> (ex: on-premises data center: <b>Latitude ar Longitude</b> bolo).</li>
+    <li>Slide: bias use korte <b>Route 53 Traffic Flow</b> lagbe (eta bodleche, "Course er por ki bodlalo" dekho).</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Bias 0 / 0 (<a class="pg" href="10-slides-p194-227.pdf#page=25" target="_blank" rel="noopener">PDF p. 218</a> <span class="pg-part">(part p. 25)</span>)</span>
+    <div class="flow">
+      <span class="b">Bam pasher user</span><span class="a">→</span><span class="b hl">us-west-1<small>Bias 0</small></span>
+      <span class="a">| majhkhane rekha |</span>
+      <span class="b hl">us-east-1<small>Bias 0</small></span><span class="a">←</span><span class="b">Dan pasher user</span>
+    </div>
+  </div>
+  <div class="fig">
+    <span class="lbl">Bias 0 / 50 (<a class="pg" href="10-slides-p194-227.pdf#page=26" target="_blank" rel="noopener">PDF p. 219</a> <span class="pg-part">(part p. 26)</span>)</span>
+    <div class="flow">
+      <span class="b">Kom user</span><span class="a">→</span><span class="b">us-west-1<small>Bias 0</small></span>
+      <span class="a">| rekha bam e sore gelo |</span>
+      <span class="b hl">us-east-1<small>Bias 50</small></span><span class="a">←</span><span class="b">Beshi user</span>
+    </div>
+  </div>
+  <p class="cap">us-east-1 e bias beshi, tai dividing line west er dike sore; US er boro ongsho us-east-1 e jay.</p>
+  <ul>
+    <li>AWS docs er formula (course e nai): <code>biased distance = actual distance × [1 - (bias/100)]</code>; +50 bias = dure ordhek dhora hoy. <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-geoproximity.html">Geoproximity routing</a></li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "Ek Region theke onno Region e traffic <b>shift</b> korte chai, location dhore" ba "<b>bias</b>" dekhle → <b>Geoproximity</b>. Bias barale (1..99) beshi traffic, komale (-1..-99) kom. Non-AWS resource → <b>latitude / longitude</b>. Geolocation = desh / continent rule; Geoproximity = dure + bias.</div>
+</section>
+
+<section class="card" id="l16">
+  <p class="num">Lecture 16 · Routing Policy - IP-based · <a class="pg" href="10-slides-p194-227.pdf#page=27" target="_blank" rel="noopener">PDF p. 220</a> <span class="pg-part">(part p. 27)</span></p>
+  <h2>IP-based: client er IP range dekhe</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Tumi jano "ei ISP er sob customer er IP 203.0.113.x". Tahole ora shob shomoy kache-r server e jak. Location na, latency na: <b>IP range</b> dekhe niyom.</p></div>
+  <ul>
+    <li>Routing hoy <b>client er IP address</b> dekhe.</li>
+    <li>Tumi <b>CIDR list</b> dao ar protita CIDR er jonno endpoint / location (<b>user-IP-to-endpoint mapping</b>). Eta Route 53 e <b>CIDR Collection</b>.</li>
+    <li>Use case: <b>performance optimize</b> (IP age theke jana), <b>network cost kom</b> (IP kotha theke ashe jana).</li>
+    <li>Example: nirdishto <b>ISP</b> er end user ke nirdishto endpoint e.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>CIDR Collection: Location</th><th>CIDR block</th><th>Record (example.com) value</th></tr>
+    <tr><td>location-1</td><td>203.0.113.0/24</td><td>1.2.3.4 (EC2)</td></tr>
+    <tr><td>location-2</td><td>200.5.4.0/24</td><td>5.6.7.8 (EC2)</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">IP-based (<a class="pg" href="10-slides-p194-227.pdf#page=27" target="_blank" rel="noopener">PDF p. 220</a> <span class="pg-part">(part p. 27)</span>)</span>
+    <div class="flow">
+      <span class="b">User A<small>203.0.113.56</small></span><span class="a">→</span><span class="b hl">Route 53<small>location-1</small></span><span class="a">→</span><span class="b">EC2 1.2.3.4</span>
+    </div>
+    <div class="flow">
+      <span class="b">User B<small>200.5.4.100</small></span><span class="a">→</span><span class="b hl">Route 53<small>location-2</small></span><span class="a">→</span><span class="b">EC2 5.6.7.8</span>
+    </div>
+  </div>
+  <div class="exam"><b>Exam:</b> "Client er <b>IP / CIDR</b> / nirdishto <b>ISP</b> er user" → <b>IP-based routing</b>. Desh dhore hole Geolocation, IP range dhore hole IP-based.</div>
+</section>
+
+<section class="card" id="l17">
+  <p class="num">Lecture 17 · Routing Policy - Multi Value · <a class="pg" href="10-slides-p194-227.pdf#page=28" target="_blank" rel="noopener">PDF p. 221</a> <span class="pg-part">(part p. 28)</span></p>
+  <h2>Multi-Value: onek answer, shudhu healthy gulo</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Simple er moto onek number dey, kintu age check kore kon number gulo <b>chalu</b>. Bondho number list e thake na. Tobu kon number e call korbe ta tumi (client) bachhe nao: eta load balancer na.</p></div>
+  <ul>
+    <li><b>Onek resource</b> e traffic route korte chaile.</li>
+    <li>Route 53 <b>onek value / resource</b> ferot dey.</li>
+    <li><b>Health check</b> jora jay: shudhu <b>healthy</b> resource er value ferot.</li>
+    <li>Proti multi-value query te <b>max 8 ta healthy</b> record.</li>
+    <li><b>ELB er substitute na</b>: eta <b>client-side load balancing</b>.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Multi-value</span>
+    <div class="flow">
+      <span class="b">Client<small>example.com?</small></span><span class="a">→</span>
+      <span class="b hl">Route 53<small>health check pass kora A record gulo (max 8)</small></span><span class="a">→</span>
+      <span class="b">Client<small>ekta bechhe ney</small></span>
+    </div>
+  </div>
+  <div class="scroll"><table>
+    <tr><th></th><th>Simple (multiple values)</th><th>Multi-Value</th></tr>
+    <tr><td>Record</td><td>Ek record, onek value</td><td>Onek record (protita te Record ID)</td></tr>
+    <tr><td>Health check</td><td><b>Na</b>: unhealthy value-o ferot jete pare</td><td><b>Hya</b>: shudhu healthy ferot</td></tr>
+    <tr><td>Koyta</td><td>Sob value</td><td><b>Max 8</b> healthy</td></tr>
+    <tr><td>Ke bachhe</td><td>Client random</td><td>Client</td></tr>
+  </table></div>
+  <h3>Hands-on</h3>
+  <ul>
+    <li><code>multi.&lt;domain&gt;</code>: 3 ta record (us-east-1, ap-southeast-1, eu-central-1), policy <b>Multivalue answer</b>, protita te nijer health check, Record ID, TTL 60 s.</li>
+    <li><code>dig</code> → <b>3 ta IP</b> (sob healthy).</li>
+    <li>eu-central-1 health check e <b>Invert health status</b> (druto unhealthy banano) → <code>dig</code> e <b>2 ta IP</b>. Pore invert tule dao.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "Onek IP return, kintu shudhu healthy gulo" → <b>Multi-Value</b> (Simple na, simple e health check nai). "Max 8". "ELB er bodole Multi-Value" → <b>substitute na</b>.</div>
+</section>
+
+<section class="card" id="policies">
+  <p class="num">Lecture 8-17 ek table e · Routing policies · <a class="pg" href="10-slides-p194-227.pdf#page=14" target="_blank" rel="noopener">PDF p. 207-221</a> <span class="pg-part">(part p. 14-28)</span></p>
+  <h2>Sob routing policy pasapashi</h2>
+  <div class="scroll"><table>
+    <tr><th>Policy</th><th>Ki dekhe answer</th><th>Health check</th><th>Keyword (exam)</th></tr>
+    <tr><td><b>Simple</b></td><td>Kichu na; onek value hole client random</td><td><b>Na</b></td><td>Single resource, basic</td></tr>
+    <tr><td><b>Weighted</b></td><td>Weight / sob weight</td><td>Hya</td><td>%, 5%, 50/50, canary, notun version test, migration</td></tr>
+    <tr><td><b>Latency</b></td><td>User ↔ AWS Region latency</td><td>Hya (failover capability)</td><td>Fastest, response time kom, best experience</td></tr>
+    <tr><td><b>Failover</b></td><td>Primary healthy kina</td><td>Primary e <b>mandatory</b></td><td>Active-passive, DR, automatic failover</td></tr>
+    <tr><td><b>Geolocation</b></td><td>User er continent / country / US state</td><td>Hya</td><td>Localization, desh restrict, compliance, Default record</td></tr>
+    <tr><td><b>Geoproximity</b></td><td>User ar resource er dure + bias</td><td>Hya <span class="pill">AWS docs</span></td><td>Bias, traffic shift Region e, lat/long</td></tr>
+    <tr><td><b>IP-based</b></td><td>Client IP er CIDR</td><td>Course e bola nai</td><td>ISP, CIDR, network cost</td></tr>
+    <tr><td><b>Multi-Value</b></td><td>Sob healthy value (max 8)</td><td>Hya</td><td>Onek healthy IP, client-side LB</td></tr>
+  </table></div>
+  <p class="src">Geoproximity e health check er kotha lecture / slide e nai; AWS docs (private hosted zone e health check: failover, multivalue, weighted, latency, geolocation, geoproximity) theke likhechi: <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-considerations.html">Private hosted zone considerations</a>. Oi page bole private hosted zone e <b>IP-based</b> chara baki sob policy chole; IP-based doc: "You cannot use IP-based routing policy for records in a private hosted zone" (<a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-ipbased.html">IP-based routing</a>).</p>
+</section>
+
+<section class="card" id="l18">
+  <p class="num">Lecture 18 + 19 · 3rd Party Domains &amp; Route 53, Section Cleanup · <a class="pg" href="10-slides-p194-227.pdf#page=29" target="_blank" rel="noopener">PDF p. 222-224</a> <span class="pg-part">(part p. 29-31)</span></p>
+  <h2>Domain Registrar vs DNS Service (GoDaddy + Route 53)</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Bari kinecho ek agent er kach theke (registrar), kintu chithi kon thikanay jabe ta manage kore onno ek post office (DNS service). Agent ke bolo "amar chithi oi post office dekhbe" = <b>NS record</b> bodlano.</p></div>
+  <h3>Parthokko (<a class="pg" href="10-slides-p194-227.pdf#page=29" target="_blank" rel="noopener">PDF p. 222</a> <span class="pg-part">(part p. 29)</span>)</h3>
+  <ul>
+    <li>Domain naam <b>Domain Registrar</b> e kena / register kora hoy, <b>bachhorik</b> dam diye (ex: GoDaddy, Amazon Registrar Inc.).</li>
+    <li>Registrar sadharonoto ekta <b>DNS service</b> o dey record manage korte.</li>
+    <li>Kintu <b>onno DNS service</b> use kora jay: ex: GoDaddy theke kino, <b>Route 53</b> e record manage koro. Ulto-o hoy (Amazon Registrar e kine onno DNS service).</li>
+    <li><b>Domain Registrar != DNS Service</b>, jodio prai sob registrar kichu DNS feature dey.</li>
+  </ul>
+  <h3>3rd party registrar + Route 53 (<a class="pg" href="10-slides-p194-227.pdf#page=30" target="_blank" rel="noopener">PDF p. 223-224</a> <span class="pg-part">(part p. 30-31)</span>)</h3>
+  <ol>
+    <li>Route 53 e domain er jonno <b>Public Hosted Zone</b> banao.</li>
+    <li>Hosted zone details e dan dike <b>4 ta name server</b> ache.</li>
+    <li>GoDaddy (3rd party) website e <b>custom name servers</b> option e oi 4 ta Route 53 name server boshao = <b>NS record update</b>.</li>
+  </ol>
+  <div class="fig">
+    <span class="lbl">GoDaddy registrar, Route 53 DNS (<a class="pg" href="10-slides-p194-227.pdf#page=30" target="_blank" rel="noopener">PDF p. 223</a> <span class="pg-part">(part p. 30)</span>)</span>
+    <div class="flow">
+      <span class="b">GoDaddy<small>domain kena; NS → Route 53 er 4 name server</small></span><span class="a">→ <small>"kon name server?"</small></span>
+      <span class="b hl">Amazon Route 53<small>Public Hosted Zone; sob record ekhane</small></span>
+    </div>
+  </div>
+  <p class="cap">Query ashle GoDaddy bole "Route 53 er name server e jao"; record manage hoy Route 53 console theke.</p>
+  <h3>Lecture 19: cleanup</h3>
+  <ul>
+    <li>Kena domain account e thake; renew korle <b>$12 / year</b> (ba beshi).</li>
+    <li>Hosted zone use na korle record khali kore <b>delete</b>, na hole <b>$0.50 / month</b>. Record er sonkhya dam e prabhab fele na.</li>
+    <li>3 Region er EC2, Frankfurt er ALB ar target group delete.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> GoDaddy te kena domain, DNS Route 53 → <b>Public Hosted Zone</b> banao + <b>3rd party registrar e NS record update</b>; domain transfer lage na, Private Hosted Zone na, "Route 53 er NS update" na (U10-Q6).</div>
+  <p class="src">Subtitle e "EDNS records that are cleaved" bujha jay ni (= DNS records), bad diyechi.</p>
+</section>
+
+<section class="card" id="hybrid">
+  <p class="num">Slide only (kono lecture nai) · Route 53 Hybrid DNS, Resolver Endpoints · <a class="pg" href="10-slides-p194-227.pdf#page=32" target="_blank" rel="noopener">PDF p. 225-227</a> <span class="pg-part">(part p. 32-34)</span></p>
+  <h2>Hybrid DNS: Resolver Inbound ar Outbound Endpoint</h2>
+  <p class="src">Ei card shudhu slide theke; ei topic er alada kono lecture nai. Kintu exam e ashe (S3-Q35).</p>
+  <div class="idea"><p><b>Shohoj kore:</b> Duita office (AWS VPC ar tomar on-premises data center), protitar nijer receptionist (DNS resolver). <b>Inbound</b> = baire theke AWS er receptionist ke prosno korar <b>dorja</b> (on-prem → AWS naam). <b>Outbound</b> = AWS er receptionist baire on-prem receptionist ke prosno pathanor <b>dorja</b> (AWS → on-prem naam). Dikta mone rakho: <b>Route 53 Resolver er dik theke</b> in ar out.</p></div>
+  <h3>Route 53 Resolver (<a class="pg" href="10-slides-p194-227.pdf#page=32" target="_blank" rel="noopener">PDF p. 225</a> <span class="pg-part">(part p. 32)</span>)</h3>
+  <ul>
+    <li>Default e <b>Route 53 Resolver</b> nije answer dey:
+      <ul>
+        <li>EC2 instance er <b>local domain name</b> (ex: <code>ec2-192-0-2-44.compute-1.amazonaws.com</code>)</li>
+        <li><b>Private Hosted Zone</b> er record</li>
+        <li><b>Public name server</b> er record</li>
+      </ul>
+    </li>
+    <li><b>Hybrid DNS</b> = VPC (Route 53 Resolver) ar tomar network (onno DNS resolver) er moddhe DNS query resolve kora.</li>
+    <li>Network hote pare: <b>VPC nije / Peered VPC</b>, ba <b>on-premises network</b> (<b>Direct Connect</b> ba <b>AWS VPN</b> diye jukto; Section 27).</li>
+  </ul>
+  <h3>Resolver Endpoints (<a class="pg" href="10-slides-p194-227.pdf#page=33" target="_blank" rel="noopener">PDF p. 226-227</a> <span class="pg-part">(part p. 33-34)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th></th><th>Inbound Endpoint</th><th>Outbound Endpoint</th></tr>
+    <tr><td>Query er dik</td><td><b>On-premises → AWS</b></td><td><b>AWS → On-premises</b></td></tr>
+    <tr><td>Ki kore</td><td>Tomar (on-prem) DNS Resolver ra <b>AWS resource</b> (EC2) ar <b>Private Hosted Zone</b> record resolve korte pare</td><td>Route 53 Resolver DNS query <b>tomar DNS Resolver e forward</b> kore</td></tr>
+    <tr><td>Slide er example</td><td>On-prem server <code>app.aws.private?</code> → on-prem resolver → VPN/DX → Inbound Endpoint → Resolver → PHZ (aws.private)</td><td>EC2 <code>web.onpremise.private?</code> → Resolver → Outbound Endpoint → VPN/DX → on-prem resolver (onpremise.private)</td></tr>
+    <tr><td>Kothay thake</td><td>VPC er private subnet e</td><td>VPC er private subnet e</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Inbound (<a class="pg" href="10-slides-p194-227.pdf#page=33" target="_blank" rel="noopener">PDF p. 226</a> <span class="pg-part">(part p. 33)</span>)</span>
+    <div class="flow">
+      <span class="b">On-prem Server<small>web.onpremise.private</small></span><span class="a">→ <small>app.aws.private?</small></span>
+      <span class="b">On-prem DNS Resolvers</span><span class="a">→ <small>VPN / DX</small></span>
+      <span class="b hl">Resolver Inbound Endpoint</span><span class="a">→</span>
+      <span class="b">Route 53 Resolver<small>PHZ aws.private lookup</small></span>
+    </div>
+  </div>
+  <div class="fig">
+    <span class="lbl">Outbound (<a class="pg" href="10-slides-p194-227.pdf#page=34" target="_blank" rel="noopener">PDF p. 227</a> <span class="pg-part">(part p. 34)</span>)</span>
+    <div class="flow">
+      <span class="b">EC2<small>app.aws.private</small></span><span class="a">→ <small>web.onpremise.private?</small></span>
+      <span class="b">Route 53 Resolver</span><span class="a">→</span>
+      <span class="b hl">Resolver Outbound Endpoint</span><span class="a">→ <small>VPN / DX</small></span>
+      <span class="b">On-prem DNS Resolvers</span>
+    </div>
+  </div>
+  <p class="cap">Duidik e resolve korte hole duita-i lagbe: Inbound + Outbound.</p>
+  <ul>
+    <li>Outbound e kon domain on-prem e jabe ta bole <b>forwarding rule</b> (conditional forwarding) <span class="pill">amar jana, course e nai</span>.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Direct Connect ache, AWS theke on-prem naam ar on-prem theke AWS naam dutoi resolve → <b>Inbound endpoint</b> (on-prem resolver Route 53 Resolver e forward kore) + <b>Outbound endpoint</b> (Route 53 Resolver conditionally on-prem e forward kore). Option e dik ulto kora thake (outbound diye on-prem → AWS, inbound diye AWS → on-prem) = bhul; "universal endpoint" bole kichu nai (S3-Q35).</div>
+</section>
+
+<section class="card" id="pairs">
+  <h2>Confusing pairs</h2>
+  <div class="scroll"><table class="pairs">
+    <tr><th>Pair</th><th>Parthokko</th><th>Kokhon konta</th></tr>
+    <tr><td>CNAME vs Alias</td><td>CNAME: hostname → jekono hostname, <b>apex e na</b>, query charge, TTL tumi dao. Alias: hostname → <b>AWS resource</b>, apex e-o, <b>free</b>, native health check, TTL set kora jay na, type A/AAAA</td><td>Apex (<code>example.com</code>) → ELB / CloudFront / S3 website → <b>Alias</b>. Non-AWS hostname → CNAME</td></tr>
+    <tr><td>Alias target vs na</td><td>Hoy: ELB, CloudFront, API Gateway, Beanstalk, <b>S3 website</b>, VPC Interface Endpoint, Global Accelerator, same zone er record. Hoy na: <b>EC2 DNS name</b></td><td>"EC2 DNS name e alias" → bhul</td></tr>
+    <tr><td>A vs AAAA</td><td>A → IPv4; AAAA → IPv6</td><td>IPv6 address → AAAA</td></tr>
+    <tr><td>Public vs Private Hosted Zone</td><td>Public: internet er jekeu query. Private: shudhu associated <b>VPC</b> theke, private IP; VPC te DNS hostnames + DNS resolution lage</td><td><code>.internal</code>, VPC er bhitor custom domain → Private</td></tr>
+    <tr><td>High TTL vs Low TTL</td><td>High: kom Route 53 query (shosta), purono record beshi khon. Low: beshi query ($$), druto change</td><td>Record change er age TTL komao. "Update er por-o purono IP" → TTL</td></tr>
+    <tr><td>Simple (multi value) vs Multi-Value</td><td>Simple: health check <b>na</b>, sob value ferot. Multi-Value: health check, shudhu <b>healthy</b>, max <b>8</b></td><td>"Shudhu healthy IP return" → Multi-Value</td></tr>
+    <tr><td>Multi-Value vs ELB</td><td>Multi-Value: DNS level, <b>client-side</b>, client bachhe. ELB: ashol traffic LB diye jay, health check + bhag</td><td>Multi-Value ELB er <b>substitute na</b></td></tr>
+    <tr><td>Weighted vs Failover</td><td>Weighted: <b>%</b> e bhag, sob active. Failover: <b>active-passive</b>, secondary shudhu primary unhealthy hole</td><td>50/50, 5%, canary → Weighted. DR, primary down → Failover</td></tr>
+    <tr><td>Latency vs Geolocation</td><td>Latency: user ↔ Region <b>latency</b> (Germany → US hote pare). Geolocation: user er <b>location</b> (desh / continent / US state), Default record</td><td>Speed / response time → Latency. Desh restrict, localization, compliance → Geolocation</td></tr>
+    <tr><td>Geolocation vs Geoproximity</td><td>Geolocation: location rule (ei desh → ei server). Geoproximity: <b>dure</b> + <b>bias</b> diye region boro / choto</td><td>"Bias", "traffic shift ek Region e" → Geoproximity</td></tr>
+    <tr><td>Geoproximity vs IP-based</td><td>Geoproximity: geographic location (Region ba lat/long). IP-based: client er <b>CIDR</b> (CIDR collection)</td><td>ISP / IP range → IP-based</td></tr>
+    <tr><td>Bias +ve vs -ve</td><td>+1..+99: region <b>expand</b>, beshi traffic. -1..-99: <b>shrink</b>, kom traffic</td><td>Beshi traffic chai → bias barao</td></tr>
+    <tr><td>Endpoint vs Calculated vs CloudWatch alarm health check</td><td>Endpoint: ~15 global checker, public endpoint. Calculated: child check AND/OR/NOT. CloudWatch alarm: alarm er state</td><td>Private / on-prem resource → <b>CloudWatch alarm</b>. Onek check mile ek → Calculated</td></tr>
+    <tr><td>Route 53 health check vs ELB health check</td><td>Route 53: DNS answer bodlay (Region / endpoint failover). ELB: shudhu LB er target e traffic bondho (Section 08)</td><td>Region failover automate → <b>Route 53 health check</b> (S5-Q51)</td></tr>
+    <tr><td>Standard vs Fast interval</td><td>Standard <b>30 s</b>; Fast <b>10 s</b>, beshi khoroch</td><td>Druto detect → Fast</td></tr>
+    <tr><td>Domain Registrar vs DNS Service</td><td>Registrar: naam <b>kena</b> (bachhorik). DNS service: record <b>manage</b>. Alada company hote pare</td><td>GoDaddy + Route 53 → Route 53 e <b>public hosted zone</b>, GoDaddy te <b>NS</b> update</td></tr>
+    <tr><td>Resolver Inbound vs Outbound</td><td>Inbound: <b>on-prem → AWS</b> (on-prem resolver AWS naam jiggesh kore). Outbound: <b>AWS → on-prem</b> (Resolver on-prem e forward kore)</td><td>Duidik resolve → duita-i (S3-Q35)</td></tr>
+    <tr><td>Route 53 routing vs LB routing</td><td>Route 53 shudhu DNS answer dey, traffic tar bhitor diye jay na. LB ashol traffic forward kore</td><td>"DNS traffic route kore" → bhul</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="changes">
+  <h2>Course er por ki bodlalo</h2>
+  <ul>
+    <li><b>Geoproximity ekhon Traffic Flow chara (10 Jan 2024):</b> slide bole "must use Route 53 Traffic Flow". AWS ekhon geoproximity ke shadharon record er routing policy banieche (console, API, SDK, CLI; public ar private hosted zone). <b>Map</b> dekhte ekhono Traffic Flow. Bias range ekhono <b>1..99 / -1..-99</b>; resource hishebe AWS Region, <b>Local Zone Group</b>, ba lat/long. Exam e "bias" dekhlei geoproximity; "Traffic Flow lagbe" option thakle purono tothyo. <a href="https://aws.amazon.com/about-aws/whats-new/2024/01/amazon-route-53-expands-geoproximity-routing/">What's New</a>, <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-geoproximity.html">Geoproximity routing</a></li>
+    <li><b>Route 53 Resolver er notun naam "Route 53 VPC Resolver" (30 Nov 2025):</b> AWS <b>Route 53 Global Resolver</b> (preview; on-prem / remote client er jonno anycast DNS) anar shomoy purono Resolver er naam bodleche. API naam ek-i, configuration ek-i kaj kore. Inbound / Outbound endpoint er concept bodlay ni. Kichu doc e ekhono purono naam. <a href="https://aws.amazon.com/blogs/aws/introducing-amazon-route-53-global-resolver-for-secure-anycast-dns-resolution-preview/">AWS Blog</a>, <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver.html">What is Route 53 VPC Resolver?</a></li>
+    <li><b>Calculated health check: 256 child:</b> slide e 255, lecture e 256; AWS docs bole <b>up to 256</b>, ar calculated check onno calculated check monitor korte pare na. <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-creating-values.html">Health check values</a></li>
+    <li><b>Alias target list boro hoyeche:</b> docs e slide er list er sathe <b>App Runner service</b> ar <b>OpenSearch Service</b> o ache. Ar same hosted zone er onno record e alias korle type A/AAAA chara onno type-o hote pare (NS ar SOA chara); apex e CNAME record e alias na. EC2 DNS name ekhono list e nai. <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias.html">Alias record values</a>, <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias-common.html">Alias common values</a></li>
+    <li><b>Dam ek-i:</b> hosted zone <b>$0.50 / month</b> (prothom 25 ta zone er jonno), AWS resource e Alias query <b>free</b>. <a href="https://aws.amazon.com/route53/pricing/">Route 53 Pricing</a></li>
+  </ul>
+</section>
+
+<section class="card exam-box" id="exam">
+  <h2>Exam e ki mone rakhbo</h2>
+  <h3>Route 53 basics</h3>
+  <ul>
+    <li>Route 53 = managed, <b>authoritative</b> DNS + <b>registrar</b> + <b>health check</b>; <b>100% SLA</b> (ekmatro AWS service); port 53.</li>
+    <li>Route 53 er kaj <b>na</b>: duita VPC er moddhe private routing (oita VPC peering) (B4-Q45).</li>
+    <li>Must-know type: <b>A</b> (IPv4), <b>AAAA</b> (IPv6), <b>CNAME</b> (hostname → hostname, apex e na), <b>NS</b>. MX, SRV, TXT, SOA, CAA ... o support kore; "SPF = session policy forwarder" bhul (B6-Q55).</li>
+    <li>Hosted zone <b>$0.50/month</b>; domain ~<b>$12/year</b>. Public = internet; Private = VPC.</li>
+    <li>Private hosted zone kaj korche na / banate → VPC te <b>enableDnsHostnames + enableDnsSupport</b> (DNS hostnames + DNS resolution) true (S1-Q63, S5-Q20).</li>
+    <li>RDS Multi-AZ failover e <b>CNAME</b> record standby te flip hoy (B4-Q16).</li>
+  </ul>
+  <h3>TTL</h3>
+  <ul>
+    <li>Record bodlalam, user purono ELB e → <b>TTL</b> (U10-Q3, S4-Q3).</li>
+    <li>High TTL = kom query, purono record; Low TTL = beshi query ($), druto change. Alias chara sob record e TTL mandatory.</li>
+  </ul>
+  <h3>CNAME vs Alias</h3>
+  <ul>
+    <li><b>Zone apex</b> (<code>example.com</code>) → AWS resource: <b>Alias A</b> record; CNAME apex e <b>na</b> (U10-Q1, B2-Q1, B5-Q13).</li>
+    <li>Apex → <code>www</code> (same hosted zone), cheapest → <b>Alias</b> (S3-Q19).</li>
+    <li>LB er IP diye A record na (IP bodlay); Alias IP change nije bujhe.</li>
+    <li>Alias: free, native health check, TTL set kora jay na, type A/AAAA. Target: ELB, CloudFront, API Gateway, Beanstalk, <b>S3 website</b>, VPC Interface Endpoint, Global Accelerator, same zone record. <b>EC2 DNS name na</b>.</li>
+  </ul>
+  <h3>Routing policy: keyword → answer</h3>
+  <ul>
+    <li><b>%</b> traffic, 5% notun version, 50/50 migration → <b>Weighted</b> (U10-Q2, B5-Q20, B5-Q40). Weight 0 = bondho; sob 0 = shoman. Same name + type.</li>
+    <li>Elasticity: <b>2 EC2 + ELB</b> ba <b>2 EC2 + Route 53 weighted</b> (B2-Q8).</li>
+    <li>Response time kom / best experience → <b>Latency</b> (U10-Q4). Europe e slow → <b>eu-west-1 web tier + latency</b> + <b>Aurora read replica eu-west-1</b> (S2-Q6).</li>
+    <li>Ek desh chara sob block / localization → <b>Geolocation</b> (U10-Q5). Continent / country / US state; most precise jete; <b>Default</b> record.</li>
+    <li>Bias diye Region e traffic shift → <b>Geoproximity</b> (1..99 expand, -1..-99 shrink; non-AWS = lat/long).</li>
+    <li>Client IP / CIDR / ISP → <b>IP-based</b>.</li>
+    <li>Active-passive DR → <b>Failover</b>; primary e health check <b>mandatory</b>; ek primary, ek secondary.</li>
+    <li>Onek IP, shudhu healthy → <b>Multi-Value</b> (max <b>8</b>; ELB er substitute na). Simple e health check <b>nai</b>, client random.</li>
+    <li>"DNS traffic route kore" → bhul; DNS shudhu answer dey.</li>
+  </ul>
+  <h3>Health checks</h3>
+  <ul>
+    <li>Tin dhoron: <b>endpoint</b>, <b>calculated</b> (onno check), <b>CloudWatch alarm</b>. <b>SQS queue</b> health check bole kichu nai (U10-Q7).</li>
+    <li>Endpoint: ~<b>15</b> global checker, threshold <b>3</b>, interval <b>30 s</b> (fast <b>10 s</b>, beshi $), HTTP/HTTPS/TCP, <b>&gt; 18%</b> healthy → healthy, <b>2xx/3xx</b> pass, text <b>prothom 5120 bytes</b>, firewall e <b>Route 53 checker IP</b> allow.</li>
+    <li>Calculated: OR / AND / NOT, child 256 (slide 255), maintenance.</li>
+    <li><b>Private</b> / on-prem resource → <b>CloudWatch metric + alarm</b>, health check alarm monitor kore (checker VPC er baire).</li>
+    <li>Warm standby DNS failover automate → <b>Route 53 health check</b>; ALB / EC2 health check / Trusted Advisor na (S5-Q51).</li>
+  </ul>
+  <h3>Registrar ar Hybrid DNS</h3>
+  <ul>
+    <li>GoDaddy domain + Route 53 DNS → <b>Public Hosted Zone</b> + <b>3rd party registrar e NS update</b>; transfer na, private zone na (U10-Q6).</li>
+    <li>Registrar != DNS service.</li>
+    <li>On-prem → AWS naam → <b>Inbound endpoint</b>. AWS → on-prem naam → <b>Outbound endpoint</b> (conditional forward). Duidik → duita. "Universal endpoint" nai; dik ulto option bhul (S3-Q35).</li>
+    <li>Route 53 Resolver default e answer dey: EC2 local naam, Private Hosted Zone, public record. Ekhon naam "Route 53 VPC Resolver".</li>
+  </ul>
+</section>
+
+<section class="card qz-part" id="part-a"><div class="qz-part-head"><h2>Part A: Udemy course quiz (7)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">The instructor's own section quiz: warm-up, direct questions. Answer first, then press Check.</p><article class="qz" id="U10-Q1" data-qid="U10-Q1" data-n="1"><div class="qz-top"><span class="qz-num">A1</span><span class="qz-id">U10-Q1</span><span class="pill">Udemy quiz · sec 10 · Q1</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have purchased <strong>mycoolcompany.com</strong> on Amazon Route 53 Registrar and would like the domain to point to your Elastic Load Balancer <strong>my-elb-1234567890.us-west-2.elb.amazonaws.com</strong>. Which Route 53 Record type must you use here?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U10-Q1" value="0"><span class="qz-l">A</span><span class="qz-o"><p>CNAME</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U10-Q1" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Alias</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><code>mycoolcompany.com</code> holo <b>zone apex</b> (root domain). Apex e <b>CNAME</b> banano jay na, tai ELB er DNS name e point korte <b>Alias</b> record lagbe (<a class="pg" href="10-slides-p194-227.pdf#page=7" target="_blank" rel="noopener">PDF p. 200</a> <span class="pg-part">(part p. 7)</span>, 204-205).</p><p>Alias AWS resource (ELB, CloudFront, S3 website...) e point kore, root ar non-root dui jaygay kaj kore, query free, ar ELB er IP bodlaleo nije bujhe nay.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> CNAME shudhu non-root naam e chole (jemon <code>www.mycoolcompany.com</code>); zone apex <code>mycoolcompany.com</code> e CNAME allowed na.</li></ul><p><b>Keyword:</b> <b>mycoolcompany.com</b> (zone apex) → <b>ELB</b> → Alias</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> You can't create a CNAME record that has the same name as the top node of the DNS namespace (Zone Apex), in our case "mycoolcompany.com."</p></details></div></article><article class="qz" id="U10-Q2" data-qid="U10-Q2" data-n="1"><div class="qz-top"><span class="qz-num">A2</span><span class="qz-id">U10-Q2</span><span class="pill">Udemy quiz · sec 10 · Q2</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have deployed a new Elastic Beanstalk environment and would like to direct 5% of your production traffic to this new environment. This allows you to monitor for CloudWatch metrics and ensuring that there're no bugs exist with your new environment. Which Route 53 Record type allows you to do so?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U10-Q2" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Simple</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U10-Q2" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Weighted</p></span></label></li><li data-i="2"><label><input type="radio" name="U10-Q2" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Latency</p></span></label></li><li data-i="3"><label><input type="radio" name="U10-Q2" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Failover</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>Weighted</b> routing e proti record e ekta relative weight dao, traffic shei hishebe bhag hoy: traffic % = record er weight / sob record er weight er jogfol (<a class="pg" href="10-slides-p194-227.pdf#page=16" target="_blank" rel="noopener">PDF p. 209</a> <span class="pg-part">(part p. 16)</span>).</p><p>Notun environment e weight 5, purono te 95 dile ~5% request notun environment e jabe. Course er use case: <b>testing new application versions</b>. Sob thik thakle weight bariye full shift kora jay.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Simple e ekta record (onek value thakle client random nay); kono % control nai.</li><li><b>C.</b> Latency user ke lowest latency er Region e pathay; nirdishto % traffic bhag kore na.</li><li><b>D.</b> Failover active-passive: primary healthy thakle sob traffic primary te; % split kore na.</li></ul><p><b>Keyword:</b> <b>5% of production traffic</b> notun environment e → Weighted</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>B:</b> Weighted Routing Policy allows you to redirect part of the traffic based on weight (e.g., percentage). It's a common use case to send part of traffic to a new version of your application.</p></details></div></article><article class="qz" id="U10-Q3" data-qid="U10-Q3" data-n="1"><div class="qz-top"><span class="qz-num">A3</span><span class="qz-id">U10-Q3</span><span class="pill">Udemy quiz · sec 10 · Q3</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have updated a Route 53 Record's <strong>myapp.mydomain.com</strong> value to point to a new Elastic Load Balancer, but it looks like users are still redirected to the old ELB. What is a possible cause for this behavior?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U10-Q3" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Because of the Alias record</p></span></label></li><li data-i="1"><label><input type="radio" name="U10-Q3" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Because of the CNAME record</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U10-Q3" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Because of the TTL</p></span></label></li><li data-i="3"><label><input type="radio" name="U10-Q3" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Because of Route 53 Health Checks</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Proti DNS record er ekta <b>TTL</b> thake: client / DNS resolver answer ta TTL porjonto <b>cache</b> kore rakhe (<a class="pg" href="10-slides-p194-227.pdf#page=10" target="_blank" rel="noopener">PDF p. 203</a> <span class="pg-part">(part p. 10)</span>). Record update korar por-o jader kache purono answer cache e ache, tara TTL shesh na howa porjonto purono ELB e-i jabe.</p><p>Tip: record change er age TTL komiye nao, tahole change druto chhoray.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Alias record ELB er IP change nije bujhe nay; update korle notun target-i dey. Purono ELB e jawar karon cache.</li><li><b>B.</b> CNAME update korle-o Route 53 notun value-i ferot dey; problem holo client er cache (TTL), record type na.</li><li><b>D.</b> Health check unhealthy record ke answer theke baad dey; purono ELB e pathay na.</li></ul><p><b>Keyword:</b> Record <b>updated</b>, tobu user <b>still</b> purono ELB e → TTL (cache)</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>C:</b> Each DNS record has a TTL (Time To Live) which orders clients for how long to cache these values and not overload the DNS Resolver with DNS requests. The TTL value should be set to strike a balance between how long the value should be cached vs. how many requests should go to the DNS Resolver.</p></details></div></article><article class="qz" id="U10-Q4" data-qid="U10-Q4" data-n="1"><div class="qz-top"><span class="qz-num">A4</span><span class="qz-id">U10-Q4</span><span class="pill">Udemy quiz · sec 10 · Q4</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have an application that's hosted in two different AWS Regions <code>us-west-1</code> and <code>eu-west-2</code>. You want your users to get the best possible user experience by minimizing the response time from application servers to your users. Which Route 53 Routing Policy should you choose?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U10-Q4" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Multi Value</p></span></label></li><li data-i="1"><label><input type="radio" name="U10-Q4" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Weighted</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U10-Q4" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Latency</p></span></label></li><li data-i="3"><label><input type="radio" name="U10-Q4" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Geolocation</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>Latency-based</b> routing user ke shei Region er resource e pathay jeta tar jonno <b>lowest latency</b> dey (<a class="pg" href="10-slides-p194-227.pdf#page=17" target="_blank" rel="noopener">PDF p. 210</a> <span class="pg-part">(part p. 17)</span>). Latency mapa hoy user ar AWS Region er moddher traffic dekhe.</p><p>Duita Region (us-west-1, eu-west-2), goal response time minimize: tai Latency.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Multi-Value onek healthy value return kore (max 8), client ekta nay; kon Region druto seta dekhe na.</li><li><b>B.</b> Weighted fixed % e traffic bhag kore; user er jonno kon Region druto seta dekhe na.</li><li><b>D.</b> Geolocation user er desh / continent er rule dhore route kore, latency dhore na; fastest Region guarantee kore na.</li></ul><p><b>Keyword:</b> <b>minimizing the response time</b>, duita Region → Latency</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>C:</b> Latency Routing Policy will evaluate the latency between your users and AWS Regions, and help them get a DNS response that will minimize their latency (e.g. response time)</p></details></div></article><article class="qz" id="U10-Q5" data-qid="U10-Q5" data-n="1"><div class="qz-top"><span class="qz-num">A5</span><span class="qz-id">U10-Q5</span><span class="pill">Udemy quiz · sec 10 · Q5</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have a legal requirement that people in any country but France should <strong>NOT</strong> be able to access your website. Which Route 53 Routing Policy helps you in achieving this?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U10-Q5" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Latency</p></span></label></li><li data-i="1"><label><input type="radio" name="U10-Q5" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Simple</p></span></label></li><li data-i="2"><label><input type="radio" name="U10-Q5" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Multi Value</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U10-Q5" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Geolocation</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><b>Geolocation</b> routing user er location (continent, country, US state) dhore answer dey (<a class="pg" href="10-slides-p194-227.pdf#page=23" target="_blank" rel="noopener">PDF p. 216</a> <span class="pg-part">(part p. 23)</span>). Shudhu <b>France</b> er jonno record banao ar <b>Default</b> record banio na: tahole onno desh er user kono answer pabe na, site e dhukte parbe na.</p><p>Course er use case: <b>restrict content distribution</b>.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Latency lowest latency er Region e pathay; user kon desh theke ashche seta dhore block korte pare na.</li><li><b>B.</b> Simple sobaike ek-i answer dey; desh dhore alada kora jay na.</li><li><b>C.</b> Multi-Value onek healthy IP return kore; location dhore filter kore na.</li></ul><p><b>Keyword:</b> <b>any country but France</b> access na → Geolocation (shudhu France record, Default na)</p></div></article><article class="qz" id="U10-Q6" data-qid="U10-Q6" data-n="1"><div class="qz-top"><span class="qz-num">A6</span><span class="qz-id">U10-Q6</span><span class="pill">Udemy quiz · sec 10 · Q6</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have purchased a domain on <strong>GoDaddy</strong> and would like to use Route 53 as the DNS Service Provider. What should you do to make this work?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U10-Q6" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Request for a domain transfer</p></span></label></li><li data-i="1"><label><input type="radio" name="U10-Q6" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Create a Private Hosted Zone and update the 3rd party Registrar NS records</p></span></label></li><li data-i="2"><label><input type="radio" name="U10-Q6" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Create a Public Hosted Zone and update the Route 53 NS records</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U10-Q6" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Create a Public Hosted Zone and update the 3rd party Registrar NS records</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p>Domain Registrar ar DNS service alada company hote pare (<a class="pg" href="10-slides-p194-227.pdf#page=29" target="_blank" rel="noopener">PDF p. 222-224</a> <span class="pg-part">(part p. 29-31)</span>). GoDaddy te kena domain er DNS Route 53 e manage korte:</p><ul><li>Route 53 e <b>Public Hosted Zone</b> banao (internet theke query ashbe).</li><li><b>3rd party registrar (GoDaddy)</b> er website e NS record update kore Route 53 er name server boshao.</li></ul></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Domain transfer lage na; registrar GoDaddy thakleo Route 53 ke DNS service hishebe use kora jay.</li><li><b>B.</b> Private Hosted Zone shudhu VPC er bhitorer query answer kore; internet user website khujle eta kaj korbe na.</li><li><b>C.</b> NS update korte hoy registrar (GoDaddy) e, Route 53 e na; Route 53 hosted zone er NS record nije-i banay.</li></ul><p><b>Keyword:</b> <b>purchased on GoDaddy</b>, Route 53 = <b>DNS Service</b> → Public Hosted Zone + 3rd party registrar e NS update</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>B:</b> Private Hosted Zones are meant to be used for internal network (e.g., VPC) DNS queries and are not publicly accessible.</p><p><b>D:</b> Public Hosted Zones are meant to be used for people requesting your website through the Internet. Finally, NS records must be updated on the 3rd party Registrar.</p></details></div></article><article class="qz" id="U10-Q7" data-qid="U10-Q7" data-n="1"><div class="qz-top"><span class="qz-num">A7</span><span class="qz-id">U10-Q7</span><span class="pill">Udemy quiz · sec 10 · Q7</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Which of the following are <strong>NOT</strong> valid Route 53 Health Checks?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U10-Q7" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Health Check that monitor SQS Queue</p></span></label></li><li data-i="1"><label><input type="radio" name="U10-Q7" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Health Check that monitors an Endpoint</p></span></label></li><li data-i="2"><label><input type="radio" name="U10-Q7" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Health Check that monitors other Health Checks</p></span></label></li><li data-i="3"><label><input type="radio" name="U10-Q7" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Health Check that monitor CloudWatch Alarms</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Route 53 health check 3 dhoroner (<a class="pg" href="10-slides-p194-227.pdf#page=18" target="_blank" rel="noopener">PDF p. 211</a> <span class="pg-part">(part p. 18)</span>):</p><ul><li>Endpoint monitor (application, server, onno AWS resource)</li><li>Onno health check monitor (Calculated Health Check)</li><li>CloudWatch Alarm monitor</li></ul><p><b>SQS queue</b> monitor kora health check bole kichu nai, tai A valid na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Valid: endpoint monitor kora health check (HTTP, HTTPS, TCP), ~15 global health checker diye.</li><li><b>C.</b> Valid: Calculated Health Check, onek child health check er result AND / OR / NOT diye jog kore.</li><li><b>D.</b> Valid: CloudWatch Alarm monitor kora health check, private resource er jonno kaje lage.</li></ul><p><b>Keyword:</b> <b>NOT valid</b> → SQS Queue (valid: endpoint, other health checks, CloudWatch alarm)</p></div></article></section>
+<section class="card qz-part" id="part-b"><div class="qz-part-head"><h2>Part B: Practice exam questions (15)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">Everything these questions need is covered up to this section (in your study order). Answer first, ~2 min per question. Then read every explanation, also for the ones you got right.</p><article class="qz" id="B2-Q8" data-qid="B2-Q8" data-n="2"><div class="qz-top"><span class="qz-num">B1</span><span class="qz-id">B2-Q8</span><span class="pill">Bonso set 2 · Q8</span><span class="pill">Highly Available Network Design</span><span class="qz-badge"></span></div><div class="qz-stem">A start-up company has an EC2 instance that is hosting a web application. The volume of users is expected to grow in the coming months and hence, you need to add more elasticity in your AWS architecture.<br><br>Which of the following methods can help add elasticity to your existing AWS setup? (Choose 2)</div><p class="qz-need">Choose 2 answers</p><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="checkbox" name="B2-Q8" value="0"><span class="qz-l">A</span><span class="qz-o">Setup two EC2 instances and then put them behind an Elastic Load balancer (ELB).</span></label></li><li data-i="1"><label><input type="checkbox" name="B2-Q8" value="1"><span class="qz-l">B</span><span class="qz-o">Setup an S3 Cache in front of the EC2 instance.</span></label></li><li data-i="2" data-c="1"><label><input type="checkbox" name="B2-Q8" value="2"><span class="qz-l">C</span><span class="qz-o">Setup two EC2 instances and use Route53 to route traffic based on a Weighted Routing Policy.</span></label></li><li data-i="3"><label><input type="checkbox" name="B2-Q8" value="3"><span class="qz-l">D</span><span class="qz-o">Setup DynamoDB behind your EC2 Instance.</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A, C. Why it is right</h4><div class="qz-bn"><p>Elasticity = load onujayi resource barano-komano; ekhane horizontal scaling (onek instance) lagbe (<a class="pg" href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-slides-p119-160.pdf#page=4" target="_blank" rel="noopener">PDF p. 122</a> <span class="pg-part">(Section 08 part p. 4)</span>). Duita upay:</p><ul><li><b>A</b>: 2+ EC2 ke <b>ELB</b> er pichone rakho; ELB traffic sob instance e chhoray ar health check kore (<a class="pg" href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-slides-p119-160.pdf#page=8" target="_blank" rel="noopener">PDF p. 126</a> <span class="pg-part">(Section 08 part p. 8)</span>).</li><li><b>C</b>: 2 EC2 te Route 53 <b>Weighted</b> routing; weight onujayi traffic bhag hoy (<a class="pg" href="10-slides-p194-227.pdf#page=16" target="_blank" rel="noopener">PDF p. 209</a> <span class="pg-part">(part p. 16)</span>).</li></ul></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> S3 object storage; EC2 er samne 'S3 cache' boshiye web tier er instance ba traffic distribution bare na.</li><li><b>D.</b> DynamoDB ekta database; DB add korle web server er sonkhya ba load sharing bare na.</li></ul><p><b>Keyword:</b> <b>add elasticity</b> web tier e → onek EC2 + ELB, ba onek EC2 + Route 53 Weighted</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Using an Elastic Load balancer is an ideal solution for adding elasticity to your application. Alternatively, you can also create a policy in Route53, such as a Weighted routing policy, to evenly distribute the traffic to 2 or more EC2 instances.</p><br><p>Resources:</p><p><a href="https://aws.amazon.com/elasticloadbalancing" target="_blank" rel="noopener">https://aws.amazon.com/elasticloadbalancing</a></p><p><a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/elasticloadbalancing" target="_blank" rel="noopener">https://aws.amazon.com/elasticloadbalancing</a> · <a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html</a></p></div></article><article class="qz" id="B4-Q16" data-qid="B4-Q16" data-n="1"><div class="qz-top"><span class="qz-num">B2</span><span class="qz-id">B4-Q16</span><span class="pill">Bonso set 4 · Q16</span><span class="pill">RDS</span><span class="qz-badge"></span></div><div class="qz-stem">Amazon RDS automatically switches over to the standby database in the event of an unplanned outage of your primary database. <br><br>In such a case, which record in Route53 is changed?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B4-Q16" value="0"><span class="qz-l">A</span><span class="qz-o">DNAME</span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="B4-Q16" value="1"><span class="qz-l">B</span><span class="qz-o">CNAME</span></label></li><li data-i="2"><label><input type="radio" name="B4-Q16" value="2"><span class="qz-l">C</span><span class="qz-o">TXT</span></label></li><li data-i="3"><label><input type="radio" name="B4-Q16" value="3"><span class="qz-l">D</span><span class="qz-o">MX</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>RDS Multi-AZ e app <b>ek ta DNS name</b> use kore; failover hole automatic standby te chole jay (<a class="pg" href="../09.%20AWS%20Fundamentals%20RDS%20%2B%20Aurora%20%2B%20ElastiCache/09-slides-p161-193.pdf#page=8" target="_blank" rel="noopener">PDF p. 168</a> <span class="pg-part">(Section 09 part p. 8)</span>). Eta hoy DNS e: RDS DB endpoint er <b>CNAME</b> record ke promoted standby er dike flip kore dey.</p><p>Tai app er connection string bodlate hoy na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> DNAME puro subtree ke onno domain e redirect kore; Route 53 er supported record list e-i nai, RDS failover e bodlay na.</li><li><b>C.</b> TXT record text info rakhe (jemon domain verification); kono host e point kore na.</li><li><b>D.</b> MX record mail server dekhay; DB endpoint er sathe somporko nai.</li></ul><p><b>Keyword:</b> RDS <b>switches over to the standby</b>, endpoint same → CNAME flip</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Failover is automatically handled by Amazon RDS so that you can resume database operations as quickly as possible without administrative intervention. When failing over, Amazon RDS simply flips the canonical name record (CNAME) in Route53 for your DB instance to point at the standby, which in turn is promoted to become the new primary.</p><p>References:</p><p><a href="https://aws.amazon.com/rds/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/rds/faqs/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/rds/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/rds/faqs/</a></p></div></article><article class="qz" id="B2-Q1" data-qid="B2-Q1" data-n="1"><div class="qz-top"><span class="qz-num">B3</span><span class="qz-id">B2-Q1</span><span class="pill">Bonso set 2 · Q1</span><span class="pill">Route53</span><span class="qz-badge"></span></div><div class="qz-stem">In Route53, which record type will you use if you want to point a domain name (such as tutorialsdojo.com) to an Application Load Balancer?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B2-Q1" value="0"><span class="qz-l">A</span><span class="qz-o">Non-Alias with a type "A" record set</span></label></li><li data-i="1"><label><input type="radio" name="B2-Q1" value="1"><span class="qz-l">B</span><span class="qz-o">Alias with a type "AAAA" record set</span></label></li><li data-i="2"><label><input type="radio" name="B2-Q1" value="2"><span class="qz-l">C</span><span class="qz-o">Alias with a type "CNAME" record set</span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="B2-Q1" value="3"><span class="qz-l">D</span><span class="qz-o">Alias with a type "A" record set</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><code>tutorialsdojo.com</code> holo zone apex. Apex e CNAME chole na, tai ALB er dike <b>Alias</b> lagbe. AWS resource er jonno Alias record sob shomoy <b>type A / AAAA</b> (<a class="pg" href="10-slides-p194-227.pdf#page=12" target="_blank" rel="noopener">PDF p. 205</a> <span class="pg-part">(part p. 12)</span>); IPv4 er jonno <b>Alias A</b>.</p><p>Alias ALB er IP change nije bujhe nay, ar query free.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Non-Alias A record e fixed IP dite hoy; ALB er IP AWS-managed, bodlate pare, tai IP hardcode kora jay na.</li><li><b>B.</b> AAAA = IPv6. ALB dualstack na hole AAAA alias kaj korbe na; domain → ALB er standard uttor Alias A.</li><li><b>C.</b> AWS resource er Alias type A / AAAA; CNAME type e Alias hoy na, ar apex e CNAME allowed-i na.</li></ul><p><b>Keyword:</b> <b>domain name</b> (apex) → <b>ALB</b> → Alias with type A</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>You can use Amazon Route53 as the DNS service for your domain, such as example.com. When Route53 is your DNS service, it routes Internet traffic to your website by translating friendly domain names like www.example.com into numeric IP addresses, like 192.0.2.1, that computers use to connect to each other. When someone enters your domain name in a browser or sends you email, a DNS query is forwarded to Route53, which responds with the appropriate value, for example, the IP address for the web server for example.com.</p><p>To route the traffic from your domain name to an Elastic Load Balancer, you have to use an alias with a type "A" record set.</p><p>References:&nbsp;</p><p><a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias.html</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias.html</a></p><p class="qz-rel">Related: <a href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-notes.html">Section 08 ELB &amp; ASG</a></p></div></article><article class="qz" id="B5-Q13" data-qid="B5-Q13" data-n="1"><div class="qz-top"><span class="qz-num">B4</span><span class="qz-id">B5-Q13</span><span class="pill">Bonso set 5 · Q13</span><span class="pill">Route53</span><span class="qz-badge"></span></div><div class="qz-stem">A client is hosting their company website on a cluster of web servers that are behind a public-facing load balancer. The client also uses Amazon Route53 to manage their public DNS. <br><br>How should the client configure the DNS zone apex record to point to the load balancer?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B5-Q13" value="0"><span class="qz-l">A</span><span class="qz-o">Create an A record pointing to the IP address of the load balancer.</span></label></li><li data-i="1"><label><input type="radio" name="B5-Q13" value="1"><span class="qz-l">B</span><span class="qz-o">Create a CNAME record pointing to the load balancer DNS name.</span></label></li><li data-i="2"><label><input type="radio" name="B5-Q13" value="2"><span class="qz-l">C</span><span class="qz-o">Create an alias for CNAME record to the load balancer DNS name.</span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="B5-Q13" value="3"><span class="qz-l">D</span><span class="qz-o">Create an A record aliased to the load balancer DNS name.</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p>Zone apex e <b>CNAME</b> banano jay na, ar load balancer er IP AWS-managed, jekono shomoy bodlate pare (<a class="pg" href="10-slides-p194-227.pdf#page=11" target="_blank" rel="noopener">PDF p. 204-205</a> <span class="pg-part">(part p. 11-12)</span>). Tai <b>A record with Alias</b> to LB DNS name: Alias apex e kaj kore ar IP change nije bujhe nay.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> LB er IP fixed na (scaling / update e bodlay), tai IP hardcode kora A record ekdin bhenge jabe.</li><li><b>B.</b> Zone apex e CNAME allowed na; CNAME shudhu www er moto non-root naam e chole.</li><li><b>C.</b> AWS resource er Alias type A / AAAA hoy, CNAME na; ar apex e CNAME type record-i banano jay na.</li></ul><p><b>Keyword:</b> <b>zone apex</b> → <b>load balancer</b> → A record aliased to LB DNS name</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Route53's DNS implementation connects user requests to infrastructure running inside (and outside) of Amazon Web Services (AWS). For example, if you have multiple web servers running on Amazon Elastic Compute Cloud (Amazon EC2) instances behind an Elastic Load Balancing load balancer, Route53 will route all traffic addressed to your website (e.g. www.example.com) to the load balancer DNS name (e.g. elb1234.elb.amazonaws.com).</p><p>Additionally, Route53 supports the alias resource record set, which lets you map your zone apex (e.g. example.com) DNS name to your load balancer DNS name. IP addresses associated with Elastic Load Balancing can change at any time due to scaling or software updates. Route53 responds to each request for an alias resource record set with one IP address for the load balancer.</p><p>Resources:</p><p><a href="http://docs.aws.amazon.com/govcloud-us/latest/UserGuide/setting-up-route53-zoneapex-elb.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/govcloud-us/latest/UserGuide/setting-up-route53-zoneapex-elb.html</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/govcloud-us/latest/UserGuide/setting-up-route53-zoneapex-elb.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/govcloud-us/latest/UserGuide/setting-up-route53-zoneapex-elb.html</a></p><p class="qz-rel">Related: <a href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-notes.html">Section 08 ELB &amp; ASG</a></p></div></article><article class="qz" id="S3-Q19" data-qid="S3-Q19" data-n="1"><div class="qz-top"><span class="qz-num">B5</span><span class="qz-id">S3-Q19</span><span class="pill">Stephane set 3 · Q19</span><span class="pill">Design Cost-Optimized Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A startup has created a new web application for users to complete a risk assessment survey for COVID-19 symptoms via a self-administered questionnaire. The startup has purchased the domain covid19survey.com using Route 53. The web development team would like to create a Route 53 record so that all traffic for covid19survey.com is routed to www.covid19survey.com. As a solutions architect, which of the following is the MOST cost-effective solution that you would recommend to the web development team?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S3-Q19" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Create a CNAME record for covid19survey.com that routes traffic to www.covid19survey.com</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="S3-Q19" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Create an alias record for covid19survey.com that routes traffic to www.covid19survey.com</p></span></label></li><li data-i="2"><label><input type="radio" name="S3-Q19" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Create an MX record for covid19survey.com that routes traffic to www.covid19survey.com</p></span></label></li><li data-i="3"><label><input type="radio" name="S3-Q19" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Create an NS record for covid19survey.com that routes traffic to www.covid19survey.com</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><code>covid19survey.com</code> holo <b>zone apex</b>; apex e CNAME banano jay na (<a class="pg" href="10-slides-p194-227.pdf#page=7" target="_blank" rel="noopener">PDF p. 200</a> <span class="pg-part">(part p. 7)</span>). <b>Alias</b> apex e kaj kore, ar Alias target hote pare <b>same hosted zone er onno Route 53 record</b> (<code>www.covid19survey.com</code>) (<a class="pg" href="10-slides-p194-227.pdf#page=13" target="_blank" rel="noopener">PDF p. 206</a> <span class="pg-part">(part p. 13)</span>).</p><p><b>Most cost-effective</b>: Route 53 AWS resource e Alias query er charge ney na, CNAME query te charge ney (<a class="pg" href="10-slides-p194-227.pdf#page=11" target="_blank" rel="noopener">PDF p. 204</a> <span class="pg-part">(part p. 11)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Apex (<code>covid19survey.com</code>) e CNAME allowed na; ar CNAME query er charge ache.</li><li><b>C.</b> MX record mail server er jonno; web traffic onno naam e pathay na.</li><li><b>D.</b> NS record hosted zone er name server dekhay; ek naam theke onno naam e traffic pathay na.</li></ul><p><b>Keyword:</b> <b>covid19survey.com</b> (apex) → www, <b>MOST cost-effective</b> → Alias</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:
+"Create an alias record for covid19survey.com that routes traffic to www.covid19survey.com"</p>
+
+<p>Alias records provide a Route 53–specific extension to DNS functionality. Alias records let you route traffic to selected AWS resources, such as CloudFront distributions and Amazon S3 buckets.
+You can create an alias record at the top node of a DNS namespace, also known as the zone apex, however, you cannot create a CNAME record for the top node of the DNS namespace. So, if you register the DNS name covid19survey.com, the zone apex is covid19survey.com. You can't create a CNAME record for covid19survey.com, but you can create an alias record for covid19survey.com that routes traffic to www.example.com.</p>
+
+<p>Exam Alert:
+You should also note that Route 53 doesn't charge for alias queries to AWS resources but Route 53 does charge for CNAME queries. Additionally, an alias record can only redirect queries to selected AWS resources such as S3 buckets, CloudFront distributions, and another record in the same Route 53 hosted zone; however a CNAME record can redirect DNS queries to any DNS record. So, you can create a CNAME record that redirects queries from app.covid19survey.com to app.covid19survey.net.</p>
+
+<p>Incorrect options:
+"Create a CNAME record for covid19survey.com that routes traffic to www.covid19survey.com" - You cannot create a CNAME record for the top node of the DNS namespace, so this option is incorrect.</p>
+
+<p>"Create an MX record for covid19survey.com that routes traffic to www.covid19survey.com" - An MX record specifies the names of your mail servers and, if you have two or more mail servers, the priority order. It cannot be used to create a Route 53 record to route traffic for the top node of the DNS namespace, so this option is incorrect.</p>
+
+<p>"Create an NS record for covid19survey.com that routes traffic to www.covid19survey.com" - An NS record identifies the name servers for the hosted zone. It cannot be used to create a Route 53 record to route traffic for the top node of the DNS namespace, so this option is incorrect.</p>
+
+<p>References:
+https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html
+https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/ResourceRecordTypes.html</p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html</a> · <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/ResourceRecordTypes.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/ResourceRecordTypes.html</a></p></div></article><article class="qz" id="S5-Q51" data-qid="S5-Q51" data-n="1"><div class="qz-top"><span class="qz-num">B6</span><span class="qz-id">S5-Q51</span><span class="pill">Stephane set 5 · Q51</span><span class="pill">Design Resilient Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A startup has created a cost-effective backup solution in another AWS Region. The application is running in warm standby mode and has Application Load Balancer (ALB) to support it from the front. The current failover process is manual and requires updating the DNS alias record to point to the secondary ALB in another Region in case of failure of the primary ALB.</p>
+
+<p>As a Solutions Architect, what will you recommend to automate the failover process?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S5-Q51" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Enable an ALB health check</p></span></label></li><li data-i="1"><label><input type="radio" name="S5-Q51" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Enable an EC2 instance health check</p></span></label></li><li data-i="2"><label><input type="radio" name="S5-Q51" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Configure Trusted Advisor to check on unhealthy instances</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="S5-Q51" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Enable an Amazon Route 53 health check</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p>Manual DNS change automate korte Route 53 <b>health check</b> + <b>Failover</b> (active-passive) record use koro (<a class="pg" href="10-slides-p194-227.pdf#page=18" target="_blank" rel="noopener">PDF p. 211</a> <span class="pg-part">(part p. 18)</span>, 215). Primary ALB er record e health check (mandatory); fail korle Route 53 nije secondary Region er ALB return kore.</p><p>Alias record er native health check (evaluate target health) o ei kaje lage (<a class="pg" href="10-slides-p194-227.pdf#page=11" target="_blank" rel="noopener">PDF p. 204</a> <span class="pg-part">(part p. 11)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> ALB health check shudhu ALB er target (EC2) healthy kina dekhe; DNS bodlate pare na, onno Region e pathay na.</li><li><b>B.</b> EC2 status check instance er health dekhe; DNS record change kore failover korte pare na.</li><li><b>C.</b> Trusted Advisor best-practice recommendation dey; automatic DNS failover kore na.</li></ul><p><b>Keyword:</b> <b>manual</b> DNS alias update → <b>automate failover</b> onno Region e → Route 53 health check (+ Failover)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:</p>
+
+<p><strong>Enable an Amazon Route 53 health check</strong> - Determining the health of an ELB endpoint is more complex than health checking a single IP address. For example, what if your application is running fine on EC2, but the load balancer itself isn't reachable? Or if your load balancer and your EC2 instances are working correctly, but a bug in your code causes your application to crash? Or how about if the EC2 instances in one Availability Zone of a multi-AZ ELB are experiencing problems?</p>
+
+<p>Route 53 DNS Failover handles all of these failure scenarios by integrating with ELB behind the scenes. Once enabled, Route 53 automatically configures and manages health checks for individual ELB nodes. Route 53 also takes advantage of the EC2 instance health checking that ELB performs (information on configuring your ELB health checks is available here). By combining the results of health checks of your EC2 instances and your ELBs, Route 53 DNS Failover can evaluate the health of the load balancer and the health of the application running on the EC2 instances behind it. In other words, if any part of the stack goes down, Route 53 detects the failure and routes traffic away from the failed endpoint.</p>
+
+<p>Using Route 53 DNS Failover, you can run your primary application simultaneously in multiple AWS regions around the world and failover across regions. Your end-users will be routed to the closest (by latency), healthy region for your application. Route 53 automatically removes from service any region where your application is unavailable - it will pull an endpoint out of service if there is region-wide connectivity or operational issue, if your application goes down in that region, or if your ELB or EC2 instances go down in that region.</p>
+
+<p>Incorrect options:</p>
+
+<p><strong>Enable an ALB health check</strong> - ELB health check verifies that a specified TCP port on an instance is accepting connections or a specified page has returned an error code of 200. It is not useful for the given failover scenario.</p>
+
+<p><strong>Enable an EC2 instance health check</strong> - Instance status checks monitor the software and network configuration of your instance. It is not intelligent enough to understand if the application on the instance is working correctly. Hence, this is not the right choice for the given use-case.</p>
+
+<p><strong>Configure Trusted Advisor to check on unhealthy instances</strong> - AWS Trusted Advisor examines the health check configuration for Auto Scaling groups. If Elastic Load Balancing is being used for an Auto Scaling group, the recommended configuration is to enable an Elastic Load Balancing health check. Trusted Advisor recommends certain configuration changes by comparing your system configurations to AWS Best practices. It cannot handle a failover as Route 53 can.</p>
+
+<p>References:</p>
+
+<p><a href="https://aws.amazon.com/blogs/aws/amazon-route-53-elb-integration-dns-failover/" target="_blank" rel="noopener">https://aws.amazon.com/blogs/aws/amazon-route-53-elb-integration-dns-failover/</a></p>
+
+<p><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html</a></p>
+
+<p><a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html</a></p>
+
+<p><a href="https://aws.amazon.com/premiumsupport/technology/trusted-advisor/best-practice-checklist/" target="_blank" rel="noopener">https://aws.amazon.com/premiumsupport/technology/trusted-advisor/best-practice-checklist/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/blogs/aws/amazon-route-53-elb-integration-dns-failover/" target="_blank" rel="noopener">https://aws.amazon.com/blogs/aws/amazon-route-53-elb-integration-dns-failover/</a> · <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html</a> · <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html</a> · <a href="https://aws.amazon.com/premiumsupport/technology/trusted-advisor/best-practice-checklist/" target="_blank" rel="noopener">https://aws.amazon.com/premiumsupport/technology/trusted-advisor/best-practice-checklist/</a></p><p class="qz-rel">Related: <a href="../31.%20WhitePapers%20and%20Architectures%20-%20AWS%20Certified%20Solutions%20Architect%20Associate/31-notes.html">Section 31 Whitepapers &amp; Architectures</a></p></div></article><article class="qz" id="S2-Q6" data-qid="S2-Q6" data-n="2"><div class="qz-top"><span class="qz-num">B7</span><span class="qz-id">S2-Q6</span><span class="pill">Stephane set 2 · Q6</span><span class="pill">Design High-Performing Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A silicon valley based startup provides a modern content management application built on open standards that unlocks the power of business-critical content. The web-tier of the application runs on EC2 instances and the database tier is on Amazon Aurora. Currently the entire infrastructure is located in us-east-1 region. The startup has 90% of its customers in the US and Europe. The engineering team is getting reports of deteriorated application performance from customers in Europe with high application load time. As a solutions architect, which of the following would you recommend to address these performance issues? (Select 2)</p></div><p class="qz-need">Choose 2 answers</p><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="checkbox" name="S2-Q6" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Setup another fleet of EC2 instances for the web tier in the eu-west-1 region. Enable latency routing policy in Route 53</p></span></label></li><li data-i="1"><label><input type="checkbox" name="S2-Q6" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Setup another fleet of EC2 instances for the web tier in the eu-west-1 region. Enable geolocation routing policy in Route 53</p></span></label></li><li data-i="2" data-c="1"><label><input type="checkbox" name="S2-Q6" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Create Amazon Aurora read replicas in the eu-west-1 region</p></span></label></li><li data-i="3"><label><input type="checkbox" name="S2-Q6" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Create Amazon Aurora Multi-AZ standby instance in the eu-west-1 region</p></span></label></li><li data-i="4"><label><input type="checkbox" name="S2-Q6" value="4"><span class="qz-l">E</span><span class="qz-o"><p>Setup another fleet of EC2 instances for the web tier in the eu-west-1 region. Enable failover routing policy in Route 53</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A, C. Why it is right</h4><div class="qz-bn"><ul><li><b>A</b>: eu-west-1 e web tier er EC2 fleet + Route 53 <b>Latency</b> routing: Europe er user lowest latency er Region (eu-west-1) e jabe, US user us-east-1 e (<a class="pg" href="10-slides-p194-227.pdf#page=17" target="_blank" rel="noopener">PDF p. 210</a> <span class="pg-part">(part p. 17)</span>).</li><li><b>C</b>: Aurora <b>cross-Region read replica</b> eu-west-1 e: Europe er web tier kache theke read korbe, load time kombe (<a class="pg" href="../09.%20AWS%20Fundamentals%20RDS%20%2B%20Aurora%20%2B%20ElastiCache/09-slides-p161-193.pdf#page=13" target="_blank" rel="noopener">PDF p. 173</a> <span class="pg-part">(Section 09 part p. 13)</span>).</li></ul><p>Problem holo <b>performance / load time</b>, tai latency routing + read replica.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Geolocation desh / continent er rule dhore route kore (localization, content restrict er jonno); fastest Region dhore na. Performance er jonno Latency.</li><li><b>D.</b> Multi-AZ standby ek Region er bhitore onno AZ e thake, onno Region e na; ar standby read serve kore na, shudhu availability / DR (<a class="pg" href="../09.%20AWS%20Fundamentals%20RDS%20%2B%20Aurora%20%2B%20ElastiCache/09-slides-p161-193.pdf#page=8" target="_blank" rel="noopener">PDF p. 168</a> <span class="pg-part">(Section 09 part p. 8)</span>).</li><li><b>E.</b> Failover active-passive: primary (us-east-1) healthy thakle Europe user o oikhanei jabe; performance bare na.</li></ul><p><b>Keyword:</b> <b>Europe</b> user er <b>high load time</b> → eu-west-1 web tier + Latency routing + Aurora read replica eu-west-1 e</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Amazon Route 53 is a highly available and scalable cloud Domain Name System (DNS) web service.</p>
+
+<p>Geolocation routing lets you choose the resources that serve your traffic based on the geographic location of your users, meaning the location that DNS queries originate from. For example, you might want all queries from Europe to be routed to an ELB load balancer in the Frankfurt region. You can also use geolocation routing to restrict distribution of content to only the locations in which you have distribution rights.</p>
+
+<p>Use latency based routing when you have resources in multiple AWS Regions and you want to route traffic to the region that provides the lowest latency. To use latency-based routing, you create latency records for your resources in multiple AWS Regions. When Route 53 receives a DNS query for your domain or subdomain (example.com or acme.example.com), it determines which AWS Regions you've created latency records for, determines which region gives the user the lowest latency, and then selects a latency record for that region. Route 53 responds with the value from the selected record, such as the IP address for a web server. Latency routing policy is the correct choice for the given use-case.</p>
+
+<p>Failover routing lets you route traffic to a resource when the resource is healthy or to a different resource when the first resource is unhealthy. The primary and secondary records can route traffic to anything from an Amazon S3 bucket that is configured as a website to a complex tree of records</p>
+
+<p>Amazon Aurora is a MySQL and PostgreSQL-compatible relational database built for the cloud, that combines the performance and availability of traditional enterprise databases with the simplicity and cost-effectiveness of open source databases. Amazon Aurora features a distributed, fault-tolerant, self-healing storage system that auto-scales up to 64TB per database instance.
+Amazon Aurora read replicas can be used to scale out reads across regions. Aurora Replicas work well for read scaling because they are fully dedicated to read operations on your cluster volume. Therefore, it is the correct choice for the given use-case.</p>
+
+<p>Amazon Aurora Multi-AZ enhances the availability and durability for the database, it does not help in read scaling, so it is not a correct option for the given use-case.</p>
+
+<p>Reference:
+https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html
+https://aws.amazon.com/blogs/aws/new-cross-region-read-replicas-for-amazon-aurora/</p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html</a> · <a href="https://aws.amazon.com/blogs/aws/new-cross-region-read-replicas-for-amazon-aurora/" target="_blank" rel="noopener">https://aws.amazon.com/blogs/aws/new-cross-region-read-replicas-for-amazon-aurora/</a></p></div></article><article class="qz" id="B4-Q45" data-qid="B4-Q45" data-n="1"><div class="qz-top"><span class="qz-num">B8</span><span class="qz-id">B4-Q45</span><span class="pill">Bonso set 4 · Q45</span><span class="pill">Route53</span><span class="qz-badge"></span></div><div class="qz-stem">Amazon Route53 is a highly available and scalable cloud Domain Name System (DNS) web service. <br><br>Which of the following is not a function of Route53?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B4-Q45" value="0"><span class="qz-l">A</span><span class="qz-o">Route internet traffic to the resources for your domain</span></label></li><li data-i="1"><label><input type="radio" name="B4-Q45" value="1"><span class="qz-l">B</span><span class="qz-o">Domain name registration</span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="B4-Q45" value="2"><span class="qz-l">C</span><span class="qz-o">Provides routing between two Virtual Private Cloud networks privately.</span></label></li><li data-i="3"><label><input type="radio" name="B4-Q45" value="3"><span class="qz-l">D</span><span class="qz-o">Checks the health of your resources.</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Route 53 er 3 kaj (<a class="pg" href="10-slides-p194-227.pdf#page=5" target="_blank" rel="noopener">PDF p. 198</a> <span class="pg-part">(part p. 5)</span>): <b>DNS</b> (domain er query answer kore user ke resource e pathano), <b>Domain Registrar</b>, ar resource er <b>health check</b>.</p><p>Duita VPC er moddhe private routing Route 53 kore na; seta <b>VPC Peering</b> (<a class="pg" href="../27.%20Networking%20-%20VPC/27-slides-p700-777.pdf#page=33" target="_blank" rel="noopener">PDF p. 732</a> <span class="pg-part">(Section 27 part p. 33)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Eta Route 53 er main kaj: DNS diye internet traffic ke domain er resource e pathano.</li><li><b>B.</b> Route 53 Domain Registrar-o; ekhan theke domain kena jay.</li><li><b>D.</b> Route 53 health check endpoint, onno health check ba CloudWatch alarm monitor kore; eta Route 53 er kaj.</li></ul><p><b>Keyword:</b> <b>not a function</b> → duita VPC er private routing (seta VPC Peering)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Amazon Route53 has 3 main functions as shown below:</p><ol><li><strong>Register domain names</strong> &ndash; Your website needs a name, such as example.com. Amazon Route53 lets you register a name for your website or web application, known as a domain name.</li><li><strong>Route internet traffic to the resources for your domain</strong> &ndash; When a user opens a web browser and enters your domain name in the address bar, Amazon Route53 helps the Domain Name System (DNS) connect the browser with your website or web application.</li><li><strong>Check the health of your resources</strong> &ndash; Amazon Route53 sends automated requests over the Internet to a resource, such as a web server, to verify that it's reachable, available, and functional.</li></ol><p>Option 3 is a feature provided by VPC Peering.<br><br>Resources:<br><a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/Welcome.html</a></p><p class="qz-rel">Related: <a href="../27.%20Networking%20-%20VPC/27-notes.html">Section 27 Networking - VPC</a></p></div></article><article class="qz" id="S1-Q63" data-qid="S1-Q63" data-n="2"><div class="qz-top"><span class="qz-num">B9</span><span class="qz-id">S1-Q63</span><span class="pill">Stephane set 1 · Q63</span><span class="pill">Design Resilient Architectures</span><span class="pill acc">not in course</span><span class="qz-badge"></span></div><div class="qz-stem"><p>The engineering team at an ecommerce company wants to set up a custom domain for internal usage such as internaldomainexample.com. The team wants to use the private hosted zones feature of Route 53 to accomplish this. Which of the following settings of the VPC need to be enabled?</p></div><p class="qz-need">Choose 2 answers</p><ol class="qz-opts"><li data-i="0"><label><input type="checkbox" name="S1-Q63" value="0"><span class="qz-l">A</span><span class="qz-o"><p>enableVpcSupport</p></span></label></li><li data-i="1"><label><input type="checkbox" name="S1-Q63" value="1"><span class="qz-l">B</span><span class="qz-o"><p>enableVpcHostnames</p></span></label></li><li data-i="2" data-c="1"><label><input type="checkbox" name="S1-Q63" value="2"><span class="qz-l">C</span><span class="qz-o"><p>enableDnsHostnames</p></span></label></li><li data-i="3"><label><input type="checkbox" name="S1-Q63" value="3"><span class="qz-l">D</span><span class="qz-o"><p>enableDnsDomain</p></span></label></li><li data-i="4" data-c="1"><label><input type="checkbox" name="S1-Q63" value="4"><span class="qz-l">E</span><span class="qz-o"><p>enableDnsSupport</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>Not in the course:</b> VPC er DNS setting (enableDnsSupport, enableDnsHostnames) course e poray na; Route 53 private hosted zone use korte duto-i true korte hoy.</div><h4>Correct: C, E. Why it is right</h4><div class="qz-bn"><p>Private hosted zone er query shudhu <b>Amazon VPC DNS server</b> (Route 53 Resolver) answer kore. Tai VPC te duita attribute true korte hobe: <b>enableDnsSupport</b> (DNS resolution) ar <b>enableDnsHostnames</b>.</p><p>Private Hosted Zone course e ache (<a class="pg" href="10-slides-p194-227.pdf#page=8" target="_blank" rel="noopener">PDF p. 201-202</a> <span class="pg-part">(part p. 8-9)</span>), kintu ei VPC setting course e poray na; AWS docs theke.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> <code>enableVpcSupport</code> naam e kono VPC attribute nai; distractor.</li><li><b>B.</b> <code>enableVpcHostnames</code> bole kichu nai; asol naam <code>enableDnsHostnames</code>.</li><li><b>D.</b> <code>enableDnsDomain</code> naam e kono VPC setting nai; distractor.</li></ul><p><b>Keyword:</b> <b>private hosted zones</b> → VPC te enableDnsHostnames + enableDnsSupport</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>A private hosted zone is a container for records for a domain that you host in one or more Amazon virtual private clouds (VPCs). You create a hosted zone for a domain (such as example.com), and then you create records to tell Amazon Route 53 how you want traffic to be routed for that domain within and among your VPCs. For each VPC that you want to associate with the Route 53 hosted zone, change the following VPC settings to true:
+enableDnsHostnames
+enableDnsSupport</p>
+
+<p>The options enableVpcSupport, enableVpcHostnames and enableDnsDomain have been added as distractors.</p>
+
+<p>Reference:
+https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-creating.html</p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-creating.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-creating.html</a></p><p class="qz-rel">Related: <a href="../27.%20Networking%20-%20VPC/27-notes.html">Section 27 Networking - VPC</a></p><p class="qz-rel">Same question also in: S6-Q63</p></div></article><article class="qz" id="S5-Q20" data-qid="S5-Q20" data-n="1"><div class="qz-top"><span class="qz-num">B10</span><span class="qz-id">S5-Q20</span><span class="pill">Stephane set 5 · Q20</span><span class="pill">Design Secure Applications and Architectures</span><span class="pill acc">not in course</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A large retail company uses separate VPCs with different configurations for each of their lines of business. As part of the specific security requirement, an administrator had created a private hosted zone and associated it with the required virtual private cloud (VPC). However, the domain names remain unresolved thereby resulting in errors.</p>
+
+<p>As a Solutions Architect, can you identify the Amazon VPC options to configure, to get the private hosted zone to work?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S5-Q20" value="0"><span class="qz-l">A</span><span class="qz-o"><p>You might have private and public hosted zones that have overlapping namespaces</p></span></label></li><li data-i="1"><label><input type="radio" name="S5-Q20" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Name server (NS) record and Start Of Authority (SOA) records are created with wrong configurations</p></span></label></li><li data-i="2"><label><input type="radio" name="S5-Q20" value="2"><span class="qz-l">C</span><span class="qz-o"><p>This error may happen when there is a private hosted zone and a Resolver rule that routes traffic to your network for the same domain name, resulting in ambiguity over the route to be taken</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="S5-Q20" value="3"><span class="qz-l">D</span><span class="qz-o"><p>DNS hostnames and DNS resolution are required settings for private hosted zones</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>Not in the course:</b> VPC er 'DNS hostnames' ar 'DNS resolution' setting (private hosted zone kaj korar jonno lage) course e porano hoy na.</div><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p>Private hosted zone er query shudhu <b>Amazon-provided VPC DNS server</b> answer kore. Tai VPC te <b>DNS resolution</b> (enableDnsSupport) ar <b>DNS hostnames</b> (enableDnsHostnames) duto-i on korte hobe; nahole naam resolve hoy na.</p><p>Wizard chara banano non-default VPC te DNS hostnames by default off thake. Ei VPC setting course e poray na; AWS docs theke.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Public ar private zone er namespace overlap hole Resolver most specific match nay; error hoy na.</li><li><b>B.</b> Hosted zone banale NS ar SOA record Route 53 nije banay; eta VPC option na, ar ei error er karon o na.</li><li><b>C.</b> Same domain er private hosted zone ar Resolver rule thakle Resolver rule precedence pay; ambiguity error hoy na.</li></ul><p><b>Keyword:</b> <b>private hosted zone</b> associated, tobu <b>unresolved</b>; <b>VPC options</b> → DNS hostnames + DNS resolution</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:</p>
+
+<p><strong>DNS hostnames and DNS resolution are required settings for private hosted zones</strong> - DNS hostnames and DNS resolution are required settings for private hosted zones. DNS queries for private hosted zones can be resolved by the Amazon-provided VPC DNS server only. As a result, these options must be enabled for your private hosted zone to work.</p>
+
+<p>DNS hostnames: For non-default virtual private clouds that aren't created using the Amazon VPC wizard, this option is disabled by default. If you create a private hosted zone for a domain and create records in the zone without enabling DNS hostnames, private hosted zones aren't enabled. To use a private hosted zone, this option must be enabled.</p>
+
+<p>DNS resolution: Private hosted zones accept DNS queries only from a VPC DNS server. The IP address of the VPC DNS server is the reserved IP address at the base of the VPC IPv4 network range plus two. Enabling DNS resolution allows you to use the VPC DNS server as a Resolver for performing DNS resolution. Keep this option disabled if you're using a custom DNS server in the DHCP Options set, and you're not using a private hosted zone.</p>
+
+<p>Incorrect options:</p>
+
+<p><strong>You might have private and public hosted zones that have overlapping namespaces</strong> - If you have private and public hosted zones that have overlapping namespaces, such as example.com and accounting.example.com, Resolver routes traffic based on the most specific match. It won't result in any error, hence this option is wrong.</p>
+
+<p><strong>Name server (NS) record and Start Of Authority (SOA) records are created with wrong configurations</strong> - When you create a hosted zone, Amazon Route 53 automatically creates a name server (NS) record and a start of authority (SOA) record for the zone for public hosted zone. The issue is about the private hosted zone, hence this is an incorrect option.</p>
+
+<p><strong>This error may happen when there is a private hosted zone and a Resolver rule that routes traffic to your network for the same domain name, resulting in ambiguity over the route to be taken</strong> - If you have a private hosted zone (example.com) and a Resolver rule that routes traffic to your network for the same domain name, the Resolver rule takes precedence. It doesn't result in any error.</p>
+
+<p>References:</p>
+
+<p><a href="https://aws.amazon.com/premiumsupport/knowledge-center/vpc-enable-private-hosted-zone/" target="_blank" rel="noopener">https://aws.amazon.com/premiumsupport/knowledge-center/vpc-enable-private-hosted-zone/</a></p>
+
+<p><a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-considerations.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-considerations.html</a></p>
+
+<p><a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-public-considerations.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-public-considerations.html</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/premiumsupport/knowledge-center/vpc-enable-private-hosted-zone/" target="_blank" rel="noopener">https://aws.amazon.com/premiumsupport/knowledge-center/vpc-enable-private-hosted-zone/</a> · <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-considerations.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-considerations.html</a> · <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-public-considerations.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-public-considerations.html</a></p><p class="qz-rel">Related: <a href="../27.%20Networking%20-%20VPC/27-notes.html">Section 27 Networking - VPC</a></p></div></article><article class="qz" id="B6-Q55" data-qid="B6-Q55" data-n="5"><div class="qz-top"><span class="qz-num">B11</span><span class="qz-id">B6-Q55</span><span class="pill">Bonso set 6 · Q55</span><span class="qz-badge"></span></div><div class="qz-stem">Which DNS record types does Amazon Route 53 support? (Select all that applies)</div><p class="qz-need">Choose 5 answers</p><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="checkbox" name="B6-Q55" value="0"><span class="qz-l">A</span><span class="qz-o">A (address record)</span></label></li><li data-i="1" data-c="1"><label><input type="checkbox" name="B6-Q55" value="1"><span class="qz-l">B</span><span class="qz-o">AAAA (IPv6 address record)</span></label></li><li data-i="2" data-c="1"><label><input type="checkbox" name="B6-Q55" value="2"><span class="qz-l">C</span><span class="qz-o">CNAME (canonical name record)</span></label></li><li data-i="3" data-c="1"><label><input type="checkbox" name="B6-Q55" value="3"><span class="qz-l">D</span><span class="qz-o">MX (mail exchange record)</span></label></li><li data-i="4" data-c="1"><label><input type="checkbox" name="B6-Q55" value="4"><span class="qz-l">E</span><span class="qz-o">SRV (service locator)</span></label></li><li data-i="5"><label><input type="checkbox" name="B6-Q55" value="5"><span class="qz-l">F</span><span class="qz-o">SPF (session policy forwarder)</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A, B, C, D, E. Why it is right</h4><div class="qz-bn"><p>Course er list (<a class="pg" href="10-slides-p194-227.pdf#page=6" target="_blank" rel="noopener">PDF p. 199</a> <span class="pg-part">(part p. 6)</span>): must-know A, AAAA, CNAME, NS; advanced CAA, DS, <b>MX</b>, NAPTR, PTR, SOA, TXT, SPF, <b>SRV</b>. Tai A, AAAA, CNAME, MX, SRV sob supported.</p><ul><li>A = hostname → IPv4, AAAA = hostname → IPv6 (<a class="pg" href="10-slides-p194-227.pdf#page=7" target="_blank" rel="noopener">PDF p. 200</a> <span class="pg-part">(part p. 7)</span>).</li><li>CNAME = hostname → onno hostname.</li><li>MX = mail server, SRV = service locator.</li></ul></div><h4>Why the other options are wrong</h4><ul><li><b>F.</b> SPF record ache, kintu SPF = <b>Sender Policy Framework</b> (email er jonno). 'Session policy forwarder' bole kono record nai.</li></ul><p><b>Keyword:</b> <b>Select all</b> → A, AAAA, CNAME, MX, SRV; F er naam bhul (SPF = Sender Policy Framework)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>All options are correct except for option 6 because there is no such thing as SPF (session policy forwarder). There is, however, a record type called: SPF (sender policy framework).</p><p>Amazon Route 53 currently supports the following DNS record types:</p><ul><li>A (address record)</li><li>AAAA (IPv6 address record)</li><li>CNAME (canonical name record)</li><li>CAA (certification authority authorization)</li><li>MX (mail exchange record)</li><li>NAPTR (name authority pointer record)</li><li>NS (name server record)</li><li>PTR (pointer record)</li><li>SOA (start of authority record)</li><li>SPF (sender policy framework)</li><li>SRV (service locator)</li><li>TXT (text record)</li></ul><p>Resources:</p><p><a href="https://aws.amazon.com/route53/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/route53/faqs/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/route53/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/route53/faqs/</a></p></div></article><article class="qz" id="S4-Q3" data-qid="S4-Q3" data-n="1"><div class="qz-top"><span class="qz-num">B12</span><span class="qz-id">S4-Q3</span><span class="pill">Stephane set 4 · Q3</span><span class="pill">Design Resilient Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Your application has been revamped from a solutions architecture perspective. To finalise the migration to the new architecture, you have updated a Route 53 simple record to point "myapp.mydomain.com" from the old Load Balancer to a new load balancer, it looks like the users are still not redirected to your new load balancer. What is happening?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="S4-Q3" value="0"><span class="qz-l">A</span><span class="qz-o"><p>The TTL is still in effect</p></span></label></li><li data-i="1"><label><input type="radio" name="S4-Q3" value="1"><span class="qz-l">B</span><span class="qz-o"><p>The health checks are not passing</p></span></label></li><li data-i="2"><label><input type="radio" name="S4-Q3" value="2"><span class="qz-l">C</span><span class="qz-o"><p>The Alias Record is misconfigured</p></span></label></li><li data-i="3"><label><input type="radio" name="S4-Q3" value="3"><span class="qz-l">D</span><span class="qz-o"><p>The CNAME Record is misconfigured</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Record update korle-o client / resolver purono answer <b>TTL</b> porjonto cache e rakhe (<a class="pg" href="10-slides-p194-227.pdf#page=10" target="_blank" rel="noopener">PDF p. 203</a> <span class="pg-part">(part p. 10)</span>). TTL shesh hole notun DNS query kore notun LB er value pabe.</p><p>Ar <b>Simple</b> routing e health check associate-i kora jay na (<a class="pg" href="10-slides-p194-227.pdf#page=15" target="_blank" rel="noopener">PDF p. 208</a> <span class="pg-part">(part p. 15)</span>), tai health check karon hote pare na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Simple record e health check associate kora jay na, tai health check pass / fail er prosno-i nai.</li><li><b>C.</b> Alias misconfig er kono ingit nai; record thik moto update hoyeche, purono value shudhu cache e ache.</li><li><b>D.</b> CNAME misconfig hole user bhul jaygay ba error e jeto, purono LB e na; ekhane karon cache (TTL).</li></ul><p><b>Keyword:</b> <b>simple record</b> updated, users <b>still not redirected</b> → TTL still in effect</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Simple Records do not have health checks, here the most likely issue is that the TTL is still in effect so you have to wait until it expires for the new users to perform another DNS query and get the value for your new Load Balancer.</p></details></div></article><article class="qz" id="S3-Q35" data-qid="S3-Q35" data-n="2"><div class="qz-top"><span class="qz-num">B13</span><span class="qz-id">S3-Q35</span><span class="pill">Stephane set 3 · Q35</span><span class="pill">Design Secure Applications and Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A retail company has connected its on-premises data center to the AWS Cloud via AWS Direct Connect. The company wants to be able to resolve DNS queries for any resources in the on-premises network from the AWS VPC and also resolve any DNS queries for resources in the AWS VPC from the on-premises network. As a solutions architect, which of the following solutions would you recommend for this use-case? (Select two)</p></div><p class="qz-need">Choose 2 answers</p><ol class="qz-opts"><li data-i="0"><label><input type="checkbox" name="S3-Q35" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Create an outbound endpoint on Route 53 Resolver and then DNS resolvers on the on-premises network can forward DNS queries to Route 53 Resolver via this endpoint</p></span></label></li><li data-i="1"><label><input type="checkbox" name="S3-Q35" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Create an inbound endpoint on Route 53 Resolver and then Route 53 Resolver can conditionally forward queries to resolvers on the on-premises network via this endpoint</p></span></label></li><li data-i="2"><label><input type="checkbox" name="S3-Q35" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Create a universal endpoint on Route 53 Resolver and then Route 53 Resolver can receive and forward queries to resolvers on the on-premises network via this endpoint</p></span></label></li><li data-i="3" data-c="1"><label><input type="checkbox" name="S3-Q35" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Create an inbound endpoint on Route 53 Resolver and then DNS resolvers on the on-premises network can forward DNS queries to Route 53 Resolver via this endpoint</p></span></label></li><li data-i="4" data-c="1"><label><input type="checkbox" name="S3-Q35" value="4"><span class="qz-l">E</span><span class="qz-o"><p>Create an outbound endpoint on Route 53 Resolver and then Route 53 Resolver can conditionally forward queries to resolvers on the on-premises network via this endpoint</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D, E. Why it is right</h4><div class="qz-bn"><p>Hybrid DNS e Route 53 Resolver endpoint er dik mone rakho (<a class="pg" href="10-slides-p194-227.pdf#page=32" target="_blank" rel="noopener">PDF p. 225-227</a> <span class="pg-part">(part p. 32-34)</span>):</p><ul><li><b>Inbound Endpoint</b> (D): on-prem DNS resolver query <b>AWS er dike</b> forward kore; Route 53 Resolver EC2 / private hosted zone er naam resolve kore dey.</li><li><b>Outbound Endpoint</b> (E): Route 53 Resolver forwarding rule diye on-prem domain er query <b>on-prem resolver e</b> conditionally forward kore.</li></ul><p>Inbound = baire theke AWS e dhoke; Outbound = AWS theke baire jay. Direct Connect connection already ache. Ajker naam Route 53 VPC Resolver, concept ek-i.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Dik ulto: on-prem resolver Route 53 Resolver e query pathay <b>inbound</b> endpoint diye, outbound diye na.</li><li><b>B.</b> Dik ulto: Route 53 Resolver on-prem e query forward kore <b>outbound</b> endpoint diye, inbound diye na.</li><li><b>C.</b> Route 53 Resolver e 'universal endpoint' bole kichu nai; shudhu Inbound ar Outbound.</li></ul><p><b>Keyword:</b> <b>on-prem → AWS</b> naam resolve = Inbound; <b>AWS → on-prem</b> = Outbound (conditional forward)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct options:
+"Create an inbound endpoint on Route 53 Resolver and then DNS resolvers on the on-premises network can forward DNS queries to Route 53 Resolver via this endpoint"
+"Create an outbound endpoint on Route 53 Resolver and then Route 53 Resolver can conditionally forward queries to resolvers on the on-premises network via this endpoint"</p>
+
+<p>Amazon Route 53 is a highly available and scalable cloud Domain Name System (DNS) web service. Amazon Route 53 effectively connects user requests to infrastructure running in AWS – such as Amazon EC2 instances – and can also be used to route users to infrastructure outside of AWS. By default, Route 53 Resolver automatically answers DNS queries for local VPC domain names for EC2 instances. You can integrate DNS resolution between Resolver and DNS resolvers on your on-premises network by configuring forwarding rules.</p>
+
+<p>To resolve any DNS queries for resources in the AWS VPC from the on-premises network, you can create an inbound endpoint on Route 53 Resolver and then DNS resolvers on the on-premises network can forward DNS queries to Route 53 Resolver via this endpoint.</p>
+
+<p>Resolver Inbound Endpoint
+<img src="../assets/qimg/400173842dace3b8.png" alt="" loading="lazy">
+via - https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver.html</p>
+
+<p>To resolve DNS queries for any resources in the on-premises network from the AWS VPC, you can create an outbound endpoint on Route 53 Resolver and then Route 53 Resolver can conditionally forward queries to resolvers on the on-premises network via this endpoint. To conditionally forward queries, you need to create Resolver rules that specify the domain names for the DNS queries that you want to forward (such as example.com) and the IP addresses of the DNS resolvers on the on-premises network that you want to forward the queries to.</p>
+
+<p>Resolver Outbound Endpoint
+<img src="../assets/qimg/258fe88b9d4e5649.png" alt="" loading="lazy">
+via - https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver.html</p>
+
+<p>Incorrect options:
+"Create an outbound endpoint on Route 53 Resolver and then DNS resolvers on the on-premises network can forward DNS queries to Route 53 Resolver via this endpoint" - DNS resolvers on the on-premises network can forward DNS queries to Route 53 Resolver via an inbound endpoint. Hence, this option is incorrect.</p>
+
+<p>"Create an inbound endpoint on Route 53 Resolver and then Route 53 Resolver can conditionally forward queries to resolvers on the on-premises network via this endpoint" - Route 53 Resolver can conditionally forward queries to resolvers on the on-premises network via an outbound endpoint. Hence, this option is incorrect.</p>
+
+<p>"Create a universal endpoint on Route 53 Resolver and then Route 53 Resolver can receive and forward queries to resolvers on the on-premises network via this endpoint" - There is no such thing as a universal endpoint on Route 53 Resolver. This option has been added as a distractor.</p>
+
+<p>References:
+https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-getting-started.html
+https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver.html</p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver.html</a> · <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-getting-started.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-getting-started.html</a></p></div></article><article class="qz" id="B5-Q20" data-qid="B5-Q20" data-n="1"><div class="qz-top"><span class="qz-num">B14</span><span class="qz-id">B5-Q20</span><span class="pill">Bonso set 5 · Q20</span><span class="pill">Route53</span><span class="qz-badge"></span></div><div class="qz-stem">Your manager instructed you to use Route53 instead of an ELB to load balance the incoming request to your web application. The system is deployed to two EC2 instances to which the traffic needs to be distributed to. You want to set a specific percentage of traffic to go to each instance. <br><br>Which routing policy would you use?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B5-Q20" value="0"><span class="qz-l">A</span><span class="qz-o">Latency</span></label></li><li data-i="1"><label><input type="radio" name="B5-Q20" value="1"><span class="qz-l">B</span><span class="qz-o">Failover</span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="B5-Q20" value="2"><span class="qz-l">C</span><span class="qz-o">Weighted</span></label></li><li data-i="3"><label><input type="radio" name="B5-Q20" value="3"><span class="qz-l">D</span><span class="qz-o">Geolocation</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>Weighted</b> routing e proti record er weight diye traffic % thik hoy (<a class="pg" href="10-slides-p194-227.pdf#page=16" target="_blank" rel="noopener">PDF p. 209</a> <span class="pg-part">(part p. 16)</span>). Duita EC2 er jonno same name ar same type er duita record banao, weight diye specific % pathao. Weight 0 dile oi resource e traffic bondho.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Latency lowest latency er Region e pathay; nirdishto % set kora jay na.</li><li><b>B.</b> Failover active-passive: primary healthy thakle sob traffic primary te; % split kore na.</li><li><b>D.</b> Geolocation user er location dhore route kore; % control kore na.</li></ul><p><b>Keyword:</b> <b>specific percentage of traffic</b> to each instance → Weighted</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Weighted routing lets you associate multiple resources with a single domain name (example.com) or subdomain name (acme.example.com) and choose how much traffic is routed to each resource. This can be useful for a variety of purposes including load balancing and testing new versions of software. You can set a specific percentage of how much traffic will be allocated to the resource by specifying the weights.</p><p>For example, if you want to send a tiny portion of your traffic to one resource and the rest to another resource, you might specify weights of 1 and 255. The resource with a weight of 1 gets 1/256th of the traffic (1/1+255), and the other resource gets 255/256ths (255/1+255).</p><p>You can gradually change the balance by changing the weights. If you want to stop sending traffic to a resource, you can change the weight for that record to 0.</p><p>References:&nbsp;</p><p><a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html</a></p></div></article><article class="qz" id="B5-Q40" data-qid="B5-Q40" data-n="1"><div class="qz-top"><span class="qz-num">B15</span><span class="qz-id">B5-Q40</span><span class="pill">Bonso set 5 · Q40</span><span class="qz-badge"></span></div><div class="qz-stem">You are working as a solutions architect for a large financial company They have a web application hosted in their on-premise infrastructure which they want to migrate to AWS cloud. Your manager had instructed you to ensure that there is no down time while the migration process is on-going. In order to achieve this, your team had decided to divert 50% of the traffic to the new application in AWS and the other 50% to the application hosted in their on-premise infrastructure. Once the migration is over and that the application works with no issues, a full diversion to the AWS will be implemented. <br><br>Which of the following steps will you do to satisfy this requirement?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B5-Q40" value="0"><span class="qz-l">A</span><span class="qz-o">Use the Classic Elastic Load balancer to divert the traffic between the on-premise and AWS hosted application.</span></label></li><li data-i="1"><label><input type="radio" name="B5-Q40" value="1"><span class="qz-l">B</span><span class="qz-o">Use an Application Elastic Load balancer to divert and proportion the traffic between the on-premise and AWS-hosted application.</span></label></li><li data-i="2"><label><input type="radio" name="B5-Q40" value="2"><span class="qz-l">C</span><span class="qz-o">Use Route53 with Failover routing policy to divert and proportion the traffic between the on-premise and AWS-hosted application.</span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="B5-Q40" value="3"><span class="qz-l">D</span><span class="qz-o">Use Route53 with Weighted routing policy to divert the traffic between the on-premise and AWS-hosted application.</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p>50% on-prem, 50% AWS, pore 100% AWS: eta <b>Weighted</b> routing er classic case (<a class="pg" href="10-slides-p194-227.pdf#page=16" target="_blank" rel="noopener">PDF p. 209</a> <span class="pg-part">(part p. 16)</span>). Duita record e weight 50 / 50 dao; migration shesh hole on-prem record er weight 0 kore dao. Route 53 record AWS er baire (on-prem) IP teo point korte pare.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> CLB target hishebe shudhu EC2 instance ney, on-prem server na; ar % proportion korar feature nai.</li><li><b>B.</b> ALB IP target (private IP) diye on-prem server neya jay ar ajkal weighted target group-o ache, tai eta possible; kintu question er intended, shohoj uttor Route 53 Weighted.</li><li><b>C.</b> Failover active-passive: ek shomoy shudhu primary te traffic, 50 / 50 bhag kore na.</li></ul><p><b>Keyword:</b> <b>50% / 50%</b> on-prem vs AWS, pore full AWS → Route 53 Weighted</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>To divert 50% of the traffic to the new application in AWS and the other 50% to the application, you can use Route53 with Weighted routing policy. This will divert the traffic between the on-premise and AWS-hosted application accordingly.</p><p>Weighted routing lets you associate multiple resources with a single domain name (tutorialsdojo.com) or subdomain name (learn.tutorialsdojo.com) and choose how much traffic is routed to each resource. This can be useful for a variety of purposes, including load balancing and testing new versions of software. You can set a specific percentage of how much traffic will be allocated to the resource by specifying the weights.</p><p>For example, if you want to send a tiny portion of your traffic to one resource and the rest to another resource, you might specify weights of 1 and 255. The resource with a weight of 1 gets 1/256th of the traffic (1/1+255), and the other resource gets 255/256ths (255/1+255).</p><p>You can gradually change the balance by changing the weights. If you want to stop sending traffic to a resource, you can change the weight for that record to 0.</p><p>References:&nbsp;</p><p><a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html</a></p><p class="qz-rel">Related: <a href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-notes.html">Section 08 ELB &amp; ASG</a></p></div></article><details class="rel-list"><summary>Related questions in other sections (6)</summary><ul><li><a href="../15.%20CloudFront%20%26%20AWS%20Global%20Accelerator/15-notes.html#S1-Q38">S1-Q38</a> · Section 15 CloudFront &amp; Global Accelerator · Route 53: Geolocation routing</li><li><a href="../26.%20AWS%20Security%20%26%20Encryption%20KMS%2C%20SSM%20Parameter%20Store%2C%20Shield%2C%20WAF/26-notes.html#S2-Q13">S2-Q13</a> · Section 26 Security &amp; Encryption: KMS, SSM, Shield, WAF · WAF: Web ACL Rules</li><li><a href="../09.%20AWS%20Fundamentals%20RDS%20%2B%20Aurora%20%2B%20ElastiCache/09-notes.html#S4-Q25">S4-Q25</a> · Section 09 RDS + Aurora + ElastiCache · RDS: Multi AZ</li><li><a href="../15.%20CloudFront%20%26%20AWS%20Global%20Accelerator/15-notes.html#S4-Q53">S4-Q53</a> · Section 15 CloudFront &amp; Global Accelerator · ASG: Overview</li><li><a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html#B3-Q28">B3-Q28</a> · Section 19 Serverless Overview · DynamoDB: Basics</li><li><a href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-notes.html#B6-Q18">B6-Q18</a> · Section 08 ELB &amp; ASG · ELB: Cross-Zone Load Balancing</li></ul></details></section>
+</main>
+</body>
+</html>

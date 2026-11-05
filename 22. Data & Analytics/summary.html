@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 22 Hub</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/qindex.js"></script>
+</head>
+<body>
+<main class="wrap" data-sec="22">
+  <div class="topbar">
+    <nav><a href="../index.html">← All sections</a> <a href="../mistakes.html">Mistakes</a> <a href="../21.%20Databases%20in%20AWS/summary.html">‹ 21</a> <a href="../23.%20Machine%20Learning/summary.html">23 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+
+  <header class="hub-head">
+    <span class="hub-no">22</span>
+    <div class="hub-title"><p class="eyebrow">Section · study order #23</p><h1>Data &amp; Analytics</h1></div>
+  </header>
+  <div class="meter" id="m-all" title="questions done"><i style="width:0%"></i></div>
+  <p class="cap" id="m-text">Loading…</p>
+
+  <div class="chips"><a href="../22.%20Data%20%26%20Analytics/22-slides-p530-562.pdf" target="_blank" rel="noopener">Slides PDF · p530-562</a><a href="../22.%20Data%20%26%20Analytics/22-notes.html">Detailed note</a></div>
+
+  <section class="card" id="summary">
+    <h2>Summary</h2>
+    <section class="sum-block" id="map"><h3>Big picture</h3>
+<p>Data S3 e, database e, ba stream hoye ashche. Ke <b>collect</b>, ke <b>transform</b>, ke <b>query / search</b>, ke <b>dashboard</b>, ar ke <b>access control</b> korbe: ei section er service gulo eta-i. Exam er beshirbhag prosno ek keyword theke ek service e jay ("Kokhon konta" table dekho).</p>
+<div class="fig">
+  <span class="lbl">1. Collect / stream</span>
+  <div class="flow">
+    <span class="b">IoT Core<small>device</small></span><span class="b">Kinesis Data Streams</span><span class="b hl">MSK<small>Kafka</small></span><span class="b">Data Firehose<small>near real time</small></span>
+  </div>
+  <span class="lbl">2. Process / transform</span>
+  <div class="flow">
+    <span class="b hl">Glue<small>serverless ETL</small></span><span class="b hl">EMR<small>Hadoop / Spark cluster</small></span><span class="b hl">Managed Flink<small>real-time stream</small></span>
+  </div>
+  <span class="lbl">3. Store + catalog + govern</span>
+  <div class="flow">
+    <span class="b">S3 data lake</span><span class="b">Glue Data Catalog<small>schema / metadata</small></span><span class="b hl">Lake Formation<small>row / column permission</small></span>
+  </div>
+  <span class="lbl">4. Query / search</span>
+  <div class="flow">
+    <span class="b hl">Athena<small>SQL on S3, serverless</small></span><span class="b hl">Redshift<small>warehouse, OLAP</small></span><span class="b hl">OpenSearch<small>search any field</small></span>
+  </div>
+  <span class="lbl">5. Visualize</span>
+  <div class="flow">
+    <span class="b hl">QuickSight<small>BI dashboard</small></span>
+  </div>
+</div>
+<p class="cap">Upor theke niche data jay: collect → transform → store → query → dashboard.</p>
+</section>
+
+<section class="sum-block" id="t1"><h3>Amazon Athena: S3 er upor serverless SQL</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Log file S3 e pore ache. DB banate ba data load korte chao na. Athena bole: "file jekhane ache thakuk, ami standard SQL diye pore dicchi." Server nai, provision nai; joto TB data <b>scan</b>, toto taka. Dump e <b>shobcheye beshi</b> asha service eta.</p></div>
+<div class="fig">
+  <span class="lbl">Athena flow</span>
+  <div class="flow">
+    <span class="b">Load data<small>CSV, JSON, ORC, Avro, Parquet</small></span><span class="a">→</span>
+    <span class="b">S3 bucket</span><span class="a">→</span>
+    <span class="b hl">Athena<small>SQL, Presto engine</small></span><span class="a">→</span>
+    <span class="b">QuickSight<small>report / dashboard</small></span>
+  </div>
+  <span class="lbl">Hands-on (lecture 2)</span>
+  <div class="flow">
+    <span class="b">1. Query result location<small>S3 bucket set</small></span><span class="a">→</span>
+    <span class="b">2. CREATE DATABASE</span><span class="a">→</span>
+    <span class="b">3. CREATE TABLE<small>LOCATION s3://bucket/prefix/</small></span><span class="a">→</span>
+    <span class="b hl">4. SELECT<small>preview, GROUP BY</small></span>
+  </div>
+</div>
+<p class="cap">Data S3 theke move hoy na; result o S3 e.</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Ki</td><td>Serverless query service, S3 er data <b>standard SQL</b> diye analyze; <b>Presto</b> engine er upor</td></tr>
+<tr><td>Format</td><td>CSV, JSON, ORC, Avro, Parquet (aro kichu)</td></tr>
+<tr><td>Price</td><td><b>$5 per TB scanned</b>; kono database provision nai</td></tr>
+<tr><td>Use case</td><td>Ad-hoc query, BI, reporting; log: <b>VPC Flow Logs, ELB / ALB, CloudTrail</b> (question e CloudFront, Transfer Family log, Cost and Usage Report)</td></tr>
+<tr><td>Sathe</td><td>QuickSight → Athena → S3 (common combo)</td></tr>
+</tbody>
+</table></div>
+<p><b>Hands-on:</b> age <b>query result location</b> (S3 bucket) set. Tarpor database, tarpor S3 access log table (DDL AWS doc theke; LOCATION e bucket + prefix, sheshe <b>trailing slash</b>). Preview = 10 row. HTTP status count (404?), <b>403</b> filter = unauthorized attempt; server chara.</p>
+<p><b>Schema na thakle:</b> question e pattern <b>Glue Crawler → Data Catalog table → Athena</b> (one-time crawler, tarpor pay-per-query).</p>
+<div class="exam"><b>Exam:</b> "S3 e log / JSON, on-demand SQL, LEAST overhead, minimal change" → <b>Athena</b> (Redshift / EMR e cluster + load, CloudWatch Logs e architecture bodlay). Weekly / occasional query → Athena (RDS, OpenSearch, EMR always-on cost). Cold data, SQL immediately, sosta → <b>S3 Standard-IA + Athena</b> (Glacier e age restore lage; "Redshift storage IA" bole kichu nai). Athena <b>CSE-KMS</b> encrypted Parquet o porte pare (S3 Select pare na).</div>
+</section>
+
+<section class="sum-block" id="t2"><h3>Athena performance ar Federated Query</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Taka scan er upor, tai <b>kom scan = kom taka + druto</b>. Puro library na ghure thik tak (partition) e jao, shudhu dorkari page (column) poro.</p></div>
+<div class="fig">
+  <span class="lbl">Partition = S3 path e virtual column</span>
+  <div class="flow">
+    <span class="b">s3://athena-examples/flight/parquet/</span><span class="a">→</span>
+    <span class="b">year=1991/</span><span class="a">→</span>
+    <span class="b">month=1/</span><span class="a">→</span>
+    <span class="b hl">day=1/<small>WHERE year, month, day → shudhu ei folder scan</small></span>
+  </div>
+  <span class="lbl">Federated Query</span>
+  <div class="flow">
+    <span class="b hl">Athena</span><span class="a">→</span>
+    <span class="b">Lambda<small>Data Source Connector, source proti ekta</small></span><span class="a">→</span>
+    <span class="b">ElastiCache, DocumentDB, DynamoDB, Redshift, Aurora, SQL Server, MySQL, HBase on EMR, on-prem DB, CloudWatch Logs</span><span class="a">→</span>
+    <span class="b">Result → S3</span>
+  </div>
+</div>
+<p class="cap">Federated: S3 er sathe onno source join / computation, result S3 e rakha jay pore analysis er jonno.</p>
+<div class="scroll"><table>
+<thead><tr><th>Performance trick</th><th>Keno</th></tr></thead>
+<tbody>
+<tr><td><b>Columnar: Parquet / ORC</b></td><td>Shudhu dorkari column scan; "huge performance improvement". CSV / JSON → Parquet convert <b>Glue ETL</b> diye</td></tr>
+<tr><td><b>Compression</b></td><td>bzip2, gzip, lz4, snappy, zlib, zstd: choto retrieval</td></tr>
+<tr><td><b>Partition</b></td><td>Ek column e bar bar filter korle path <code>/column=value/</code> e bhag koro</td></tr>
+<tr><td><b>Boro file (&gt; 128 MB)</b></td><td>Onek choto file = beshi overhead; boro file scan / retrieve shohoj</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Athena query slow / fail, petabyte CSV, nirdishto date + region" → <b>partition by date + region</b> ar <b>Glue diye CSV → Parquet</b> (file 128 MB er choto kora bhul, ek boro single object o na). Data lake refined zone → <b>compressed (columnar) format</b> e likho, CSV na. Federated Query analytics er jonno: app er DynamoDB read e use korle table scan kore capacity (RCU) khay. Tai serverless app onek DynamoDB table theke data anbe, baseline performance e prabhab na → dump key <b>edge-optimized API Gateway + Lambda</b> (onekei AppSync pipeline resolver bole, course e nai), Federated Query na.</div>
+</section>
+
+<section class="sum-block" id="t3"><h3>Amazon Redshift: data warehouse</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Protidin er bikri lekha (insert / update) = <b>OLTP</b>, RDS er kaaj. Bochor shesh e "kon mash e kon product koto bikri" = boro aggregation = <b>OLAP</b>, Redshift er kaaj. Data <b>column</b> hisabe rakhe, tai ek column er shob value druto jog kora jay.</p></div>
+<div class="fig">
+  <span class="lbl">Redshift cluster</span>
+  <div class="flow">
+    <span class="b">Client<small>SELECT COUNT(*) ... GROUP BY, JDBC / ODBC</small></span><span class="a">→</span>
+    <span class="b hl">Leader node<small>query plan + result aggregate</small></span><span class="a">→</span>
+    <span class="b">Compute nodes<small>query chalay, result leader e pathay</small></span>
+  </div>
+  <span class="lbl">Duita mode</span>
+  <div class="flow">
+    <span class="b">Provisioned<small>instance type age choose, Reserved e sosta</small></span>
+    <span class="b">Serverless<small>cluster / node manage nai</small></span>
+  </div>
+</div>
+<p class="cap">Leader plan kore, compute nodes parallel e chalay.</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Base</td><td><b>PostgreSQL</b> based, kintu OLTP na; <b>OLAP</b> (analytics + data warehousing)</td></tr>
+<tr><td>Speed / scale</td><td>Onno warehouse er cheye <b>10x</b>; <b>petabyte</b> porjonto</td></tr>
+<tr><td>Keno druto</td><td><b>Columnar storage</b> + <b>parallel query engine</b> (MPP)</td></tr>
+<tr><td>Interface</td><td>SQL; BI tool <b>QuickSight, Tableau</b> integrate</td></tr>
+<tr><td>vs Athena</td><td>Redshift e <b>indexes</b> er karone query / join / aggregation druto, kintu cluster lage; Athena serverless, data S3 e</td></tr>
+</tbody>
+</table></div>
+<p><b>Course e nai (question theke):</b> columnar block <b>1 MB</b>. Masik hajar user er report surge, availability na komiye → <b>Concurrency scaling</b> (WLM queue e extra capacity; resize na). <b>Redshift ML</b> = SQL diye ML model train.</p>
+<div class="exam"><b>Exam:</b> "Analytical query, columnar, data warehouse, petabyte-scale, QuickSight connect" → <b>Redshift</b> (RDS OLTP, S3 storage, Neptune graph). Daily S3 lake → transform → MPP warehouse + SQL e ML, serverless → <b>Glue + Redshift Serverless + Redshift ML</b>.</div>
+</section>
+
+<section class="sum-block" id="t4"><h3>Redshift: snapshot / DR, data load, Spectrum</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Beshirbhag cluster ek AZ e, tai DR mane <b>snapshot onno region e copy</b>. Data dhokano: Firehose, S3 COPY, ba JDBC (boro batch). Ar S3 er data load na korei query = <b>Spectrum</b>.</p></div>
+<div class="fig">
+  <span class="lbl">Cross-region DR</span>
+  <div class="flow">
+    <span class="b">Cluster<small>us-east-1</small></span><span class="a">→</span>
+    <span class="b">Snapshot<small>automated / manual</small></span><span class="a">→ auto copy →</span>
+    <span class="b hl">Copied snapshot<small>eu-west-1</small></span><span class="a">→ restore →</span>
+    <span class="b">Notun cluster</span>
+  </div>
+  <span class="lbl">Load data (boro insert onek bhalo)</span>
+  <div class="flow">
+    <span class="b">Firehose</span><span class="a">→</span><span class="b">S3</span><span class="a">→ S3 COPY →</span><span class="b hl">Redshift</span>
+  </div>
+  <div class="flow">
+    <span class="b">S3 bucket</span><span class="a">→ COPY + IAM role →</span><span class="b hl">Redshift<small>internet diye, ba Enhanced VPC Routing e VPC diye</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">EC2 app</span><span class="a">→ JDBC driver →</span><span class="b hl">Redshift<small>batch e lekho, row by row na</small></span>
+  </div>
+  <span class="lbl">Redshift Spectrum</span>
+  <div class="flow">
+    <span class="b">Query<small>FROM S3.EXT_TABLE</small></span><span class="a">→</span>
+    <span class="b">Leader + compute nodes</span><span class="a">→</span>
+    <span class="b hl">Spectrum nodes 1..N<small>hajar hajar</small></span><span class="a">→</span>
+    <span class="b">S3 data<small>load chara</small></span>
+  </div>
+</div>
+<p class="cap">Spectrum e cluster lagbei; tarpor cluster er cheye onek beshi processing power.</p>
+<ul>
+  <li><b>Snapshot:</b> point-in-time, internally <b>S3 e</b>, <b>incremental</b>; restore <b>notun cluster e</b>. Automated: proti <b>8 h</b> / <b>5 GB</b> / schedule, retention <b>1-35 din</b>. Manual: delete na kora porjonto. Kichu cluster e <b>Multi-AZ</b> mode o ache.</li>
+  <li><b>Enhanced VPC Routing:</b> COPY / UNLOAD traffic internet er bodole puro <b>VPC</b> diye.</li>
+  <li><b>Spectrum:</b> S3 e already thaka data load na kore query; Redshift table er sathe join kora jay.</li>
+</ul>
+<div class="exam"><b>Exam:</b> Redshift DR → <b>automated snapshot + cross-region auto copy</b> (Multi-AZ shudhu AZ failure, "Redshift Global cluster" nai). COPY / UNLOAD VPC diye → <b>Enhanced VPC Routing</b>. Purono data S3 e sorao, daily report er sathe cross-reference → <b>Spectrum</b> (reload ba flat file export bhul). Clickstream Lambda diye enrich → S3 → Redshift, HA → <b>Lambda + S3 + Spectrum</b> (Spot HA na). Shudhu occasional SQL on S3 → Athena, Spectrum na (cluster er taka).</div>
+</section>
+
+<section class="sum-block" id="t5"><h3>Amazon OpenSearch Service (ex ElasticSearch)</h3>
+<div class="idea"><p><b>Shohoj kore:</b> DynamoDB e item pete primary key (ba index) jante hoy. User "joh" likhle "John Smith" ber kora DynamoDB parbe na. OpenSearch <b>je kono field</b> search kore, <b>partial match</b> o. Tai main DB er <b>pashe</b> search engine hisabe boshe. Naam bodlano licensing er karone.</p></div>
+<div class="fig">
+  <span class="lbl">DynamoDB pattern</span>
+  <div class="flow">
+    <span class="b">App CRUD</span><span class="a">→</span><span class="b">DynamoDB table</span><span class="a">→</span><span class="b">DynamoDB Stream</span><span class="a">→</span><span class="b">Lambda</span><span class="a">→</span><span class="b hl">OpenSearch<small>API to search items</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">Search e item ID pao</span><span class="a">→</span><span class="b">DynamoDB theke full item<small>API to retrieve items</small></span>
+  </div>
+  <span class="lbl">CloudWatch Logs pattern</span>
+  <div class="flow">
+    <span class="b">CloudWatch Logs</span><span class="a">→</span><span class="b">Subscription Filter</span><span class="a">→</span><span class="b">Lambda<small>AWS managed, real time</small></span><span class="a">→</span><span class="b hl">OpenSearch</span>
+  </div>
+  <div class="flow">
+    <span class="b">CloudWatch Logs</span><span class="a">→</span><span class="b">Subscription Filter</span><span class="a">→</span><span class="b">Firehose<small>near real time</small></span><span class="a">→</span><span class="b hl">OpenSearch</span>
+  </div>
+  <span class="lbl">Kinesis pattern</span>
+  <div class="flow">
+    <span class="b">KDS</span><span class="a">→</span><span class="b">Firehose<small>near real time, optional Lambda transform</small></span><span class="a">→</span><span class="b hl">OpenSearch</span>
+  </div>
+  <div class="flow">
+    <span class="b">KDS</span><span class="a">→</span><span class="b">Lambda<small>custom code, real time</small></span><span class="a">→</span><span class="b hl">OpenSearch</span>
+  </div>
+</div>
+<p class="cap">Source of truth DynamoDB. Lambda = real time, Firehose = near real time.</p>
+<ul>
+  <li>Search chara <b>analytic query</b> o. Mode: <b>managed cluster</b> ba <b>serverless</b>.</li>
+  <li>Nijer query language; <b>SQL native na</b> (plugin diye enable).</li>
+  <li>Ingestion: Firehose, AWS IoT, CloudWatch Logs, custom app. Security: <b>Cognito, IAM</b>, KMS at rest, TLS in flight. Visualize: <b>OpenSearch Dashboards</b>.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Gamer ke name diye search, partial match" (DynamoDB app) → <b>OpenSearch</b> (DynamoDB, Redshift, Neptune na). "Website / app er log + trace centrally store, real time e search + analyze, error / threat" → <b>OpenSearch</b>. Real-time search + visualization, native → <b>KDS → OpenSearch → QuickSight</b>.</div>
+</section>
+
+<section class="sum-block" id="t6"><h3>Amazon EMR (Elastic MapReduce)</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Hadoop / Spark cluster nije banano mane shotoshoto server e install, config, tuning: khub kothin. EMR bole "koto node chao bolo, ami EC2 te Spark, HBase, Presto, Flink set kore dicchi." "Big data / <b>Hadoop cluster</b>" dekhlei EMR. Cluster EC2 diye, tai underlying <b>OS e admin access</b> pao.</p></div>
+<div class="fig">
+  <span class="lbl">Node type → kon purchasing</span>
+  <div class="flow">
+    <span class="b hl">Master (primary)<small>cluster manage, coordinate, health; long running → On-Demand / Reserved</small></span><span class="a">→</span>
+    <span class="b hl">Core<small>task + data store; long running → On-Demand / Reserved</small></span><span class="a">→</span>
+    <span class="b">Task (optional)<small>shudhu task → Spot</small></span>
+  </div>
+  <span class="lbl">Deployment</span>
+  <div class="flow">
+    <span class="b">Long-running cluster<small>Reserved bhalo</small></span>
+    <span class="b">Transient cluster<small>kaaj kore tear down</small></span>
+  </div>
+</div>
+<p class="cap">Core node data rakhe, tai Spot e dile data harabe; shudhu Task node Spot.</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Bundled</td><td>Shotoshoto EC2 er cluster; Spark, HBase, Presto, Flink (question e Hive) EMR provision + config kore</td></tr>
+<tr><td>Cost</td><td><b>Auto-scaling</b>, <b>Spot</b> integration</td></tr>
+<tr><td>Use case</td><td>Data processing, machine learning, web indexing, big data</td></tr>
+<tr><td>On-Demand</td><td>Reliable, predictable, terminate hoy na</td></tr>
+<tr><td>Reserved</td><td>Min 1 bochor, boro saving; EMR available thakle nije use kore</td></tr>
+<tr><td>Spot</td><td>Sosta, kintu terminate hote pare, kom reliable</td></tr>
+</tbody>
+</table></div>
+<p><b>Question theke:</b> terabyte data <b>in memory</b> → primary <b>general purpose</b>, core + task <b>memory optimized</b>. Node idle → <b>EMR managed scaling</b>. HPC + analytics → FSx for Lustre + cluster placement group + EMR.</p>
+<div class="exam"><b>Exam:</b> "Spark, Hive, Presto, Hadoop" → <b>EMR</b>. Nijer Spark job daily, S3 → S3 → <b>EMR</b> (select two: <b>EMR + Glue</b>). "Underlying OS / full admin" → <b>EMR + EC2</b> (RDS, DynamoDB na). Purono question: log S3 e, <b>EMR</b> diye analyze (Athena option thakle Athena). Daily 6 h job, data harano jabe na, sosta → <b>transient</b>, primary + core On-Demand, task Spot. Choto 30 s, 1 GB job → <b>Lambda</b> (Glue / EMR e minimum cost beshi).</div>
+</section>
+
+<section class="sum-block" id="t7"><h3>Amazon QuickSight</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Boss chart chay: "gotobochor er revenue mash onujayi". QuickSight data source e connect kore <b>interactive dashboard</b> banay. Serverless, ML-powered <b>BI</b>, <b>per-session</b> pricing, website e embed kora jay.</p></div>
+<div class="fig">
+  <span class="lbl">Data source → QuickSight</span>
+  <div class="flow">
+    <span class="b">AWS: RDS, Aurora, Redshift, Athena, S3, OpenSearch, Timestream</span>
+    <span class="b">SaaS: Salesforce, Jira</span>
+    <span class="b">3rd-party DB: Teradata, on-prem JDBC</span>
+    <span class="b">Import: Excel, CSV, JSON, TSV, ELF / CLF log</span>
+  </div>
+  <div class="flow">
+    <span class="a">→</span><span class="b hl">QuickSight<small>SPICE in-memory, shudhu import kora data te</small></span>
+  </div>
+  <span class="lbl">Share</span>
+  <div class="flow">
+    <span class="b">Analysis</span><span class="a">→ publish →</span>
+    <span class="b hl">Dashboard<small>read-only snapshot</small></span><span class="a">→</span>
+    <span class="b">QuickSight users / groups<small>IAM na</small></span>
+  </div>
+</div>
+<p class="cap">Exam e beshi ashe: QuickSight + Athena ba QuickSight + Redshift.</p>
+<ul>
+  <li><b>SPICE</b>: in-memory computation engine; data <b>import</b> korle kaaj kore, onno DB te live connect korle na.</li>
+  <li><b>Users</b> (Standard edition) ar <b>groups</b> (Enterprise edition) <b>shudhu QuickSight er moddhe</b> thake, IAM user na. IAM shudhu administration er jonno.</li>
+  <li><b>Dashboard</b> = analysis er read-only snapshot; filter, parameter, control, sort config rakhe. Share korte age <b>publish</b>. Dashboard je dekhe, se <b>underlying data</b> o dekhte pare.</li>
+  <li>Enterprise edition: <b>Column-Level Security (CLS)</b>.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Dashboard / report / visualize, Redshift er sathe native" → <b>QuickSight</b>. Management full, baki limited access → dashboard publish, share <b>QuickSight users / groups</b> e (IAM role na). CloudFront log → <b>Athena + QuickSight</b> (Glue visualize kore na). Cost and Usage Report e NAT gateway cost dashboard → <b>QuickSight + Athena</b> (DataSync, CloudWatch dashboard na).</div>
+</section>
+
+<section class="sum-block" id="t8"><h3>AWS Glue: serverless ETL + Data Catalog</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Rannaghor: kancha mal ana (<b>Extract</b>), kete-dhue ranna (<b>Transform</b>: filter, column add), plate e deya (<b>Load</b>). Glue eta <b>fully serverless</b> e kore; tumi code likhe job launch koro. <b>Data Catalog</b> holo khata: kon data kothay, ki table, ki column, ki type.</p></div>
+<div class="fig">
+  <span class="lbl">Classic ETL</span>
+  <div class="flow">
+    <span class="b">S3 / RDS</span><span class="a">→ extract →</span><span class="b hl">Glue ETL<small>transform</small></span><span class="a">→ load →</span><span class="b">Redshift warehouse</span>
+  </div>
+  <span class="lbl">CSV → Parquet (exam favourite)</span>
+  <div class="flow">
+    <span class="b">S3 PUT CSV<small>input bucket</small></span><span class="a">→ event →</span>
+    <span class="b">Lambda<small>ba EventBridge</small></span><span class="a">→ trigger →</span>
+    <span class="b hl">Glue ETL job<small>CSV → Parquet</small></span><span class="a">→</span>
+    <span class="b">Output S3</span><span class="a">→</span><span class="b">Athena</span>
+  </div>
+  <span class="lbl">Data Catalog</span>
+  <div class="flow">
+    <span class="b">S3, RDS, DynamoDB, JDBC (on-prem)</span><span class="a">→</span>
+    <span class="b">Glue Data Crawler</span><span class="a">→ metadata →</span>
+    <span class="b hl">Data Catalog<small>database, table, column, type</small></span><span class="a">→</span>
+    <span class="b">Glue jobs, Athena, Redshift Spectrum, EMR</span>
+  </div>
+</div>
+<p class="cap">Catalog onek service er central metadata.</p>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>Ki kore</th></tr></thead>
+<tbody>
+<tr><td><b>Job Bookmarks</b></td><td>Ager run e process kora data mone rakhe; notun run e <b>purono data abar process kore na</b></td></tr>
+<tr><td><b>DataBrew</b></td><td><b>Pre-built</b> transformation diye clean + normalize, no code (question: recipe share, data profiling, lineage)</td></tr>
+<tr><td><b>Studio</b></td><td>GUI diye ETL job create, run, monitor</td></tr>
+<tr><td><b>Streaming ETL</b></td><td>Apache Spark Structured Streaming; batch er bodole streaming job; source <b>KDS, Kafka, MSK</b></td></tr>
+<tr><td><b>Elastic Views</b> <span class="pill bad">ar nai</span></td><td>Video te: SQL diye RDS + Aurora + S3 jure virtual table (materialized view), no code. Slide e nai; April 2022 theke available na; quiz e shudhu distractor</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Create, run, monitor ETL jobs" → <b>Glue</b>. "JSON / CSV → Parquet" → <b>Glue</b>; protiti PUT e → <b>Lambda trigger Glue job</b>; least dev effort → <b>crawler + ETL job</b> (EMR, Batch, Lambda e custom code). S3 lake → Redshift daily, serverless → <b>Glue</b> (EMR cluster, DMS, Data Pipeline na). Legacy CSV, COTS app Redshift pore → <b>scheduled Glue job → Redshift</b>. Rerun e shob data abar → <b>Job Bookmarks</b> (dump key "NumberOfWorkers = 1" bhul). No-code prep + profiling + lineage → <b>DataBrew</b>; job orchestration, retry, parallel / order → <b>Step Functions</b>. DynamoDB daily metric, table capacity na khaiye → <b>Glue DynamoDB export connector</b> (PITR export, RCU khay na; dump key Athena connector, kintu sheta Scan kore RCU khay).</div>
+</section>
+
+<section class="sum-block" id="t9"><h3>AWS Lake Formation</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Company r data chhoriye ache (S3, RDS, Aurora, on-prem SQL / NoSQL). <b>Data lake</b> = analytics er jonno shob data ek jaygay (S3 e). Lake Formation mash er kaaj kichu <b>din</b> e kore. Ar shobcheye boro kotha: <b>ke kon row / column dekhbe, ek jaygay thik koro</b>.</p></div>
+<div class="fig">
+  <span class="lbl">Lake Formation (Glue er upor layer)</span>
+  <div class="flow">
+    <span class="b">S3, RDS, Aurora, on-prem DB</span><span class="a">→ blueprints, ingest →</span>
+    <span class="b hl">Lake Formation<small>source crawlers, ETL + data prep, catalog, security settings, access control</small></span><span class="a">→</span>
+    <span class="b">Data lake<small>S3 e</small></span>
+  </div>
+  <span class="lbl">Centralized permission</span>
+  <div class="flow">
+    <span class="b">Users</span><span class="a">→</span>
+    <span class="b">Athena / QuickSight / Redshift / EMR / Spark</span><span class="a">→</span>
+    <span class="b hl">Lake Formation<small>row + column-level check</small></span><span class="a">→</span>
+    <span class="b">Data lake</span>
+  </div>
+</div>
+<p class="cap">Athena, QuickSight, S3 bucket policy, RDS user, Aurora user e alada alada security = mess. Lake Formation e ekbar.</p>
+<ul>
+  <li>Fully managed; discover, cleanse, transform, ingest. Collecting, cleansing, moving, cataloging automate; <b>de-duplicate</b> ML Transforms diye.</li>
+  <li><b>Structured + unstructured</b> ek sathe. Out-of-the-box <b>blueprints</b>: S3, RDS, relational ar NoSQL DB theke migrate.</li>
+  <li><b>Built on Glue</b> (crawler, ETL, catalog Glue theke), kintu Glue sorasori touch korte hoy na.</li>
+  <li>Question theke: <b>data filters</b> diye row-level ar <b>cell-level</b> security; <b>LF-Tags</b> (tag-based access control) diye onek account e cross-account grant ekbar (course e nai).</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Data lake e sensitive / PII, row / column-level, specific IAM role" → <b>Lake Formation fine-grained access control</b> (IAM policy all-or-nothing, bucket policy column bujhe na; Cognito, Shield, Object Lock, DataBrew na). S3 + RDS data onek team ke, low overhead → <b>Lake Formation + Glue JDBC connection to RDS + S3 register</b>. Lake + Aurora QuickSight e, marketing shudhu kichu column → <b>LF blueprint + LF column-level + Athena as QuickSight source</b>. Cross-account selective share → <b>LF-Tags</b>.</div>
+</section>
+
+<section class="sum-block" id="t10"><h3>Amazon Managed Service for Apache Flink</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Stream e protimuhurte event ashche; <b>Flink</b> (Java, Scala, SQL framework) application ta real time e transform / analyze kore. AWS cluster chalay, tumi shudhu Flink app dao. Purono naam <b>Kinesis Data Analytics for Apache Flink</b>. Eta <b>shudhu data stream process</b> er jonno.</p></div>
+<div class="fig">
+  <span class="lbl">Source → Flink</span>
+  <div class="flow">
+    <span class="b">Kinesis Data Streams</span><span class="b">Amazon MSK<small>Apache Kafka</small></span><span class="a">→</span>
+    <span class="b hl">Managed Service for Apache Flink</span>
+  </div>
+  <span class="lbl">Bhul source</span>
+  <div class="flow">
+    <span class="b bad">Amazon Data Firehose</span><span class="a">→ ✕ →</span><span class="b">Flink</span>
+  </div>
+  <span class="lbl">Console (hands-on)</span>
+  <div class="flow">
+    <span class="b">Streaming application<small>Flink runtime, app upload, Flink dashboard e monitor</small></span>
+    <span class="b">Studio notebook<small>one-off analysis</small></span>
+    <span class="b bad">SQL applications (legacy)<small>Firehose porto; ekhon bondho</small></span>
+  </div>
+</div>
+<p class="cap">"Flink Firehose theke pore na" = exam trick, lecture e boleche.</p>
+<ul>
+  <li>AWS dey: provisioned compute, <b>parallel computation</b>, <b>automatic scaling</b>, application backup (<b>checkpoints + snapshots</b>); je kono Flink programming feature diye transform.</li>
+  <li>Hands-on: exam e KDA er detail lagbe na, shudhu option dekhano.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Real-time analytics on streams of data" → <b>Kinesis Data Analytics = Managed Flink</b> (SQS / SNS analyze kore na, Firehose shudhu deliver kore). Mobile app data near-real-time analyze + encrypt + Parquet e S3 → <b>Firehose → S3 + KDA</b> (EMR cluster overhead). Stream transform → S3 → SQL: <b>KDS → KDA → Firehose → S3 → Athena</b> ba <b>MSK → Glue → S3 → Athena</b> (DMS, RDS query editor na). Bicycle location REST API → <b>API Gateway + KDA</b> (accepted answer; judgement call). Live <b>video</b> stream → <b>Kinesis Video Streams</b> (course e nai), KDS / KDA na.</div>
+</section>
+
+<section class="sum-block" id="t11"><h3>Amazon MSK (Managed Streaming for Apache Kafka)</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Kafka ar Kinesis duto-i data stream kore; Kafka = Kinesis er alternative. On-prem e Kafka chalao ar app Kafka API use kore? AWS e <b>MSK</b> nile <b>code bodlate hoy na</b>. Kafka nije setup kora khub kothin; MSK one-click, fully managed.</p></div>
+<div class="fig">
+  <span class="lbl">Kafka high level</span>
+  <div class="flow">
+    <span class="b">Source<small>Kinesis, IoT, RDS...</small></span><span class="a">→</span>
+    <span class="b">Producers<small>your code</small></span><span class="a">→ write to topic →</span>
+    <span class="b hl">MSK cluster<small>broker 1 / 2 / 3, topic replicated</small></span><span class="a">→ poll →</span>
+    <span class="b">Consumers<small>your code</small></span><span class="a">→</span>
+    <span class="b">EMR, S3, SageMaker, Kinesis, RDS</span>
+  </div>
+  <span class="lbl">MSK consumer</span>
+  <div class="flow">
+    <span class="b hl">MSK</span><span class="a">→</span>
+    <span class="b">Managed Flink</span><span class="b">Glue Streaming ETL<small>Spark Streaming</small></span><span class="b">Lambda<small>event source</small></span><span class="b">Nijer Kafka consumer<small>EC2, ECS, EKS</small></span>
+  </div>
+</div>
+<p class="cap">Produce korte Kafka Producer likho; consume er onek option.</p>
+<ul>
+  <li>MSK <b>Kafka broker + Zookeeper nodes</b> banay + manage kore; cluster create / update / delete on the fly.</li>
+  <li>Cluster <b>tomar VPC</b> te, <b>multi-AZ (3 porjonto)</b> HA. Common Kafka failure theke <b>automatic recovery</b>.</li>
+  <li>Data <b>EBS volume</b> e, <b>joto din chao</b> (1 bochor er beshi o, EBS er taka dile).</li>
+  <li><b>MSK Serverless</b>: server / capacity manage nai; compute + storage auto provision + scale.</li>
+</ul>
+<div class="scroll"><table>
+<thead><tr><th></th><th>Kinesis Data Streams</th><th>Amazon MSK</th></tr></thead>
+<tbody>
+<tr><td>Message size</td><td>1 MB limit</td><td>1 MB default, configure kore beshi (jemon 10 MB)</td></tr>
+<tr><td>Unit</td><td>Data Stream + Shard</td><td>Kafka Topic + Partition</td></tr>
+<tr><td>Scale</td><td>Shard splitting (up) + merging (down)</td><td>Shudhu partition <b>add</b>; remove kora jay na</td></tr>
+<tr><td>In-flight encryption</td><td>TLS</td><td>PLAINTEXT ba TLS</td></tr>
+<tr><td>At-rest</td><td>KMS</td><td>KMS</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "On-prem Kafka, <b>no code change</b>" → <b>MSK</b> (KDS e code bodlate hoy). Docker microservice + Kafka (ek message onek service) → <b>ECS Fargate + MSK</b> (Kafka on EC2 beshi kaaj, SQS ek message ekjon ke). MSK public + in-transit encryption → <b>existing VPC te public subnet + mutual TLS</b> (notun VPC beshi kaaj). Trap: API message onek Lambda te filter kore, least overhead → <b>SNS + SQS + filter policy</b>; dump key MSK, kintu Kafka cluster least overhead na.</div>
+</section>
+
+<section class="sum-block" id="t12"><h3>Big data ingestion pipeline</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Hajar IoT device data pathacche. Chai: puro <b>serverless</b>, real time e collect, transform, SQL e query, report S3 e, tarpor warehouse + dashboard.</p></div>
+<div class="fig">
+  <span class="lbl">Collect + deliver</span>
+  <div class="flow">
+    <span class="b">IoT devices</span><span class="a">→</span>
+    <span class="b">IoT Core<small>device manage</small></span><span class="a">→</span>
+    <span class="b hl">Kinesis Data Streams<small>real time</small></span><span class="a">→</span>
+    <span class="b hl">Data Firehose<small>proti 1 min; Lambda transform</small></span><span class="a">→</span>
+    <span class="b">S3 ingestion bucket</span>
+  </div>
+  <span class="lbl">Query + report + visualize</span>
+  <div class="flow">
+    <span class="b">S3 ingestion</span><span class="a">→ event →</span>
+    <span class="b">SQS<small>optional</small></span><span class="a">→</span>
+    <span class="b">Lambda</span><span class="a">→ trigger →</span>
+    <span class="b hl">Athena<small>ingestion bucket theke pull</small></span><span class="a">→</span>
+    <span class="b">S3 reporting bucket</span><span class="a">→</span>
+    <span class="b">QuickSight / Redshift (Serverless)</span>
+  </div>
+</div>
+<p class="cap">S3 notification SQS, SNS ba Lambda te jete pare; SQS na diye S3 → Lambda o thik.</p>
+<ul>
+  <li><b>IoT Core</b>: onek IoT device theke data harvest; connected device ↔ cloud application.</li>
+  <li>KDS = <b>real-time</b> collection; Firehose = S3 e <b>near real time</b>, lowest frequency <b>1 minute</b>; Lambda Firehose ke transform e help kore.</li>
+  <li>Athena serverless SQL, result S3 e; reporting bucket QuickSight ba Redshift use kore.</li>
+</ul>
+<p><b>Question er pipeline variation:</b></p>
+<div class="scroll"><table>
+<thead><tr><th>Scenario</th><th>Answer</th></tr></thead>
+<tbody>
+<tr><td>Stream filter / transform → S3, least infra</td><td><b>Firehose + Lambda</b> (Glue, EMR, KDA SQL beshi kaaj)</td></tr>
+<tr><td>300 website, 30 TB/day clickstream</td><td><b>KDS → Firehose → S3 data lake → Redshift</b></td></tr>
+<tr><td>Millions device, EC2 REST app replace</td><td><b>API Gateway → KDS → Firehose → S3</b> + <b>Glue</b> transform</td></tr>
+<tr><td>Petabyte activity data, on-demand SQL</td><td><b>Firehose → Redshift</b></td></tr>
+<tr><td>EC2 reboot e in-flight data haray, near-real-time query</td><td>Stephane: <b>Firehose → Redshift</b>; dump: <b>KDS + KDA</b>. Instance store / EBS + Redis duitai bhul</td></tr>
+<tr><td>On-prem device SMB share e CSV, periodic SQL, sosta</td><td><b>S3 File Gateway + Glue crawler + Athena</b></td></tr>
+<tr><td>DynamoDB data long-term analytics</td><td><b>DynamoDB incremental export to S3</b> (Streams / EMR na)</td></tr>
+<tr><td>Sub-ms read + historical one-time query</td><td><b>DynamoDB + DAX</b>, export to S3, <b>Athena</b></td></tr>
+<tr><td>50 TB, bandwidth nai, weekly transform cloud e</td><td><b>Snowball Edge Storage Optimized + Glue</b> (ajke: Snowball Edge notun customer pay na)</td></tr>
+<tr><td>Raw zone 5 bochor rakho, query hoy na</td><td>Lifecycle → <b>Deep Archive</b> (delete na); refined zone compressed</td></tr>
+<tr><td>Transcript: 1 bochor random, tarpor rare</td><td><b>Intelligent-Tiering + Athena</b>, 1 bochor por Glacier Flexible Retrieval (Glacier Select course e nai)</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Connected devices ↔ cloud app" → <b>IoT Core</b>. Batch DB + live stream ek jaygay, one-time query + KPI dashboard → <b>Lake Formation blueprint + Glue (Parquet)</b> ar <b>Athena + QuickSight</b>. Daily 2000 row × 3 s = 100 min → Lambda 15 min er beshi, course answer <b>EC2</b>. Monthly report e RDS slow → <b>read replica</b> (dump key "S3 export + Athena", kintu read replica textbook answer).</div>
+</section>
+
+<section class="sum-block" id="when"><h3>Kokhon konta</h3>
+<div class="scroll"><table>
+<thead><tr><th>Question e dekhle</th><th>Answer</th><th>Bhul option (keno na)</th></tr></thead>
+<tbody>
+<tr><td>S3 e log / JSON / CSV, ad-hoc SQL, least overhead, occasional</td><td><b>Athena</b> (schema: Glue Crawler)</td><td>Redshift / EMR / Aurora (cluster + load), CloudWatch Logs</td></tr>
+<tr><td>Athena slow / costly</td><td><b>Parquet / ORC</b> (Glue), compression, partition, file &gt; 128 MB</td><td>Choto file, ek boro single object, KDA</td></tr>
+<tr><td>Data warehouse, columnar, petabyte, BI</td><td><b>Redshift</b></td><td>RDS (OLTP), Neptune, S3</td></tr>
+<tr><td>Redshift ache + S3 er purono data join</td><td><b>Redshift Spectrum</b></td><td>COPY / Glue diye reload, Athena + flat file</td></tr>
+<tr><td>Redshift DR</td><td><b>Automated snapshot + cross-region copy</b></td><td>Multi-AZ (shudhu AZ), "Global cluster" (nai)</td></tr>
+<tr><td>COPY / UNLOAD VPC diye</td><td><b>Enhanced VPC Routing</b></td><td>"Improved VPC Routing" (nai), Spectrum</td></tr>
+<tr><td>Redshift monthly user surge</td><td><b>Concurrency scaling</b></td><td>Classic / elastic resize, Spectrum</td></tr>
+<tr><td>Partial match search, log search + analyze</td><td><b>OpenSearch</b></td><td>DynamoDB (shudhu key), Neptune</td></tr>
+<tr><td>Hadoop, Spark, Hive, Presto; OS access</td><td><b>EMR</b> (task node Spot)</td><td>Athena / Redshift (SQL engine), Lambda</td></tr>
+<tr><td>Dashboard / BI, user e share</td><td><b>QuickSight</b> (QuickSight users / groups)</td><td>IAM role e share, Glue / Athena visualize kore na</td></tr>
+<tr><td>ETL, CSV → Parquet, S3 → Redshift serverless</td><td><b>Glue</b></td><td>EMR (cluster), DMS, Data Pipeline</td></tr>
+<tr><td>Rerun e shudhu notun data</td><td><b>Glue Job Bookmarks</b></td><td>Worker shonkha, delete, FindMatches</td></tr>
+<tr><td>No-code clean / normalize, recipe, profiling</td><td><b>Glue DataBrew</b></td><td>Studio job, Athena SQL (code lage)</td></tr>
+<tr><td>Data lake, row / column / cell, central</td><td><b>Lake Formation</b> (cross-account: LF-Tags)</td><td>IAM / bucket policy, data copy</td></tr>
+<tr><td>Real-time analytics on streams</td><td><b>Managed Flink</b> (ex KDA; source KDS / MSK)</td><td>Firehose, SQS, SNS</td></tr>
+<tr><td>On-prem Kafka, no code change</td><td><b>Amazon MSK</b></td><td>KDS, Glue, KDA</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section class="sum-block" id="traps"><h3>Exam traps</h3>
+<ul>
+  <li>Cold data kintu "SQL immediately" dekhle <b>S3 Standard-IA + Athena</b>, Glacier na (age restore).</li>
+  <li>Redshift DR e "Multi-AZ" / "Global cluster" na, <b>cross-region snapshot copy</b>.</li>
+  <li>Flink er source dekhle <b>KDS ba MSK</b>; Firehose theke Flink pore na.</li>
+  <li>QuickSight share dekhle <b>QuickSight user / group</b>, IAM user / role na. <b>SPICE</b> shudhu import kora data te.</li>
+  <li>EMR cost dekhle primary + core <b>On-Demand / Reserved</b>, shudhu <b>task Spot</b>; idle node → <b>managed scaling</b>; daily kaaj → <b>transient</b> cluster.</li>
+  <li>"Least overhead" dekhle Glue / Athena / Firehose; EMR cluster, EC2 fleet na.</li>
+  <li>Glue + Lambda / DataBrew orchestrate dekhle <b>Step Functions</b>, Batch / EMR / SWF / Data Pipeline na.</li>
+  <li>MSK partition <b>remove kora jay na</b>; KDS shard split / merge hoy.</li>
+  <li>Dump key kichu jaygay bhul: Glue reprocess → <b>Job Bookmarks</b>; DynamoDB capacity na khaiye → <b>Glue export connector</b>; API message filter → <b>SNS + SQS</b>; RDS monthly report → <b>read replica</b>. Exam e logically thik ta dao.</li>
+</ul>
+</section>
+
+<section class="sum-block" id="numbers"><h3>Number mone rakho</h3>
+<ul>
+  <li>Athena <b>$5 / TB scanned</b>; file <b>&gt; 128 MB</b> bhalo; partition path <code>year=/month=/day=</code>.</li>
+  <li>Redshift onno warehouse er cheye <b>10x</b>, petabyte; automated snapshot proti <b>8 h</b> ba <b>5 GB</b> ba schedule; retention <b>1-35 din</b>; columnar block <b>1 MB</b> (course e nai).</li>
+  <li>EMR Reserved min <b>1 bochor</b>.</li>
+  <li>KDS message <b>1 MB</b>; MSK default 1 MB, configure kore beshi (jemon <b>10 MB</b>). MSK multi-AZ <b>3</b> porjonto; retention unlimited (EBS), 1 bochor er beshi o.</li>
+  <li>Firehose S3 e near real time, lowest frequency <b>1 minute</b>.</li>
+  <li>Lambda max <b>15 min</b> (2000 × 3 s = 100 min → EC2).</li>
+  <li>Naam: Kinesis Data Analytics (ajke: Managed Service for Apache Flink; KDA for SQL 27 Jan 2026 theke bondho), Kinesis Data Firehose (ajke: Amazon Data Firehose), ElasticSearch (ajke: OpenSearch), QuickSight (ajke: Amazon Quick Sight), Glue Elastic Views (ajke: nai), Data Pipeline ar S3 / Glacier Select (ajke: notun customer pay na).</li>
+</ul>
+</section>
+
+  </section>
+
+  <section class="card" id="practice">
+    <h2>Practice</h2>
+    <div class="tiles"><a class="tile" data-src="U" href="course-quiz.html"><b>Course quiz</b><small>Udemy section quiz</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="S" href="stephane.html"><b>Stephane</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="B" href="dojo.html"><b>Dojo (Bonso)</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="D" href="dump.html"><b>Dump</b><small>SAA-C03 dump, keys checked</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a></div>
+  </section>
+
+  <section class="card" id="mynote">
+    <h2>My notes</h2>
+    <p class="cap">What I got wrong, why, and what to remember. Saves as you type.</p>
+    <textarea class="mynote" id="note" data-size="secnote" spellcheck="false" placeholder="e.g. I mix up SQS and Kinesis: 'real-time + replay' means Kinesis…"></textarea>
+    <p class="cap" id="note-status"></p>
+  </section>
+
+  <section class="card" id="page-notes" data-sec="22" data-scope="section" data-pages='{"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump", "base": ""}'>
+    <h2>Question notes (this section)</h2>
+    <p class="cap">Notes you wrote on this section's questions (Course quiz, Stephane, Dojo, Dump). Edit or delete them here.</p>
+    <div class="pn-list"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section class="card" id="mistakes">
+    <h2>My mistakes (this section)</h2>
+    <p class="noprint"><button class="btn" type="button" id="miss-clear" hidden>Clear this section's mistakes</button></p>
+    <div id="miss-list"><p class="muted">Loading…</p></div>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  const SEC = 22;
+  const Q = window.SAA_Q || {};
+  const PAGE = {"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump"};
+  const NAME = { U: "Udemy quiz", S: "Stephane", B: "Bonso", D: "Dump" };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const ids = Object.keys(Q).filter(id => Q[id][0] === SEC);
+
+  function progress() {
+    let done = 0, firstOk = 0, bad = 0;
+    const per = {};
+    ids.forEach(id => {
+      const src = Q[id][5], s = SAAQuiz.status(id);
+      const p = per[src] = per[src] || { n: 0, done: 0, ok: 0 };
+      p.n++;
+      if (s.state === "new") return;
+      done++; p.done++;
+      if (s.first) { firstOk++; p.ok++; }
+      if (s.state === "mistake") bad++;
+    });
+    const pct = ids.length ? Math.round(done / ids.length * 100) : 0;
+    document.querySelector("#m-all i").style.width = pct + "%";
+    document.getElementById("m-text").textContent = done + "/" + ids.length + " questions done" +
+      (done ? " · right first time " + Math.round(firstOk / done * 100) + "%" : "") + " · in the mistake list " + bad;
+    Object.entries(per).forEach(([src, p]) => {
+      const el = document.querySelector('[data-src="' + src + '"]');
+      if (!el) return;
+      el.querySelector(".big").textContent = p.done + "/" + p.n;
+      el.querySelector(".meter i").style.width = (p.n ? Math.round(p.done / p.n * 100) : 0) + "%";
+      el.querySelector(".acc").textContent = p.done ? "right first time " + Math.round(p.ok / p.done * 100) + "%" : "not started";
+    });
+  }
+
+  function mistakes() {
+    const rows = [];
+    ids.forEach(id => {
+      const s = SAAQuiz.status(id);
+      const wrong = SAAQuiz.wrongAttempts(id);  // wrong answers before a "clear" no longer count
+      if (!wrong.length) return;
+      const last = wrong[wrong.length - 1];
+      const chose = last.c.map(i => "ABCDEFGH"[i]).join(",");
+      rows.push({ id, s, chose, when: last.t });
+    });
+    rows.sort((a, b) => (a.s.state === "mistake" ? 0 : 1) - (b.s.state === "mistake" ? 0 : 1) || (a.when < b.when ? 1 : -1));
+    const active = rows.filter(r => r.s.state === "mistake").map(r => r.id);
+    const btn = document.getElementById("miss-clear");
+    btn.hidden = !active.length;
+    btn.textContent = "Clear this section's mistakes (" + active.length + ")";
+    btn.onclick = () => {
+      if (!confirm("Take the " + active.length + " question(s) of Section " + String(SEC).padStart(2, "0") + " off the mistake list? Your answer history stays; a new wrong answer puts a question back.")) return;
+      SAAQuiz.clearMistakes(active).then(() => { progress(); mistakes(); }, () => alert("Could not clear (is the tracker running?)."));
+    };
+    const box = document.getElementById("miss-list");
+    if (!rows.length) { box.innerHTML = '<p class="muted">No mistakes yet.</p>'; return; }
+    box.innerHTML = rows.map(r => {
+      const m = Q[r.id];
+      const state = r.s.state === "mistake"
+        ? (r.s.isDue ? '<span class="pill bad">due</span>' : '<span class="pill">' + SAAQuiz.shortDate(r.s.due) + " again</span>")
+        : '<span class="pill ok">clear</span>';
+      return '<div class="miss"><div class="top"><b class="qz-id">' + esc(r.id) + "</b>" +
+        '<span class="pill">' + NAME[m[5]] + "</span>" + state +
+        '<span class="pill bad">you: ' + esc(r.chose) + '</span><span class="pill ok">right: ' + esc(m[4]) + "</span>" +
+        '<span class="muted">' + SAAQuiz.shortDate(r.when) + "</span></div>" +
+        '<div>' + esc(m[2]) + '… <a href="' + PAGE[m[5]] + ".html#" + encodeURIComponent(r.id) + '">open question</a></div></div>';
+    }).join("");
+  }
+
+  // own note: tracker API when served, browser storage as a fallback
+  const note = document.getElementById("note"), status = document.getElementById("note-status");
+  const KEY = "saa-note-" + SEC;
+  let timer = null;
+  function setStatus(t) { status.textContent = t; }
+  function save() {
+    const text = note.value;
+    SAA.writeLocal(KEY, text);
+    if (!SAA.served) { setStatus("Saved in this browser (opened without the tracker)."); return; }
+    fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: String(SEC), text }) })
+      .then(r => { if (!r.ok) throw new Error(); setStatus("Saved " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })); })
+      .catch(() => setStatus("Not saved on the server; kept in this browser."));
+  }
+  note.addEventListener("input", () => { setStatus("Typing…"); clearTimeout(timer); timer = setTimeout(save, 800); });
+  (SAA.served ? fetch("/api/notes", { cache: "no-store" }).then(r => r.json()).catch(() => ({})) : Promise.resolve({}))
+    .then(all => { note.value = all[String(SEC)] != null ? all[String(SEC)] : (SAA.readLocal(KEY) || ""); });
+
+  SAAQuiz.load().then(() => { progress(); mistakes(); });
+})();
+</script>
+</body>
+</html>

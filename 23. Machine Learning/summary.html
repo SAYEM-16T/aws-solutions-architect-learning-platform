@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 23 Hub</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/qindex.js"></script>
+</head>
+<body>
+<main class="wrap" data-sec="23">
+  <div class="topbar">
+    <nav><a href="../index.html">← All sections</a> <a href="../mistakes.html">Mistakes</a> <a href="../22.%20Data%20%26%20Analytics/summary.html">‹ 22</a> <a href="../24.%20AWS%20Monitoring%20%26%20Audit%20CloudWatch%2C%20CloudTrail%20%26%20Config/summary.html">24 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+
+  <header class="hub-head">
+    <span class="hub-no">23</span>
+    <div class="hub-title"><p class="eyebrow">Section · study order #24</p><h1>Machine Learning</h1></div>
+  </header>
+  <div class="meter" id="m-all" title="questions done"><i style="width:0%"></i></div>
+  <p class="cap" id="m-text">Loading…</p>
+
+  <div class="chips"><a href="../23.%20Machine%20Learning/23-slides-p563-577.pdf" target="_blank" rel="noopener">Slides PDF · p563-577</a><a href="../23.%20Machine%20Learning/23-notes.html">Detailed note</a></div>
+
+  <section class="card" id="summary">
+    <h2>Summary</h2>
+    <section class="sum-block" id="map"><h3>Big picture</h3>
+<p>Ei section e AWS er <b>ready-made ML service</b>: model banate hoy na, API call korlei kaaj. Protita service er ekta nirdishto kaaj (specific purpose); shudhu <b>SageMaker AI</b> alada, sheta developer / data scientist der nijer model banano platform. Exam e prai shob proshno "<b>keyword → service</b>" (summary lecture: "shob mone rakho, kichu point pabe"). Dump question e beshi ashe <b>pipeline</b>: S3 upload → Lambda → ML API → S3 / DynamoDB / Athena.</p>
+<div class="fig">
+  <span class="lbl">Ki dhukbe → kon service → ki berobe</span>
+  <div class="flow"><span class="b">Image / video</span><span class="a">→</span><span class="b hl">Rekognition</span><span class="a">→</span><span class="b">label, face, celebrity, moderation flag</span></div>
+  <div class="flow"><span class="b">Audio (speech)</span><span class="a">→</span><span class="b hl">Transcribe</span><span class="a">→</span><span class="b">text / subtitle</span></div>
+  <div class="flow"><span class="b">Text</span><span class="a">→</span><span class="b hl">Polly</span><span class="a">→</span><span class="b">lifelike speech</span></div>
+  <div class="flow"><span class="b">Text (bhasha A)</span><span class="a">→</span><span class="b hl">Translate</span><span class="a">→</span><span class="b">text (bhasha B)</span></div>
+  <div class="flow"><span class="b">Voice / chat</span><span class="a">→</span><span class="b hl">Lex</span><span class="a">→</span><span class="b">intent → Lambda</span><span class="b">Connect<small>phone call er contact center</small></span></div>
+  <div class="flow"><span class="b">Text</span><span class="a">→</span><span class="b hl">Comprehend</span><span class="a">→</span><span class="b">sentiment, entity, topic</span><span class="b">Comprehend Medical<small>clinical text → PHI</small></span></div>
+  <div class="flow"><span class="b">Scanned doc / PDF</span><span class="a">→</span><span class="b hl">Textract</span><span class="a">→</span><span class="b">text + form / table data</span></div>
+  <div class="flow"><span class="b">Onek document</span><span class="a">→</span><span class="b hl">Kendra</span><span class="a">→</span><span class="b">prosno r answer</span></div>
+  <div class="flow"><span class="b">User behaviour</span><span class="a">→</span><span class="b hl">Personalize</span><span class="a">→</span><span class="b">recommendation</span><span class="b">Forecast<small>history → future value</small></span></div>
+  <div class="flow"><span class="b">Nijer data</span><span class="a">→</span><span class="b hl">SageMaker AI</span><span class="a">→</span><span class="b">nijer model (build, train, deploy)</span></div>
+</div>
+<p class="cap">Input er dhoron (image, audio, text, document) dekhe group, tarpor kaaj dekhe service.</p>
+</section>
+
+<section class="sum-block" id="t1"><h3>Amazon Rekognition</h3>
+<div class="idea"><p><b>Shohoj kore:</b> CCTV er shamne ekjon smart guard. Chobi ba video dao, Rekognition bolbe "ekhane manush, rock, mountain bike, outdoors; ei meye hashche, chokh khola; ei jon celebrity". Shudhu <b>image ar video</b>; text ba audio na.</p></div>
+<div class="scroll"><table>
+<thead><tr><th>Use case</th><th>Example (lecture)</th></tr></thead>
+<tbody>
+<tr><td>Labeling</td><td>Chobite "golden retriever", "dog", "rock", "outdoors"</td></tr>
+<tr><td><b>Content Moderation</b></td><td>Chobi / video sob boyosher jonno appropriate kina</td></tr>
+<tr><td>Text Detection</td><td>Daur protijogitay runner er bib number</td></tr>
+<tr><td>Face Detection and Analysis</td><td>Gender, age range, emotion (smiling, eyes open)</td></tr>
+<tr><td>Face Search and Verification</td><td>User verification, people counting, security app; nijer "<b>familiar faces</b>" database</td></tr>
+<tr><td>Celebrity Recognition</td><td>Famous manush chena (demo te AWS er CTO)</td></tr>
+<tr><td>Pathing</td><td>Sports game (soccer) e ke kothay jacche, real-time analysis</td></tr>
+</tbody>
+</table></div>
+<div class="fig">
+  <span class="lbl">Content Moderation flow (exam favourite)</span>
+  <div class="flow">
+    <span class="b">Image / video</span><span class="a">→</span>
+    <span class="b hl">Rekognition<small>pre-trained, training nai</small></span><span class="a">→</span>
+    <span class="b">Confidence level vs<small>Minimum Confidence Threshold</small></span><span class="a">→</span>
+    <span class="b">Flagged</span><span class="a">→</span>
+    <span class="b hl">Amazon A2I<small>optional manual review</small></span><span class="a">→</span>
+    <span class="b">Rakho / delete</span>
+  </div>
+</div>
+<p class="cap">Machine age auto flag kore; manush (A2I) final decision ney.</p>
+<ul>
+  <li>Inappropriate, unwanted, offensive content (jemon racist, pornography) detect, image ar video duto-tei. Social media, broadcast media, advertising, e-commerce e <b>safer user experience</b>.</li>
+  <li><b>Minimum Confidence Threshold</b> tumi set koro (percentage). Threshold <b>kom</b> dile <b>beshi</b> match / flag. Confidence = Rekognition koto nishchit je eta offensive.</li>
+  <li>Flag kora content <b>Amazon Augmented AI (A2I)</b> e human review. Post howar age detect korte hoy emon <b>regulation comply</b> korte help kore.</li>
+  <li>Question theke: photo (still image) hole normal Rekognition image API; <b>Rekognition Video</b> video er jonno.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Objects, people, text, scenes in images and videos" → <b>Rekognition</b>. "Inappropriate / unwanted image, minimizes development effort, must not involve training, confidence threshold, manual review" → <b>Rekognition</b> (+ A2I). Typical flow: web app photo upload → Lambda (function URL) → Rekognition. Trap: Comprehend (text only), SageMaker / Autopilot / Fargate custom model (training lage), Rekognition Video (photo na). Option e "Amazon Recognition" bhul banan; Rekognition audio theke speaker chene na.</div>
+</section>
+
+<section class="sum-block" id="t2"><h3>Amazon Transcribe</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Steno-typist. Call ba meeting er recording dao, Transcribe shob kotha likhe dey; naam, boyosh, phone number er moto gopon info kete dey (redaction). English, French, Spanish mix holeo nije chine ney.</p></div>
+<div class="fig">
+  <span class="lbl">Batch call recording (dump pattern)</span>
+  <div class="flow">
+    <span class="b">Audio file<small>S3 upload</small></span><span class="a">→</span>
+    <span class="b">S3 event → Lambda</span><span class="a">→</span>
+    <span class="b hl">Transcribe job<small>PII redaction on</small></span><span class="a">→</span>
+    <span class="b">Transcript<small>alada S3 bucket</small></span><span class="a">→</span>
+    <span class="b">Athena<small>SQL, business pattern</small></span>
+  </div>
+</div>
+<p class="cap">Audio theke text, PII baad, S3 e rekhe (7 bochor o) Athena diye query.</p>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Speech → text</td><td>Deep learning process <b>ASR</b> (Automatic Speech Recognition), druto + accurate; console e live streaming demo</td></tr>
+<tr><td><b>PII Redaction</b></td><td>Naam, boyosh, phone, Social Security Number automatically remove. Question theke: transcript e text er jaygay <code>[PII]</code>, redacted audio te oi jaygay silence</td></tr>
+<tr><td><b>Automatic Language Identification</b></td><td>Multi-lingual audio nije detect</td></tr>
+<tr><td>Speaker labeling (question theke)</td><td>Ek call e multiple speaker, ke ki bolche alada; 2-10 speaker identify</td></tr>
+<tr><td>Use case</td><td>Customer service call transcribe, <b>closed captioning / subtitling</b>, media asset er metadata → fully searchable archive</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Speech-to-text", "subtitles", "call transcript", "multiple speaker recognition" → <b>Transcribe</b> (+ Athena query). "Call / audio save er age PII remove" → Transcribe <b>PII redaction</b>, Lambda e nijer "known PII pattern" scan na. Trap: Textract audio pore na; Kinesis Data Streams / Kinesis Video Streams audio transcribe kore na; Alexa AWS er ASR service na; Connect S3 er purono file batch transcribe kore na; Translate / Rekognition speaker chene na. Ulta "text → speech" → Polly.</div>
+</section>
+
+<section class="sum-block" id="t3"><h3>Amazon Polly</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Transcribe er ulta. Lekha dao, Polly deep learning diye manusher moto gola banay: app ke "kotha bolano" jay. Console e <b>neural</b> engine shobcheye natural, voice choose kora jay.</p></div>
+<div class="fig">
+  <span class="lbl">Polly</span>
+  <div class="flow">
+    <span class="b">Plain text<small>ba SSML markup</small></span><span class="a">→</span>
+    <span class="b hl">Polly<small>SynthesizeSpeech + Lexicon</small></span><span class="a">→</span>
+    <span class="b">Lifelike speech</span>
+  </div>
+</div>
+<p class="cap">Lexicon = kon word kivabe uccharon; SSML = kivabe bolbe (thama, phishphish, jor).</p>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>Ki kore</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td><b>Pronunciation Lexicons</b></td><td>Word er uccharon customize; lexicon file upload kore <b>SynthesizeSpeech</b> operation e use</td><td>Stylized word "St3ph4ne" → "Stephane"; acronym "AWS" → "Amazon Web Services"</td></tr>
+<tr><td><b>SSML</b> (Speech Synthesis Markup Language)</td><td>Markup kora document theke speech, beshi customization</td><td>Word / phrase emphasis, phonetic pronunciation, breathing, whispering, Newscaster style; demo te <code>break time="3s"</code> (3 second thama)</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Text to speech", "lifelike", "app that talks" → <b>Polly</b>. Blank-fill order: pronunciation customize ("Amazon EC2" → "Amazon Elastic Compute Cloud") = <b>Lexicon</b>, emphasis / whisper / breathing = <b>SSML</b>. Trap: <b>SAML</b> = identity federation, Polly er sathe shomporko nai. "Transcribe diye text → speech" = False.</div>
+</section>
+
+<section class="sum-block" id="t4"><h3>Amazon Translate</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Website English e; France, Brazil, India er user der nijer bhashay dekhate chao. Translate natural ar accurate anubad kore (text → text), boro volume er text o druto.</p></div>
+<ul>
+  <li>Natural and accurate language translation (neural machine translation).</li>
+  <li>Website ar application <b>localize</b> kora, international user der jonno.</li>
+  <li>Large volumes of text efficiently translate. Source ar target language code dao.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Different languages", "natural and accurate", "translate text into English" → <b>Translate</b>. Trap: Transcribe (speech → text, bhasha same), Polly (text → speech), Comprehend translate kore na. "WordTranslator" bole kono AWS service nai. Translate entity / sentiment er moto NLP analysis o kore na.</div>
+</section>
+
+<section class="sum-block" id="t5"><h3>Amazon Lex + Amazon Connect</h3>
+<div class="idea"><p><b>Shohoj kore:</b> "Alexa, kal weather kemon?" "Kal 24 degree, rodela." Lex shei Alexa r technology: kotha shune text kore (ASR), ar bujhe tumi ki chao (NLU, intent). Connect holo phone line + call center. Duita jure appointment booking robot.</p></div>
+<div class="fig">
+  <span class="lbl">Smart contact center</span>
+  <div class="flow">
+    <span class="b">Phone call<small>"appointment chai"</small></span><span class="a">→ call →</span>
+    <span class="b hl">Connect<small>Connect er number</small></span><span class="a">→ stream →</span>
+    <span class="b hl">Lex<small>intent recognized</small></span><span class="a">→ invoke →</span>
+    <span class="b">Lambda<small>code</small></span><span class="a">→ schedule →</span>
+    <span class="b">CRM<small>"kal 3 PM Tom er sathe"</small></span>
+  </div>
+</div>
+<p class="cap">Connect = call receive; Lex = kotha bujhe intent; Lambda = asol kaaj.</p>
+<div class="scroll"><table>
+<thead><tr><th></th><th>Amazon Lex</th><th>Amazon Connect</th></tr></thead>
+<tbody>
+<tr><td>Ki</td><td>Alexa er same technology</td><td>Cloud-based virtual contact center</td></tr>
+<tr><td>Kaaj</td><td><b>ASR</b> (speech → text) + <b>NLU</b> (text / caller er intent chena)</td><td>Call receive, <b>contact flow</b> create</td></tr>
+<tr><td>Banay</td><td>Chatbot, call center bot (conversational)</td><td>Contact center; CRM ba AWS service integrate</td></tr>
+<tr><td>Cost</td><td>-</td><td>No upfront payment, traditional er cheye <b>80%</b> sosta</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Chatbot, speech-to-text + customer er intention" → <b>Lex</b>. "Cloud contact center, contact flow" → <b>Connect</b>. Trap: Transcribe speech → text kore kintu intent bujhe na (NLU nai); Lex sentiment report banay na (sheta Comprehend); Connect nije speech-to-text / intent kore na. Connect + Lex call e PII remove chaile → Transcribe.</div>
+</section>
+
+<section class="sum-block" id="t6"><h3>Amazon Comprehend</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Exam e "<b>NLP</b>" dekhlei Comprehend. Hajar customer email ek-ek kore pora shombhob na; Comprehend shob pore bole: kon bhasha, kon manush / jayga / brand er naam, customer khushi na raag, kon topic. Unstructured text → structured insight. Fully managed, serverless.</p></div>
+<div class="scroll"><table>
+<thead><tr><th>Comprehend ki ber kore</th><th>Mane</th></tr></thead>
+<tbody>
+<tr><td>Language</td><td>Text kon bhashay</td></tr>
+<tr><td>Key phrase, entity</td><td>Places, people, brands, events (question e: recipe theke ingredient er naam)</td></tr>
+<tr><td><b>Sentiment</b></td><td>Text koto positive / negative</td></tr>
+<tr><td>Syntax</td><td>Tokenization, parts of speech</td></tr>
+<tr><td><b>Topic</b></td><td>Text file er collection automatically topic onujayi organize</td></tr>
+</tbody>
+</table></div>
+<p><b>Use case (lecture):</b> customer email analyze kore kon jinish positive / negative experience ane, sheta theke business improve; onek article Comprehend e dile se nije topic ber kore group kore.</p>
+<div class="fig">
+  <span class="lbl">Survey sentiment, MOST scalable</span>
+  <div class="flow">
+    <span class="b">Survey<small>hajar / ghonta</small></span><span class="a">→</span>
+    <span class="b">API Gateway</span><span class="a">→</span>
+    <span class="b">SQS<small>burst buffer</small></span><span class="a">→</span>
+    <span class="b">Lambda<small>poll</small></span><span class="a">→</span>
+    <span class="b hl">Comprehend<small>sentiment</small></span><span class="a">→</span>
+    <span class="b">DynamoDB<small>TTL 365 din</small></span>
+  </div>
+  <span class="lbl">Recipe ingredient, MOST cost-effective</span>
+  <div class="flow">
+    <span class="b">Text file S3 e</span><span class="a">→ S3 Event Notification →</span>
+    <span class="b">Lambda</span><span class="a">→</span>
+    <span class="b hl">Comprehend<small>entity</small></span><span class="a">→</span>
+    <span class="b">DynamoDB</span>
+  </div>
+</div>
+<p class="cap">Lambda theke API call, kono ML knowledge lage na.</p>
+<div class="exam"><b>Exam:</b> "NLP", "sentiment", "key phrase / entity recognition", "group articles by topic", "no ML knowledge" → <b>Comprehend</b>. Trap: Lex (chatbot), Rekognition (image), Translate (bhasha), Textract (text tule ane, mane bujhe na), Athena / QuickSight (query / chart, NLP na), SageMaker (nijer model, beshi kaaj), Forecast (time-series), Polly (audio banay).</div>
+</section>
+
+<section class="sum-block" id="t7"><h3>Amazon Comprehend Medical</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Doctor er note: "45 bochorer high school teacher, ei osudh 500 mg din e duibar". Comprehend Medical clinical text theke boyosh, procedure, osudh er generic naam, strength, dosage, route, frequency alada kore structured data banay, ar <b>PHI</b> (Protected Health Information) khuje dey.</p></div>
+<div class="fig">
+  <span class="lbl">Input er tin rasta</span>
+  <div class="flow">
+    <span class="b">Documents<small>S3</small></span><span class="a">→</span><span class="b hl">Comprehend Medical API<small>DetectPHI</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">Real-time data<small>Kinesis Data Firehose</small></span><span class="a">→</span><span class="b hl">Comprehend Medical</span>
+  </div>
+  <div class="flow">
+    <span class="b">Patient er voice</span><span class="a">→</span><span class="b">Transcribe<small>text</small></span><span class="a">→</span><span class="b hl">Comprehend Medical</span>
+  </div>
+</div>
+<p class="cap">Comprehend Medical shudhu text pore; voice hole age Transcribe, scan / PDF hole age Textract.</p>
+<ul>
+  <li>Unstructured clinical text: physician's notes, discharge summaries, test results, case notes.</li>
+  <li>NLP diye <b>PHI</b> detect: <b>DetectPHI API</b>. Question theke: HIPAA eligible.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Doctor's notes, clinical trial, radiology report", "identify PHI", "HIPAA" → <b>Comprehend Medical</b>. Trap: SageMaker diye nijer PHI model (beshi overhead), <b>Transcribe Medical</b> (speech → text, text theke medical info extract kore na), Rekognition, Polly, Translate.</div>
+</section>
+
+<section class="sum-block" id="t8"><h3>Amazon Textract</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Driving license er scan upload koro; Textract AI / ML diye pore result data file (JSON) dey: Document ID, Name, SEX, DOB. Typed text, <b>handwriting</b>, <b>forms ar tables</b> er bhitor theke o.</p></div>
+<div class="fig">
+  <span class="lbl">Textract</span>
+  <div class="flow">
+    <span class="b">Scanned doc<small>PDF, image</small></span><span class="a">→ analyze →</span>
+    <span class="b hl">Textract</span><span class="a">→ result →</span>
+    <span class="b">{ "Document ID", "SEX", "DOB" ... }</span>
+  </div>
+  <span class="lbl">Hospital report pipeline (dump)</span>
+  <div class="flow">
+    <span class="b">PDF / JPEG<small>S3 upload</small></span><span class="a">→</span>
+    <span class="b">Lambda</span><span class="a">→</span>
+    <span class="b hl">Textract<small>raw text (OCR)</small></span><span class="a">→</span>
+    <span class="b hl">Comprehend Medical<small>PHI, medical info</small></span><span class="a">→</span>
+    <span class="b">S3 + Athena<small>SQL</small></span>
+  </div>
+</div>
+<p class="cap">Textract text tule ane, kintu mane bujhe na; mane bujhar jonno Comprehend / Comprehend Medical.</p>
+<div class="scroll"><table>
+<thead><tr><th>Sector</th><th>Use case</th></tr></thead>
+<tbody>
+<tr><td>Financial Services</td><td>Invoice, financial report</td></tr>
+<tr><td>Healthcare</td><td>Medical record, insurance claim</td></tr>
+<tr><td>Public Sector</td><td>Tax form, ID document, passport</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Scanned document / PDF / form / table / handwriting theke text" → <b>Textract</b>. Trap: Rekognition image e object / face er jonno, report er text er jonno na; nijer Python library ba EC2 ASG custom app (beshi overhead); EC2 te MySQL (overhead). Common pair: <b>Textract → Comprehend</b> (sentiment / insight) ba <b>Textract → Comprehend Medical</b> (PHI).</div>
+</section>
+
+<section class="sum-block" id="t9"><h3>Amazon SageMaker AI</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Ager service gulo ready-made khabar (ek ek nirdishto kaaj). SageMaker pura rannaghor: developer / data scientist nije recipe (model) banabe, test korbe, serve korbe. Beshi power, kintu beshi involved, kothin, ML skill lage. Shob step ek jaygay kora ar server provision kora kothin, SageMaker sheta shohoj kore.</p></div>
+<div class="fig">
+  <span class="lbl">Ready-made vs nijer model</span>
+  <div class="flow">
+    <span class="b">Rekognition, Transcribe, Polly, Translate, Comprehend, Textract, Personalize ...<small>specific purpose, API call</small></span>
+    <span class="b hl">SageMaker AI<small>higher level: nijer model banao</small></span>
+  </div>
+  <span class="lbl">ML process (simplified): exam score predict</span>
+  <div class="flow">
+    <span class="b">Historical data<small>IT / AWS experience, course e shomoy</small></span><span class="a">→</span>
+    <span class="b">Label<small>asol score: 670, 890, 934</small></span><span class="a">→</span>
+    <span class="b hl">Build ML model</span><span class="a">→</span>
+    <span class="b">Train &amp; Tune</span><span class="a">→</span>
+    <span class="b">Apply / deploy<small>new data → "PASS WITH 906"</small></span>
+  </div>
+</div>
+<p class="cap">Labeling, building, training, tuning, deploying: shob SageMaker er moddhe.</p>
+<ul>
+  <li>Fully managed service, developers / data scientists der ML model build korte. Naam ekhon <b>SageMaker AI</b>; "SageMaker" ba "SageMaker AI" same service.</li>
+  <li>Question theke: telemetry pattern = data <b>Timestream</b> e, ML (maintenance predict) <b>SageMaker</b> e, visual report <b>QuickSight</b> e (Athena visualize kore na, Neptune graph DB, DynamoDB + EMR beshi complex).</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Developer nijer model build, train, deploy quickly" → <b>SageMaker</b>. Kintu stem e "<b>no ML experience</b>", "must not involve training", "minimize development effort", "least overhead" thakle SageMaker (ar Autopilot, Ground Truth) <b>bhul</b>: ready-made service (Rekognition, Comprehend, Comprehend Medical, Personalize, Forecast) bachai.</div>
+</section>
+
+<section class="sum-block" id="t10"><h3>Amazon Kendra</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Office er nijer Google. Hajar PDF, Word, PowerPoint, SharePoint page, FAQ. Tumi likhle "IT support desk kothay?", Kendra document theke sorasori answer dey: "1st floor". Link er list na.</p></div>
+<div class="fig">
+  <span class="lbl">Kendra</span>
+  <div class="flow">
+    <span class="b">Data sources<small>S3, RDS, Google Drive, SharePoint, OneDrive, 3rd party, custom</small></span><span class="a">→ indexing →</span>
+    <span class="b hl">Knowledge Index<small>ML powered</small></span><span class="a">→</span>
+    <span class="b">User: "IT support desk kothay?" → "1st floor"</span>
+  </div>
+</div>
+<p class="cap">Natural language prosno kore document er bhitor theke answer extract.</p>
+<ul>
+  <li>Fully managed <b>document search</b> service, ML powered; text, PDF, HTML, PowerPoint, MS Word, FAQ.</li>
+  <li><b>Natural language search</b> (Google er moto).</li>
+  <li>User interaction / feedback theke shikhe preferred result upore: <b>Incremental Learning</b>.</li>
+  <li>Search result manually fine-tune: data er importance, freshness, custom filter.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Document search service powered by ML" → <b>Kendra</b>. Trap: Comprehend analyze kore, search kore na; Translate, Polly. OpenSearch nije index banano search / log analytics engine.</div>
+</section>
+
+<section class="sum-block" id="t11"><h3>Amazon Personalize</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Amazon.com e kichu kenar por "tumi eta o pochondo korte paro". Ekjon onek gardening tool kineche, porer ta suggest koro. Amazon.com er same technology tomar app e.</p></div>
+<div class="fig">
+  <span class="lbl">Personalize</span>
+  <div class="flow">
+    <span class="b">S3<small>user interaction data (read)</small></span><span class="a">→</span>
+    <span class="b hl">Personalize</span><span class="a">→</span>
+    <span class="b">Customized personalized API<small>website, mobile app, SMS, email</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">Personalize API<small>real-time data integration</small></span><span class="a">→</span>
+    <span class="b hl">Personalize</span>
+  </div>
+</div>
+<p class="cap">Days e implement, months na; nije ML build / train / deploy korte hoy na.</p>
+<ul>
+  <li>Fully managed ML service, <b>real-time personalized recommendation</b>: product recommendation, re-ranking, customized direct marketing.</li>
+  <li>Existing website, app, SMS, email marketing system e integrate. Use case: retail store, media and entertainment.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Recommendation", "rapidly create customized / personalized user experience" → <b>Personalize</b>. Trap: Kendra (search), Connect (contact center), SageMaker (nijer model, "rapidly" na). Graph-based recommendation database proshne Neptune (Section 21), ML service proshne Personalize.</div>
+</section>
+
+<section class="sum-block" id="t12"><h3>Amazon Forecast</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Bhobishyot er hisab. Historical value (jemon S3 e mash-wise data) theke porer mash e koto demand / resource lagbe: time-series forecast. Summary lecture e shudhu ek line: "Forecast allows you to build highly accurate forecast" (slide e nai).</p></div>
+<div class="fig">
+  <span class="lbl">No ML experience forecasting (question theke)</span>
+  <div class="flow">
+    <span class="b">Historical data<small>S3</small></span><span class="a">→</span>
+    <span class="b hl">Train Forecast predictor</span><span class="a">→</span>
+    <span class="b">Lambda<small>function URL</small></span><span class="a">→</span>
+    <span class="b">Oi predictor diye prediction</span>
+  </div>
+</div>
+<p class="cap">Train ar predict duto-i Forecast diye.</p>
+<ul>
+  <li>Fully managed, highly accurate forecast; question explanation onujayi ML experience lage na.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Fully managed, highly accurate forecasts" → <b>Forecast</b>. "Monthly resource predict from S3 history, no ML experience, managed" → <b>Forecast</b>: predictor train + Lambda theke oi predictor diye predict. Dump key te SageMaker train + Forecast predictor mix ache; logically Forecast train + Forecast predict pair-ta thik. Trap: Personalize (recommendation), SageMaker (ML skill lage).</div>
+</section>
+
+<section class="sum-block" id="t13"><h3>Pipeline: service gulo jora lagano</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Ek service ek kaaj. Boro proshne input dekhe chain banao: audio hole age Transcribe, scan hole age Textract, bhasha bodlate Translate, tarpor text er mane bujhte Comprehend, shesh e store (S3 / DynamoDB) ar query (Athena) ba chart (QuickSight).</p></div>
+<div class="fig">
+  <span class="lbl">Multi-language call sentiment (ML model maintain er resource nai)</span>
+  <div class="flow">
+    <span class="b">Call audio<small>4+ bhasha</small></span><span class="a">→</span>
+    <span class="b hl">Transcribe</span><span class="a">→</span>
+    <span class="b hl">Translate<small>to English</small></span><span class="a">→</span>
+    <span class="b hl">Comprehend<small>sentiment report</small></span>
+  </div>
+  <span class="lbl">News PDF insight + sentiment</span>
+  <div class="flow">
+    <span class="b">PDF</span><span class="a">→</span><span class="b">Textract</span><span class="a">→</span><span class="b hl">Comprehend</span><span class="a">→</span><span class="b">S3</span>
+  </div>
+  <span class="lbl">Highly available NLP app, onek concurrent request</span>
+  <div class="flow">
+    <span class="b">API Gateway REST</span><span class="a">→</span><span class="b">Lambda</span><span class="a">→</span><span class="b hl">Comprehend</span><span class="a">→</span><span class="b">DynamoDB<small>HA, scalable</small></span>
+  </div>
+  <span class="lbl">Call center analysis (option e Comprehend na thakle)</span>
+  <div class="flow">
+    <span class="b">Call audio</span><span class="a">→</span><span class="b hl">Transcribe</span><span class="a">→</span><span class="b">Text S3 e</span><span class="a">→</span><span class="b">Athena<small>SQL analysis</small></span>
+  </div>
+</div>
+<p class="cap">Trigger: S3 Event Notification → Lambda. Store: S3 (+ Athena SQL) ba DynamoDB; ElastiCache durable store na.</p>
+<ul>
+  <li>Serverless (Lambda, S3, Athena, DynamoDB) = scalability + operational efficiency; EC2 / ASG / MySQL on EC2 = beshi overhead.</li>
+  <li>Burst (hajar request / ghonta) → API Gateway + SQS buffer + Lambda.</li>
+  <li>Sentiment er asol service Comprehend; option e na thakle Transcribe + Athena best (QuickSight shudhu chart, "human analysis").</li>
+</ul>
+<div class="exam"><b>Exam:</b> Option e bhul ML service bosano thake (Translate / Textract diye NLP, Rekognition diye document ba speaker, Lex diye sentiment, Comprehend diye translate, Polly diye audio → text). Protita step e service er kaaj mile kina check koro.</div>
+</section>
+
+<section class="sum-block" id="when"><h3>Kokhon konta</h3>
+<div class="scroll"><table>
+<thead><tr><th>Question e dekhle</th><th>Answer</th><th>Bhul option (keno na)</th></tr></thead>
+<tbody>
+<tr><td>Objects, people, text, scenes in images / videos; face, celebrity, labeling</td><td><b>Rekognition</b></td><td>Textract (document), Kendra, Polly, Lex</td></tr>
+<tr><td>Inappropriate image, confidence threshold, human review, no training</td><td><b>Rekognition</b> moderation + A2I</td><td>Comprehend (text), SageMaker / Autopilot (training), Rekognition Video (photo na)</td></tr>
+<tr><td>Speech → text, subtitles, call transcript, multiple speakers</td><td><b>Transcribe</b></td><td>Polly (ulta), Translate, Rekognition, Connect</td></tr>
+<tr><td>Audio / call theke PII remove</td><td><b>Transcribe</b> PII redaction</td><td>Textract (audio na), Lambda e PII pattern, Kinesis Video Streams</td></tr>
+<tr><td>Text → lifelike speech, app that talks</td><td><b>Polly</b></td><td>Transcribe (speech → text)</td></tr>
+<tr><td>Pronunciation customize / emphasis, whisper</td><td><b>Lexicon</b> / <b>SSML</b></td><td>SAML (federation)</td></tr>
+<tr><td>Different languages, translate to English, localize</td><td><b>Translate</b></td><td>Comprehend, Transcribe, "WordTranslator"</td></tr>
+<tr><td>Chatbot, speech-to-text + intent</td><td><b>Lex</b></td><td>Transcribe (NLU nai), Connect</td></tr>
+<tr><td>Cloud contact center, contact flow</td><td><b>Connect</b></td><td>Lex (bot, center na)</td></tr>
+<tr><td>NLP, sentiment, key phrase, entity, topic</td><td><b>Comprehend</b></td><td>Lex, Rekognition, Translate, Athena / QuickSight</td></tr>
+<tr><td>Clinical text, doctor's notes, PHI, HIPAA</td><td><b>Comprehend Medical</b></td><td>SageMaker (nijer model), Transcribe Medical (speech)</td></tr>
+<tr><td>Scanned document, PDF, form, table, handwriting</td><td><b>Textract</b></td><td>Rekognition, Python library / EC2 app (overhead)</td></tr>
+<tr><td>Build, train, deploy own ML model</td><td><b>SageMaker AI</b></td><td>Polly, Comprehend, Personalize (ready-made)</td></tr>
+<tr><td>Document search powered by ML</td><td><b>Kendra</b></td><td>Comprehend (analyze), Translate</td></tr>
+<tr><td>Recommendation, customized user experience</td><td><b>Personalize</b></td><td>Kendra (search), Connect</td></tr>
+<tr><td>Highly accurate forecast, history theke predict, no ML experience</td><td><b>Forecast</b></td><td>SageMaker (ML skill), Personalize, Lex</td></tr>
+<tr><td>Vehicle telemetry store + ML + visual report</td><td><b>Timestream + SageMaker + QuickSight</b></td><td>Neptune (graph), Athena (visualize kore na)</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section class="sum-block" id="traps"><h3>Exam traps</h3>
+<ul>
+  <li>"No ML experience", "minimize development effort", "must not involve training" dekhle ready-made service, <b>SageMaker / Autopilot / Ground Truth / Fargate custom model na</b>.</li>
+  <li>Transcribe (shune likhe) ≠ Polly (lekha pore) ≠ Lex (bujhe, chatbot) ≠ Translate (bhasha bodlay).</li>
+  <li>Rekognition = image / video; Textract = document; Comprehend = text er mane; Kendra = search.</li>
+  <li>Report / PDF theke text dekhle Textract, Rekognition na; text theke PHI dekhle Comprehend Medical, SageMaker ba Transcribe Medical na.</li>
+  <li>Photo moderation dekhle normal Rekognition, Rekognition Video na; Comprehend kokhono image dekhe na.</li>
+  <li>"Amazon Recognition" bhul banan; speaker recognition Transcribe, Rekognition na.</li>
+  <li>SSML = Polly; SAML = federation. Blank e Lexicon age (pronunciation), SSML pore (whisper).</li>
+  <li>Moderation threshold kom dile beshi flag (beshi match), kom na.</li>
+  <li>Visual report dekhle QuickSight, Athena na; durable result store DynamoDB / S3, ElastiCache na.</li>
+  <li>Kinesis Data Streams audio file transcribe kore na; Alexa AWS service na (tar technology = Lex).</li>
+</ul>
+</section>
+
+<section class="sum-block" id="numbers"><h3>Number mone rakho</h3>
+<ul>
+  <li>Connect: no upfront, traditional contact center er cheye <b>80%</b> sosta.</li>
+  <li>Transcribe speaker identification <b>2-10</b> speaker (question theke).</li>
+  <li>Polly SSML demo: <code>break time="3s"</code> = 3 second thama.</li>
+  <li>DynamoDB TTL <b>365 din</b> dile 12 mash por survey result nije delete.</li>
+  <li>Personalize: <b>days</b> e implement, months na.</li>
+  <li>SageMaker → <b>SageMaker AI</b> naam (3 Dec 2024); exam answer ek-i.</li>
+  <li>Forecast exam answer (ajke: 29 July 2024 theke notun customer nay na, AWS bole SageMaker Canvas).</li>
+  <li>Kendra exam answer (ajke: maintenance mode 30 June 2026, 30 July 2026 theke notun customer nay na). A2I exam answer (ajke: notun customer der jonno open na).</li>
+  <li>Rekognition moderation exam answer (ajke: People Pathing bondho 31 Oct 2025; Streaming Video ar Bulk Image Analysis 30 April 2026 theke notun customer nay na). Comprehend topic answer (ajke: topic modeling notun customer der jonno bondho 30 April 2026; sentiment, entity ager moto).</li>
+  <li>Lex V1 end of support 15 Sept 2025 (ajke: Lex V2); Connect ekhon "Amazon Connect Customer". Timestream telemetry answer (ajke: LiveAnalytics notun customer nay na).</li>
+</ul>
+</section>
+
+  </section>
+
+  <section class="card" id="practice">
+    <h2>Practice</h2>
+    <div class="tiles"><a class="tile" data-src="U" href="course-quiz.html"><b>Course quiz</b><small>Udemy section quiz</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="S" href="stephane.html"><b>Stephane</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="B" href="dojo.html"><b>Dojo (Bonso)</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="D" href="dump.html"><b>Dump</b><small>SAA-C03 dump, keys checked</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a></div>
+  </section>
+
+  <section class="card" id="mynote">
+    <h2>My notes</h2>
+    <p class="cap">What I got wrong, why, and what to remember. Saves as you type.</p>
+    <textarea class="mynote" id="note" data-size="secnote" spellcheck="false" placeholder="e.g. I mix up SQS and Kinesis: 'real-time + replay' means Kinesis…"></textarea>
+    <p class="cap" id="note-status"></p>
+  </section>
+
+  <section class="card" id="page-notes" data-sec="23" data-scope="section" data-pages='{"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump", "base": ""}'>
+    <h2>Question notes (this section)</h2>
+    <p class="cap">Notes you wrote on this section's questions (Course quiz, Stephane, Dojo, Dump). Edit or delete them here.</p>
+    <div class="pn-list"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section class="card" id="mistakes">
+    <h2>My mistakes (this section)</h2>
+    <p class="noprint"><button class="btn" type="button" id="miss-clear" hidden>Clear this section's mistakes</button></p>
+    <div id="miss-list"><p class="muted">Loading…</p></div>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  const SEC = 23;
+  const Q = window.SAA_Q || {};
+  const PAGE = {"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump"};
+  const NAME = { U: "Udemy quiz", S: "Stephane", B: "Bonso", D: "Dump" };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const ids = Object.keys(Q).filter(id => Q[id][0] === SEC);
+
+  function progress() {
+    let done = 0, firstOk = 0, bad = 0;
+    const per = {};
+    ids.forEach(id => {
+      const src = Q[id][5], s = SAAQuiz.status(id);
+      const p = per[src] = per[src] || { n: 0, done: 0, ok: 0 };
+      p.n++;
+      if (s.state === "new") return;
+      done++; p.done++;
+      if (s.first) { firstOk++; p.ok++; }
+      if (s.state === "mistake") bad++;
+    });
+    const pct = ids.length ? Math.round(done / ids.length * 100) : 0;
+    document.querySelector("#m-all i").style.width = pct + "%";
+    document.getElementById("m-text").textContent = done + "/" + ids.length + " questions done" +
+      (done ? " · right first time " + Math.round(firstOk / done * 100) + "%" : "") + " · in the mistake list " + bad;
+    Object.entries(per).forEach(([src, p]) => {
+      const el = document.querySelector('[data-src="' + src + '"]');
+      if (!el) return;
+      el.querySelector(".big").textContent = p.done + "/" + p.n;
+      el.querySelector(".meter i").style.width = (p.n ? Math.round(p.done / p.n * 100) : 0) + "%";
+      el.querySelector(".acc").textContent = p.done ? "right first time " + Math.round(p.ok / p.done * 100) + "%" : "not started";
+    });
+  }
+
+  function mistakes() {
+    const rows = [];
+    ids.forEach(id => {
+      const s = SAAQuiz.status(id);
+      const wrong = SAAQuiz.wrongAttempts(id);  // wrong answers before a "clear" no longer count
+      if (!wrong.length) return;
+      const last = wrong[wrong.length - 1];
+      const chose = last.c.map(i => "ABCDEFGH"[i]).join(",");
+      rows.push({ id, s, chose, when: last.t });
+    });
+    rows.sort((a, b) => (a.s.state === "mistake" ? 0 : 1) - (b.s.state === "mistake" ? 0 : 1) || (a.when < b.when ? 1 : -1));
+    const active = rows.filter(r => r.s.state === "mistake").map(r => r.id);
+    const btn = document.getElementById("miss-clear");
+    btn.hidden = !active.length;
+    btn.textContent = "Clear this section's mistakes (" + active.length + ")";
+    btn.onclick = () => {
+      if (!confirm("Take the " + active.length + " question(s) of Section " + String(SEC).padStart(2, "0") + " off the mistake list? Your answer history stays; a new wrong answer puts a question back.")) return;
+      SAAQuiz.clearMistakes(active).then(() => { progress(); mistakes(); }, () => alert("Could not clear (is the tracker running?)."));
+    };
+    const box = document.getElementById("miss-list");
+    if (!rows.length) { box.innerHTML = '<p class="muted">No mistakes yet.</p>'; return; }
+    box.innerHTML = rows.map(r => {
+      const m = Q[r.id];
+      const state = r.s.state === "mistake"
+        ? (r.s.isDue ? '<span class="pill bad">due</span>' : '<span class="pill">' + SAAQuiz.shortDate(r.s.due) + " again</span>")
+        : '<span class="pill ok">clear</span>';
+      return '<div class="miss"><div class="top"><b class="qz-id">' + esc(r.id) + "</b>" +
+        '<span class="pill">' + NAME[m[5]] + "</span>" + state +
+        '<span class="pill bad">you: ' + esc(r.chose) + '</span><span class="pill ok">right: ' + esc(m[4]) + "</span>" +
+        '<span class="muted">' + SAAQuiz.shortDate(r.when) + "</span></div>" +
+        '<div>' + esc(m[2]) + '… <a href="' + PAGE[m[5]] + ".html#" + encodeURIComponent(r.id) + '">open question</a></div></div>';
+    }).join("");
+  }
+
+  // own note: tracker API when served, browser storage as a fallback
+  const note = document.getElementById("note"), status = document.getElementById("note-status");
+  const KEY = "saa-note-" + SEC;
+  let timer = null;
+  function setStatus(t) { status.textContent = t; }
+  function save() {
+    const text = note.value;
+    SAA.writeLocal(KEY, text);
+    if (!SAA.served) { setStatus("Saved in this browser (opened without the tracker)."); return; }
+    fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: String(SEC), text }) })
+      .then(r => { if (!r.ok) throw new Error(); setStatus("Saved " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })); })
+      .catch(() => setStatus("Not saved on the server; kept in this browser."));
+  }
+  note.addEventListener("input", () => { setStatus("Typing…"); clearTimeout(timer); timer = setTimeout(save, 800); });
+  (SAA.served ? fetch("/api/notes", { cache: "no-store" }).then(r => r.json()).catch(() => ({})) : Promise.resolve({}))
+    .then(all => { note.value = all[String(SEC)] != null ? all[String(SEC)] : (SAA.readLocal(KEY) || ""); });
+
+  SAAQuiz.load().then(() => { progress(); mistakes(); });
+})();
+</script>
+</body>
+</html>

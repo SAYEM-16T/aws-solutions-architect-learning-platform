@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 17 Hub</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/qindex.js"></script>
+</head>
+<body>
+<main class="wrap" data-sec="17">
+  <div class="topbar">
+    <nav><a href="../index.html">← All sections</a> <a href="../mistakes.html">Mistakes</a> <a href="../18.%20Containers%20on%20AWS%20ECS%2C%20Fargate%2C%20ECR%20%26%20EKS/summary.html">‹ 18</a> <a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/summary.html">19 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+
+  <header class="hub-head">
+    <span class="hub-no">17</span>
+    <div class="hub-title"><p class="eyebrow">Section · study order #19</p><h1>Decoupling applications SQS, SNS, Kinesis, Active MQ</h1></div>
+  </header>
+  <div class="meter" id="m-all" title="questions done"><i style="width:0%"></i></div>
+  <p class="cap" id="m-text">Loading…</p>
+
+  <div class="chips"><a href="../17.%20Decoupling%20applications%20SQS%2C%20SNS%2C%20Kinesis%2C%20Active%20MQ/17-slides-p377-415.pdf" target="_blank" rel="noopener">Slides PDF · p377-415</a><a href="../17.%20Decoupling%20applications%20SQS%2C%20SNS%2C%20Kinesis%2C%20Active%20MQ/17-notes.html">Detailed note</a></div>
+
+  <section class="card" id="summary">
+    <h2>Summary</h2>
+    <section class="sum-block" id="map"><h3>Big picture</h3>
+<p>App gulo kotha bole duivabe: <b>synchronous</b> (Buying service shorashori Shipping service ke call kore) ba <b>asynchronous / event based</b> (majhe queue; ek jon message rekhe jay, arek jon nijer shomoy e tule ney). Synchronous e hothat spike (shadharon 10 ta video, aj 1,000) hole receiver overwhelmed. Tai majhe <b>decoupling layer</b> boshao, je nije scale kore.</p>
+<p>Tin ta model: <b>SQS</b> = queue model (pull, ek message ek consumer), <b>SNS</b> = pub/sub model (push, sobai copy), <b>Kinesis</b> = real-time streaming model (big data, order, replay). Ar on-prem er open-protocol broker code na bodlai cloud e anle <b>Amazon MQ</b>.</p>
+<div class="fig">
+  <span class="lbl">Synchronous (spike e bhenge pore)</span>
+  <div class="flow">
+    <span class="b">Buying service</span><span class="a">→</span>
+    <span class="b">Shipping service<small>direct call, overwhelmed</small></span>
+  </div>
+  <span class="lbl">Asynchronous / event based</span>
+  <div class="flow">
+    <span class="b">Buying service</span><span class="a">→</span>
+    <span class="b hl">Queue / Topic / Stream<small>nije scale kore</small></span><span class="a">→</span>
+    <span class="b">Shipping service<small>nijer gotite</small></span>
+  </div>
+  <span class="lbl">Ei section er service</span>
+  <div class="flow">
+    <span class="b hl">SQS<small>queue, pull</small></span>
+    <span class="b hl">SNS<small>pub/sub, push</small></span>
+    <span class="b hl">Kinesis Data Streams<small>real-time stream</small></span>
+    <span class="b hl">Data Firehose<small>load into S3 / Redshift</small></span>
+    <span class="b hl">Amazon MQ<small>RabbitMQ / ActiveMQ</small></span>
+  </div>
+</div>
+<p class="cap">Majhe layer thakle producer ar consumer alada scale kore; spike e request harabe na.</p>
+<div class="exam"><b>Exam:</b> "decouple", "sudden spike", "requests / orders lost", "tightly coupled monolith", "timeouts" dekhlei age <b>SQS</b> bhabo.</div>
+</section>
+
+<section class="sum-block" id="t1"><h3>SQS Standard queue</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Post office er chithir baksho. Je keu chithi phele (<b>producer</b>), pion ra (<b>consumer</b>) baksho theke tule ney (<b>poll</b>), kaaj kore, tarpor phele dey (<b>delete</b>). Baksho kokhono bhore na, kintu chithi 4 din (max 14 din) por nije nosto hoy. Majhe majhe ek chithi duijon pion er hate jay (duplicate), ar order er guarantee nai.</p></div>
+<div class="fig">
+  <span class="lbl">Produce → consume → delete</span>
+  <div class="flow">
+    <span class="b">Producer<small>SDK: SendMessage</small></span><span class="a">→</span>
+    <span class="b hl">SQS queue<small>persist until delete</small></span><span class="a">→</span>
+    <span class="b">Consumer<small>poll, max 10 msg</small></span><span class="a">→</span>
+    <span class="b">Process<small>jemon RDS e insert</small></span><span class="a">→</span>
+    <span class="b">DeleteMessage</span>
+  </div>
+  <span class="lbl">Onek consumer</span>
+  <div class="flow">
+    <span class="b hl">SQS queue</span><span class="a">→</span>
+    <span class="b">EC2 #1</span><span class="b">EC2 #2</span><span class="b">EC2 #3<small>parallel, alada message set</small></span>
+  </div>
+</div>
+<p class="cap">Delete = "kaaj shesh" signal. Delete na korle onno consumer message ta abar dekhe.</p>
+<div class="scroll"><table>
+<thead><tr><th>Attribute</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Dhoron</td><td>Shobcheye purono AWS service (10+ bochor), fully managed, <b>application decoupling</b></td></tr>
+<tr><td>Throughput, message shonkha</td><td><b>Unlimited</b> duitai; kono capacity / pre-warm setting nai</td></tr>
+<tr><td>Retention</td><td>Default <b>4 din</b>, max <b>14 din</b>; er moddhe process + delete na hole message harabe</td></tr>
+<tr><td>Latency</td><td>&lt; 10 ms publish ar receive e</td></tr>
+<tr><td>Message size</td><td>256 KB (lecture o purono question); slide e ekhon 1,024 KB</td></tr>
+<tr><td>Delivery</td><td><b>At-least-once</b>: majhe duplicate (consumer deri korle onno consumer o pay)</td></tr>
+<tr><td>Ordering</td><td><b>Best-effort</b>: out of order hote pare (order lagle FIFO)</td></tr>
+<tr><td>Consumer kothay</td><td>EC2, <b>on-premises server</b>, Lambda; beshi consumer = beshi throughput (<b>horizontal scaling</b>)</td></tr>
+</tbody>
+</table></div>
+<p><b>Security:</b> in-flight <b>HTTPS</b> API; at-rest <b>KMS</b>. Console e default encryption <b>SSE-SQS</b> (S3 er SSE-S3 er moto); option <b>SSE-KMS</b>. <b>Client-side</b> encryption client nije kore, SQS out of the box kore na.</p>
+<p><b>Access control:</b> <b>IAM policy</b> SQS API access thik kore. <b>SQS access policy</b> = resource policy (S3 bucket policy er moto): <b>cross-account</b> access, ar <b>SNS ba S3 event</b> ke queue te likhte dite. EC2 consumer e <b>IAM role</b>; on-prem server e IAM user credentials (role attach kora jay na).</p>
+<p><b>Hands-on:</b> message details e <b>receive count</b>; <b>Purge</b> = shob message muche dey (dev e, prod e na); monitoring e <b>approximate age of oldest message</b> (ASG scale er arekta metric).</p>
+<div class="exam"><b>Exam:</b> Traffic 100x, SQS Standard e ki korbe → <b>kichu na</b>, SQS nije scale kore. "Standard queue order preserve kore" = <b>false</b>; "at-least-once delivery" = true. Default retention e weekly batch job → kichu message nai (4 din por delete). Retention max (14 din) e 13 din por crash → message ekhono ache, restart e process hobe. Onno company / account queue poll korbe → <b>SQS access policy</b>. Transcoding job SQS e keno → <b>horizontal scaling</b> of workers (order guarantee na).</div>
+</section>
+
+<section class="sum-block" id="t2"><h3>Visibility timeout, long polling ar onno queue setting</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Library theke boi tulle library 30 s boi ta onnoder theke lukiye rakhe (<b>visibility timeout</b>). Ferot dile (delete) kaaj shesh; na dile boi abar shelf e, onno keu niye ney = duplicate. Aro shomoy lagle "aro shomoy dao" = <b>ChangeMessageVisibility</b>. <b>Long polling</b> = boi na thakle counter e kichukhon wait koro, boi ashlei pao.</p></div>
+<div class="fig">
+  <span class="lbl">Visibility timeout timeline</span>
+  <div class="flow">
+    <span class="b">ReceiveMessage<small>message returned</small></span><span class="a">→</span>
+    <span class="b hl">Invisible<small>default 30 s; onno request: not returned</small></span><span class="a">→</span>
+    <span class="b">Delete hoy ni?</span><span class="a">→</span>
+    <span class="b">Abar visible<small>returned again, receive count +1</small></span>
+  </div>
+  <span class="lbl">Long polling</span>
+  <div class="flow">
+    <span class="b">Consumer<small>WaitTimeSeconds = 20</small></span><span class="a">→</span>
+    <span class="b hl">Queue khali: wait</span><span class="a">→</span>
+    <span class="b">Message ashlei shathe shathe return</span>
+  </div>
+</div>
+<p class="cap">Process time &gt; visibility timeout hole ek message duibar process hoy.</p>
+<div class="scroll"><table>
+<thead><tr><th>Setting</th><th>Ki kore</th><th>Range</th></tr></thead>
+<tbody>
+<tr><td><b>Visibility timeout</b></td><td>Receive er <b>por</b> message onnoder theke hide. Beshi (ghonta) = crash e message firte deri; kom (second) = duplicate. Reasonable value + dorkar hole <b>ChangeMessageVisibility</b></td><td>Default 30 s; 0 s (recommended na) - 12 h</td></tr>
+<tr><td><b>Long polling</b></td><td>Queue khali hole consumer wait kore. Kom API call (kom cost), kom latency, beshi efficiency. Queue level e (<code>ReceiveMessageWaitTimeSeconds</code> &gt; 0) ba API level e (<code>WaitTimeSeconds</code>). Short polling er cheye better</td><td>1-20 s (20 s preferable)</td></tr>
+<tr><td><b>Delay</b></td><td>Course e ek line: "individual message delay capability" (jemon 30 s por consumer dekhbe). Question e: <b>delay queue</b> = queue te dhoka <b>shob notun</b> message delay; <b>message timer</b> (<code>DelaySeconds</code>) = <b>kichu</b> message delay</td><td>0-15 min</td></tr>
+<tr><td><b>Dead-letter queue</b></td><td>Course e shudhu naam (hands-on e "redrive / DLQ" setting). Bar bar fail kora message alada queue e rakhe debug er jonno; order ba delay dey na</td><td>-</td></tr>
+<tr><td><b>Temporary queues</b> (course e nai)</td><td>Temporary Queue Client onek <b>virtual queue</b> ek-i SQS queue er upor chalay: high-throughput <b>request-response</b> pattern e dev time ar cost bachay</td><td>-</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> Ek-i message onno consumer o pacche / duibar process → <b>visibility timeout barao</b> (ChangeMessageVisibility API); long polling ba DelaySeconds na. EC2 message niye crash → timeout shesh e message abar visible, onno instance pabe. "5 order, 20+ email" / "4 order, 12 email" → consumer <b>DeleteMessage korche na</b> (polling mode duplicate banay na). Tight loop, empty response, SQS cost komao → <b>long polling</b> (wait time &gt; 0). "Postpone shob notun message" → delay queue; "certain messages" → message timer; visibility timeout na.</div>
+</section>
+
+<section class="sum-block" id="t3"><h3>SQS FIFO queue</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Bank er token: je order e token, shei order e dake. Ek line er gotir shima ache (300 msg/s). Ek-i token duibar dile (5 min er moddhe same deduplication ID) queue nije phele dey. Order thake <b>message group</b> er bhitore: protita group nijer line.</p></div>
+<div class="fig">
+  <span class="lbl">FIFO</span>
+  <div class="flow">
+    <span class="b">Producer<small>4, 3, 2, 1</small></span><span class="a">→</span>
+    <span class="b hl">DemoQueue.fifo</span><span class="a">→</span>
+    <span class="b">Consumer<small>4, 3, 2, 1 (same order)</small></span>
+  </div>
+  <span class="lbl">Order per Message Group ID</span>
+  <div class="flow">
+    <span class="b">Group = desktop-A<small>A1, A2, A3 in order</small></span>
+    <span class="b">Group = desktop-B<small>B1, B2 in order</small></span><span class="a">→</span>
+    <span class="b hl">Alada consumer parallel e</span>
+  </div>
+</div>
+<p class="cap">Joto group, toto parallel consumer; group er bhitore strict order.</p>
+<ul>
+  <li><b>Ordering</b>: strict, <b>Message Group ID</b> level e; group ID protita message e <b>mandatory</b>.</li>
+  <li><b>Exactly-once send</b>: <b>Deduplication ID</b>; same ID <b>5 min</b> er moddhe abar ashle duplicate remove. Ba setting <b>content-based deduplication</b> (body same hole).</li>
+  <li><b>Throughput limited</b>: <b>300 msg/s</b> batching chara, <b>3,000 msg/s</b> batching e.</li>
+  <li>Naam <b>.fifo</b> diye shesh hote hobe, na hole create hoy na.</li>
+  <li>Question theke (course e nai): Standard → FIFO <b>convert hoy na</b>, delete kore notun FIFO queue banao. S3 event notification Standard SQS e jay, <b>FIFO SQS e na</b>.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Exactly once + in order" → <b>SQS FIFO</b> (Standard, DLQ, delay queue na). Checkout timeout e form abar submit, duplicate order → order DB te, order number <b>SQS FIFO</b> e. Form "exactly once, no data loss" → FIFO. 1,000 msg/s + order → FIFO + <b>batch</b> (4 msg per call = 1,200/s). Per-desktop order, consumer = desktop shonkha → FIFO + <b>Group ID = desktop ID</b>. Payment ID onujayi order (2 answer) → <b>KDS partition key = payment ID</b> ar <b>FIFO group = payment ID</b>. Migration checklist: delete + recreate, <b>.fifo</b>, batching e 3,000 msg/s er beshi na.</div>
+</section>
+
+<section class="sum-block" id="t4"><h3>SQS + Auto Scaling: buffer ar tier decoupling</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Line lomba hole beshi worker dako, chhoto hole kombe. Sale er din DB te shorashori likhle DB hapiye transaction fail; tai age order queue te rakho (harabe na), worker group dheere DB te likhbe. Dump e <b>shobcheye beshi</b> asha pattern.</p></div>
+<div class="fig">
+  <span class="lbl">Worker ASG kibhabe scale kore</span>
+  <div class="flow">
+    <span class="b">SQS metric<small>ApproximateNumberOfMessages (queue length)</small></span><span class="a">→</span>
+    <span class="b">CloudWatch alarm<small>jemon &gt; 1,000</small></span><span class="a">→</span>
+    <span class="b hl">ASG scale out / in</span>
+  </div>
+  <span class="lbl">SQS as buffer to database writes</span>
+  <div class="flow">
+    <span class="b">Requests</span><span class="a">→</span>
+    <span class="b">App ASG<small>enqueue: SendMessage</small></span><span class="a">→</span>
+    <span class="b hl">SQS<small>infinitely scalable</small></span><span class="a">→</span>
+    <span class="b">Worker ASG<small>dequeue, insert, tarpor delete</small></span><span class="a">→</span>
+    <span class="b">RDS / Aurora / DynamoDB</span>
+  </div>
+  <span class="lbl">Decouple application tiers</span>
+  <div class="flow">
+    <span class="b">Front-end ASG<small>request ney</small></span><span class="a">→</span>
+    <span class="b hl">SQS</span><span class="a">→</span>
+    <span class="b">Back-end ASG<small>video process, GPU instance</small></span><span class="a">→</span>
+    <span class="b">S3</span>
+  </div>
+</div>
+<p class="cap">DB te insert confirm hole tobei delete, tai kono transaction harabe na. Shorto: client er tokhon-i write confirmation lagbe na.</p>
+<ul>
+  <li>Front-end ar back-end <b>alada ASG</b>, alada scale: front-end traffic e, back-end queue backlog e; protita tier e optimal instance type (back-end e GPU).</li>
+  <li>Question theke: best policy <b>target tracking</b> on custom metric <b>backlog per instance</b> (ApproximateNumberOfMessages ÷ InService instance). Simple scaling cooldown e wait kore, scheduled scaling unpredictable spike dhore na.</li>
+  <li>Async job, client wait korte raji, retry chole, cheapest → SQS + <b>Spot</b> worker. Baseline shob shomoy + downtime nai → Reserved (baseline) + On-Demand (extra).</li>
+  <li><b>Priority</b> SQS e nai → <b>duita queue</b> (premium / free), worker age premium queue poll kore.</li>
+  <li>Hybrid decoupling (EC2 + on-prem): SQS ba <b>SWF</b> (Simple Workflow Service; course e nai, legacy, aj Step Functions): multi-step checkout, distributed business process. Purono question e "order duibar process" er fix SWF (option e FIFO chilo na); aj <b>SQS FIFO</b>.</li>
+  <li>Microservices (ECS) er moddhe communication → SQS. Spike + ordered process + independent component → Fargate + RDS + SQS.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Jobs / requests lost", "variable / unpredictable load", "Aurora bottleneck on promotion", "CPU 100%, queue bhore jay", "invitation deri te ashe", "durably stored jobs, loosely coupled" → <b>SQS + ASG scaling on queue depth</b> (AMI + launch template + ASG). Trap: CPU / network metric, scheduled scaling, boro instance, ALB / ELB pre-warm (request store kore na), SNS (job store kore na).</div>
+</section>
+
+<section class="sum-block" id="t5"><h3>SNS (pub/sub)</h3>
+<div class="idea"><p><b>Shohoj kore:</b> WhatsApp group: ekbar message dao, shob member copy pay. Notun receiver jog korle producer er code bodlate hoy na (direct integration e protibar notun integration likhte hoto). Kintu offline member er message SNS dhore rakhe na: <b>persist kore na</b>, deliver na hole harate pare.</p></div>
+<div class="fig">
+  <span class="lbl">Direct integration vs Pub/Sub</span>
+  <div class="flow">
+    <span class="b">Buying service</span><span class="a">→</span>
+    <span class="b">Email, Fraud, Shipping, SQS<small>protitar jonno alada code</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">Publisher</span><span class="a">→</span>
+    <span class="b hl">SNS topic<small>Publish</small></span><span class="a">→</span>
+    <span class="b">SQS</span><span class="b">Lambda</span><span class="b">Data Firehose</span>
+    <span class="b">Email / Email-JSON</span><span class="b">SMS / mobile push</span><span class="b">HTTP / HTTPS</span>
+  </div>
+  <span class="lbl">Je AWS service SNS e notification pathay</span>
+  <div class="flow">
+    <span class="b">CloudWatch Alarms</span><span class="b">ASG notifications</span><span class="b">S3 events</span>
+    <span class="b">CloudFormation state changes</span><span class="b">Budgets, Lambda, DynamoDB, DMS, RDS events</span><span class="a">→</span>
+    <span class="b hl">SNS</span>
+  </div>
+</div>
+<p class="cap">Prottek subscriber topic er <b>shob</b> message pay (filter policy na thakle). <b>Kinesis Data Streams subscriber hote pare na</b>; Firehose pare.</p>
+<ul>
+  <li>Limit: <b>12,500,000</b> subscription per topic, <b>100,000</b> topic per account (barano jay; limit niye exam e proshno ashe na).</li>
+  <li>Publish: <b>Topic publish</b> (SDK: topic → subscription → publish) ba <b>Direct publish</b> mobile app er jonno (platform application → platform endpoint → publish; Google GCM, Apple APNS, Amazon ADM).</li>
+  <li>Hands-on: <b>Email</b> subscription "pending confirmation" thake, email er link e click korle confirmed. Subscription e optional <b>filter policy</b>.</li>
+  <li>Security SQS er moto: in-flight HTTPS, at-rest KMS, client-side. IAM policy + <b>SNS access policy</b> (resource policy): cross-account, S3 event ke topic e likhte dite.</li>
+</ul>
+<div class="exam"><b>Exam:</b> Email / SMS / mobile app notification, "notify many" → <b>SNS</b> (SQS + Lambda diye SNS banano na). Delivery transport: Email, SMS, SQS, HTTP/S, Lambda; CloudFront / FTP / SNMP na. HR account Finance er topic access → Finance er topic e policy, <b>Principal = HR account</b> (Resource na). Hajar notification e network choke → protibar <b>full snapshot</b> pathao (constant work, course e nai).</div>
+</section>
+
+<section class="sum-block" id="t6"><h3>SNS + SQS fan-out, SNS FIFO, message filtering</h3>
+<div class="idea"><p><b>Shohoj kore:</b> SNS = loudspeaker, SQS = protita department er nijer chithir baksho. Ekbar ghoshona, protita baksho te copy jome, department nijer shomoy pore. Nije alada alada queue te pathale app crash, delivery fail, notun queue jog er jhamela; fan-out e nai.</p></div>
+<div class="fig">
+  <span class="lbl">Fan-out</span>
+  <div class="flow">
+    <span class="b">Buying service</span><span class="a">→</span>
+    <span class="b hl">SNS topic</span><span class="a">→</span>
+    <span class="b">SQS<small>Fraud service</small></span>
+    <span class="b">SQS<small>Shipping service</small></span>
+  </div>
+  <span class="lbl">S3 event onek jaygay</span>
+  <div class="flow">
+    <span class="b">S3 object created<small>images/ prefix</small></span><span class="a">→</span>
+    <span class="b hl">SNS topic</span><span class="a">→</span>
+    <span class="b">SQS ×N</span><span class="b">Lambda</span><span class="b">Email</span>
+  </div>
+  <span class="lbl">SNS → S3</span>
+  <div class="flow">
+    <span class="b">Buying service</span><span class="a">→</span>
+    <span class="b hl">SNS topic</span><span class="a">→</span>
+    <span class="b">Data Firehose</span><span class="a">→</span>
+    <span class="b">S3 / any Firehose destination</span>
+  </div>
+  <span class="lbl">Ordered fan-out</span>
+  <div class="flow">
+    <span class="b">Producer<small>1, 2, 3, 4</small></span><span class="a">→</span>
+    <span class="b hl">SNS FIFO topic</span><span class="a">→</span>
+    <span class="b">SQS FIFO<small>Fraud</small></span>
+    <span class="b">SQS FIFO<small>Shipping</small></span>
+  </div>
+</div>
+<p class="cap">S3 e ek event type + prefix er jonno ekta-i event rule; ek event onek queue te nite majhe SNS.</p>
+<ul>
+  <li>Fan-out = <b>fully decoupled, no data loss</b>. SQS dey: data persistence, delayed processing, retries. Pore aro queue subscribe kora jay.</li>
+  <li>Queue er <b>access policy te SNS ke write allow</b> korte hobe. <b>Cross-region delivery</b>: onno region er queue o subscriber hote pare.</li>
+  <li><b>SNS FIFO topic</b>: SQS FIFO er moto: ordering by Message Group ID, dedup (Deduplication ID ba content-based); throughput SQS FIFO er shoman (console: 300 publish/s); naam <b>.fifo</b>; subscriber <b>shudhu SQS</b> (Standard ba FIFO queue). Lagbe jokhon fan-out + ordering + dedup.</li>
+  <li><b>Standard topic</b>: best-effort order, at-least-once, highest throughput, shob type subscriber.</li>
+</ul>
+<div class="fig">
+  <span class="lbl">Message filtering (JSON filter policy per subscription)</span>
+  <div class="flow">
+    <span class="b">New transaction<small>Order 1036, Pencil, Qty 4, State: Placed</small></span><span class="a">→</span>
+    <span class="b hl">SNS topic</span><span class="a">→</span>
+    <span class="b">State: Placed<small>SQS placed</small></span>
+    <span class="b">State: Cancelled<small>SQS + Email</small></span>
+    <span class="b">State: Declined<small>SQS</small></span>
+    <span class="b">No policy<small>SQS all</small></span>
+  </div>
+</div>
+<p class="cap">Filter policy chara subscription <b>shob</b> message pay (default).</p>
+<div class="exam"><b>Exam:</b> 3 app, shobai SQS, ek-i message → <b>SNS + SQS fan-out</b> ("SQS replication" bole kichu nai, alada alada send na). Dozens of consumers, spike 100,000/s → SNS + SQS (single shard KDS na). Quote type onujayi alada queue, harabe na, kom maintenance → ek topic + <b>filter policy</b> + protita backend er nijer queue. Trap: S3 upload, 4 instance er <b>ekta</b> kaj korbe → S3 → <b>SQS</b>; SNS hole sobai pay.</div>
+</section>
+
+<section class="sum-block" id="t7"><h3>Kinesis Data Streams (KDS)</h3>
+<div class="idea"><p><b>Shohoj kore:</b> CCTV recorder: ghotona (click, sensor, log) time order e record hoy, onek jon ek-i recording dekhe, pichone giye abar dekha jay (<b>replay</b>), retention shesh hole nije muche jay; age nije delete kora jay na. Koyta channel (<b>shard</b>) ache tar upor koto data dhorbe. Keyword: <b>real time</b>.</p></div>
+<div class="fig">
+  <span class="lbl">KDS</span>
+  <div class="flow">
+    <span class="b">Real-time data<small>click streams, IoT, metrics &amp; logs</small></span><span class="a">→</span>
+    <span class="b">Producers<small>app (SDK / KPL), Kinesis Agent</small></span><span class="a">→</span>
+    <span class="b hl">Stream<small>shard 1..N</small></span><span class="a">→</span>
+    <span class="b">Consumers<small>app (SDK / KCL), Lambda, Data Firehose, Managed Service for Apache Flink</small></span>
+  </div>
+  <span class="lbl">Ordering</span>
+  <div class="flow">
+    <span class="b">partition key = user ID</span><span class="a">→</span>
+    <span class="b hl">same shard</span><span class="a">→</span>
+    <span class="b">oi user er data order e</span>
+  </div>
+  <span class="lbl">Consume mode</span>
+  <div class="flow">
+    <span class="b">Shared (standard): pull<small>2 MB/s per shard, shob consumer mile</small></span>
+    <span class="b hl">Enhanced fan-out: push<small>2 MB/s per shard per consumer</small></span>
+  </div>
+</div>
+<p class="cap">Same partition key → same shard → order. Kom unique key hole "hot shard".</p>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Retention</td><td><b>1-365 din</b>; persist thake tai consumer <b>replay / reprocess</b> korte pare. Question theke: <b>default 24 h</b></td></tr>
+<tr><td>Record size</td><td>1 MB (lecture); slide e 10 MiB. Typical: onek <b>chhoto</b> real-time data</td></tr>
+<tr><td>Security</td><td>At-rest KMS, in-flight HTTPS</td></tr>
+<tr><td>KPL / KCL</td><td><b>KPL</b> = optimized producer (batching); <b>KCL</b> = optimized consumer</td></tr>
+<tr><td>Provisioned mode</td><td>Shard shonkha nije thik koro. Shard prati in <b>1 MB/s ba 1,000 records/s</b>, out <b>2 MB/s</b>. 10 MB/s ba 10,000 rec/s → 10 shard. Manually scale, throughput monitor koro. Bill <b>per shard per hour</b></td></tr>
+<tr><td>On-demand mode</td><td>Capacity manage nai. Default <b>4 MB/s ba 4,000 records/s</b>, gato <b>30 din</b> er peak dekhe auto scale. Bill <b>per stream per hour + GB in/out</b>. Console: max 200 MB/s ba 200,000 rec/s write</td></tr>
+</tbody>
+</table></div>
+<div class="fig">
+  <span class="lbl">Hands-on (CloudShell, low-level CLI)</span>
+  <div class="flow">
+    <span class="b">put-record<small>stream, partition key, data</small></span><span class="a">→</span>
+    <span class="b">describe-stream<small>shard ID pao</small></span><span class="a">→</span>
+    <span class="b">get-shard-iterator<small>TRIM_HORIZON = shuru theke</small></span><span class="a">→</span>
+    <span class="b hl">get-records<small>data base64; NextShardIterator</small></span>
+  </div>
+</div>
+<p class="cap">Low level e shard ID nije dite hoy; KCL eta handle kore.</p>
+<div class="exam"><b>Exam:</b> Real-time clickstream / IoT / log, <b>onek app ek-i data parallel</b>, replay, billing + audit same order e → <b>KDS</b> (SQS consume e delete kore). <b>ProvisionedThroughputExceeded</b>: traffic beshi → <b>shard barao</b>; ek ek record high rate e → <b>batch (PutRecords / KPL)</b>, cost kom; capacity kom use holeo throttling → hot shard, <b>high-cardinality partition key</b> (shard barano / on-demand fix kore na). User er data onek shard e chhoriye, order nai → <b>partition key = user ID</b>. Unpredictable 100x → <b>On-demand</b>. Onek consumer lag → <b>enhanced fan-out</b>. Data ek din por harache → <b>retention barao</b>. 3 mash retain + strict order + low-latency consumer → <b>KDS + enhanced fan-out</b>.</div>
+</section>
+
+<section class="sum-block" id="t8"><h3>Amazon Data Firehose</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Pipe + tank: data dhoke, dorkar hole Lambda diye bodlay, tank (<b>buffer</b>) bhorle ba time hole S3 / Redshift / OpenSearch e batch e dhele dey. Tai <b>near real-time</b>. No storage, no replay, server nai. Aager naam "Kinesis Data Firehose".</p></div>
+<div class="fig">
+  <span class="lbl">Firehose pipeline</span>
+  <div class="flow">
+    <span class="b">Producers<small>app / client (SDK), Kinesis Agent, KDS, CloudWatch Logs &amp; Events, AWS IoT, SNS</small></span><span class="a">→</span>
+    <span class="b hl">Data Firehose<small>record up to 1 MB; optional Lambda transform; buffer</small></span><span class="a">→</span>
+    <span class="b">AWS: S3, Redshift, OpenSearch</span>
+    <span class="b">3rd party: Splunk, Datadog, New Relic, MongoDB</span>
+    <span class="b">Custom HTTP endpoint</span>
+  </div>
+  <span class="lbl">Backup</span>
+  <div class="flow">
+    <span class="b">All ba shudhu failed data</span><span class="a">→</span>
+    <span class="b">S3 backup bucket</span>
+  </div>
+  <span class="lbl">Common combo</span>
+  <div class="flow">
+    <span class="b">KDS<small>real-time ingest</small></span><span class="a">→</span>
+    <span class="b hl">Firehose<small>Lambda transform</small></span><span class="a">→</span>
+    <span class="b">S3 + Redshift</span>
+  </div>
+</div>
+<p class="cap">Tin AWS destination mone rakho: S3, Redshift, OpenSearch (purono naam Elasticsearch). EMR na.</p>
+<ul>
+  <li>Fully managed, <b>serverless</b>, automatic scaling, pay for what you use.</li>
+  <li>Input: CSV, JSON, Parquet, Avro, raw text, binary. Convert to <b>Parquet / ORC</b>; compress <b>gzip / snappy</b>. Custom transform (CSV → JSON) = <b>Lambda</b>.</li>
+  <li><b>Buffer</b> size ba time e flush: default size <b>5 MB</b>; boro buffer (jemon 128 MB) = efficient, chhoto = druto. Interval <b>60 s (minimum)</b> theke 900 s; 300 s = 5 min wait.</li>
+  <li>Hands-on: Firehose nijer <b>IAM role</b> banay (KDS porte, S3 e likhte); error log CloudWatch Logs e; Firehose banano-r <b>por</b> pathano data-i jay.</li>
+  <li>Question theke (course e nai): source KDS set thakle oi Firehose e <b>Kinesis Agent shorashori likhte pare na</b>; agent KDS e likhbe. Kinesis consumer result rakhte pare S3, DynamoDB, Redshift e.</li>
+</ul>
+<div class="scroll"><table>
+<thead><tr><th>Kinesis Data Streams</th><th>Data Firehose</th></tr></thead>
+<tbody>
+<tr><td>Streaming data <b>collect</b></td><td>Streaming data <b>load</b> into S3 / Redshift / OpenSearch / 3rd party / HTTP</td></tr>
+<tr><td>Producer &amp; consumer code likhte hoy</td><td>Fully managed</td></tr>
+<tr><td><b>Real-time</b></td><td><b>Near real-time</b> (buffer)</td></tr>
+<tr><td>Provisioned / on-demand</td><td>Automatic scaling</td></tr>
+<tr><td>Storage 365 din porjonto, replay</td><td>No storage, no replay</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Capture, transform, load streaming data into S3 / Redshift / OpenSearch / Splunk", "serverless, auto scale, no administration", "near real time to S3, least overhead" → <b>Firehose</b> (KDS shard manage lage, EMR cluster, Lambda store kore na). Alert S3 e, 14 din por archive → Firehose → S3 + <b>lifecycle rule</b> to Glacier. Real-time + transform + S3 / Redshift, ba third-party real-time ingest raw S3 e → <b>KDS + Firehose</b>.</div>
+</section>
+
+<section class="sum-block" id="t9"><h3>SQS vs SNS vs Kinesis</h3>
+<div class="idea"><p><b>Shohoj kore:</b> SQS = chithir baksho (ek chithi ek jon, pore phele dey). SNS = loudspeaker (sobai shone, record nai). Kinesis = CCTV recording (sobai ek-i recording dekhe, order thik, pichone jaoa jay).</p></div>
+<div class="scroll"><table>
+<thead><tr><th></th><th>SQS</th><th>SNS</th><th>Kinesis Data Streams</th></tr></thead>
+<tbody>
+<tr><td>Model</td><td>Consumer <b>pull</b></td><td><b>Push</b> to many subscribers (pub/sub)</td><td>Standard: pull, 2 MB/s per shard; enhanced fan-out: push, 2 MB/s per shard per consumer</td></tr>
+<tr><td>Consume er por</td><td>Delete hoy</td><td><b>Persist nai</b> (deliver na hole harate pare)</td><td>Thake, X din por expire (1-365); <b>replay</b></td></tr>
+<tr><td>Consumer</td><td>Joto khushi worker, mile kaaj ses kore</td><td>12,500,000 subscriber, 100,000 topic</td><td>Onek app ek-i data</td></tr>
+<tr><td>Capacity</td><td>Provision lage na</td><td>Provision lage na</td><td>Provisioned (shard) ba on-demand</td></tr>
+<tr><td>Ordering</td><td>Shudhu FIFO queue</td><td>FIFO topic (SQS FIFO er sathe)</td><td><b>Shard</b> level (partition key)</td></tr>
+<tr><td>Extra</td><td>Individual message delay</td><td>SQS er sathe fan-out</td><td>Real-time big data, analytics, ETL</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> Ek message ek worker, fast ar slow microservice nijer gotite → <b>SQS</b> (SNS push kore, nijer gotite pore na). Sobai ke notify → <b>SNS</b>. Onek app ek-i data real time + replay → <b>KDS</b>. Sensor key onujayi order + thousands msg/s streaming → <b>Kinesis</b>.</div>
+</section>
+
+<section class="sum-block" id="t10"><h3>Amazon MQ</h3>
+<div class="idea"><p><b>Shohoj kore:</b> SQS / SNS "cloud-native", AWS er nijer (proprietary) API. On-prem er purono app open protocol e broker er sathe kotha bole. Cloud e ante SQS / SNS er jonno code abar likhte na chaile AWS oi broker-i managed kore dey: <b>Amazon MQ</b> (RabbitMQ ba ActiveMQ).</p></div>
+<div class="fig">
+  <span class="lbl">MQ high availability (us-east-1)</span>
+  <div class="flow">
+    <span class="b">Client</span><span class="a">→</span>
+    <span class="b hl">Broker ACTIVE<small>us-east-1a</small></span><span class="a">↔</span>
+    <span class="b">Amazon EFS<small>shared storage</small></span><span class="a">↔</span>
+    <span class="b">Broker STANDBY<small>us-east-1b, failover</small></span>
+  </div>
+</div>
+<p class="cap">Duita broker ek-i EFS mount kore, tai failover e standby same data pay.</p>
+<ul>
+  <li>Open protocol: <b>MQTT, AMQP, STOMP, Openwire, WSS</b>. Engine: <b>RabbitMQ, ActiveMQ</b>.</li>
+  <li>Ek broker e <b>queue</b> feature (~SQS) ar <b>topic</b> feature (~SNS) duitai.</li>
+  <li><b>Server e chale</b>, tai SQS / SNS er moto (prai infinite) scale kore <b>na</b>; server issue hote pare, tai HA = <b>Multi-AZ active/standby + failover</b>, backend storage EFS.</li>
+</ul>
+<div class="exam"><b>Exam:</b> On-prem MQTT / AMQP broker, "migrate without re-engineering / changing code", self-managed RabbitMQ unstable → <b>Amazon MQ</b>. Kubernetes app + AMQP queue, least overhead → <b>EKS + Amazon MQ</b>. Highest availability, least ops: <b>MQ active/standby (2 AZ) + Multi-AZ ASG consumer + RDS Multi-AZ</b>. Trap: SQS AMQP bole na (re-engineer lagbe); nijer EC2 te RabbitMQ chalano beshi kaaj.</div>
+</section>
+
+<section class="sum-block" id="when"><h3>Kokhon konta</h3>
+<div class="scroll"><table>
+<thead><tr><th>Question e dekhle</th><th>Answer</th><th>Bhul option (keno na)</th></tr></thead>
+<tbody>
+<tr><td>Decouple, sudden spike, request / order lost, DB overload</td><td><b>SQS</b> buffer + worker ASG</td><td>Boro instance, ALB / ELB pre-warm (request store kore na)</td></tr>
+<tr><td>Worker ASG kon metric e scale</td><td>Queue depth (ApproximateNumberOfMessages) / <b>backlog per instance</b>, target tracking</td><td>CPU / network, scheduled scaling</td></tr>
+<tr><td>Traffic 100x, SQS Standard e ki korbe</td><td><b>Kichu na</b></td><td>Pre-warm, queue auto scaling, capacity (nai)</td></tr>
+<tr><td>Ek-i message duibar process, queue e duplicate nai</td><td><b>Visibility timeout barao</b> (ChangeMessageVisibility)</td><td>Long polling, DelaySeconds</td></tr>
+<tr><td>Order kom, email beshi</td><td>Consumer <b>DeleteMessage</b> korche na</td><td>Long / short polling (duplicate banay na)</td></tr>
+<tr><td>Order + exactly once (per device / payment)</td><td><b>SQS FIFO</b>, Group ID = device / payment ID</td><td>Standard (at-least-once, best-effort)</td></tr>
+<tr><td>Empty response, tight loop, SQS cost komao</td><td><b>Long polling</b> (wait time 1-20 s)</td><td>Short polling, visibility timeout</td></tr>
+<tr><td>Onno account queue / topic access</td><td><b>SQS / SNS access policy</b> (Principal = oi account)</td><td>Nijer account er IAM user policy</td></tr>
+<tr><td>Ek message onek app (sob SQS), type onujayi routing</td><td><b>SNS + SQS fan-out</b> + filter policy</td><td>"SQS replication", alada alada send</td></tr>
+<tr><td>Email / SMS / mobile push</td><td><b>SNS</b></td><td>SQS, Kinesis</td></tr>
+<tr><td>Real-time, clickstream / IoT, onek app ek-i data, replay</td><td><b>Kinesis Data Streams</b></td><td>SQS (consume e delete), Firehose (shudhu load)</td></tr>
+<tr><td>KDS ProvisionedThroughputExceeded</td><td>Shard barao / batch (KPL) / better partition key</td><td>SQS buffer, "Kinesis replication", retention komano</td></tr>
+<tr><td>Streaming data S3 / Redshift / OpenSearch / Splunk e load, serverless</td><td><b>Data Firehose</b> (transform = Lambda)</td><td>KDS (shard manage), EMR (destination na)</td></tr>
+<tr><td>On-prem MQTT / AMQP / RabbitMQ, no code change</td><td><b>Amazon MQ</b> (HA: active/standby + EFS)</td><td>SQS / SNS (re-engineer lagbe)</td></tr>
+<tr><td>Premium vs free priority</td><td><b>Duita queue</b>, premium age poll</td><td>Message priority (SQS e nai), polling type</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section class="sum-block" id="traps"><h3>Exam traps</h3>
+<ul>
+  <li>"Shob notun message delay" dekhle <b>delay queue</b>; "kichu message" dekhle <b>message timer</b>; visibility timeout ba DLQ na.</li>
+  <li>Standard → FIFO dekhle <b>delete + recreate</b> (.fifo), convert na. S3 event FIFO SQS e jay na, Standard e jay.</li>
+  <li>S3 upload, worker fleet er <b>ekta</b> kaj korbe dekhle S3 → SQS, SNS na.</li>
+  <li>SNS subscriber list e <b>Kinesis Data Streams nai</b>; Firehose ache. SNS FIFO topic e shudhu SQS.</li>
+  <li>KDS data ek din por nai dekhle default <b>retention 24 h</b>; retention barao, shard ba KPL na.</li>
+  <li>Hot shard (kom partition key) dekhle <b>key bodlao</b>; shard barano ba on-demand fix kore na.</li>
+  <li>"Near real-time" dekhle Firehose; "real-time + replay" dekhle KDS.</li>
+  <li>EC2 te SQS access dekhle <b>IAM role</b>, EC2 te IAM user key na (on-prem e user key thik).</li>
+  <li>MQ HA dekhle <b>active/standby across 2 AZ</b>, nijer EC2 te RabbitMQ na.</li>
+</ul>
+</section>
+
+<section class="sum-block" id="numbers"><h3>Number mone rakho</h3>
+<ul>
+  <li>SQS retention default <b>4 din</b>, max <b>14 din</b>; ek receive e max <b>10</b> message; latency &lt; 10 ms.</li>
+  <li>SQS message <b>256 KB</b> (ajke: 1 MiB; slide e 1,024 KB).</li>
+  <li>Visibility timeout default <b>30 s</b>, range 0 s - <b>12 h</b>. Long polling <b>1-20 s</b>. Delay queue / message timer <b>0-15 min</b>.</li>
+  <li>SQS FIFO <b>300 msg/s</b>, batch e <b>3,000 msg/s</b> (ajke: high throughput mode e aro beshi); dedup window <b>5 min</b>.</li>
+  <li>SNS: <b>12,500,000</b> subscription / topic, <b>100,000</b> topic; FIFO topic 300 publish/s.</li>
+  <li>KDS shard: in <b>1 MB/s ba 1,000 rec/s</b>, out <b>2 MB/s</b> (enhanced fan-out: 2 MB/s per consumer). Retention <b>1-365 din</b>, default <b>24 h</b>.</li>
+  <li>KDS on-demand: default <b>4 MB/s ba 4,000 rec/s</b>, gato <b>30 din</b> er peak; max 200 MB/s write.</li>
+  <li>KDS record <b>1 MB</b> (ajke: 10 MiB).</li>
+  <li>Firehose buffer default <b>5 MB</b>; interval <b>60 s</b> (min) - 900 s.</li>
+</ul>
+</section>
+
+  </section>
+
+  <section class="card" id="practice">
+    <h2>Practice</h2>
+    <div class="tiles"><a class="tile" data-src="U" href="course-quiz.html"><b>Course quiz</b><small>Udemy section quiz</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="S" href="stephane.html"><b>Stephane</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="B" href="dojo.html"><b>Dojo (Bonso)</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="D" href="dump.html"><b>Dump</b><small>SAA-C03 dump, keys checked</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a></div>
+  </section>
+
+  <section class="card" id="mynote">
+    <h2>My notes</h2>
+    <p class="cap">What I got wrong, why, and what to remember. Saves as you type.</p>
+    <textarea class="mynote" id="note" data-size="secnote" spellcheck="false" placeholder="e.g. I mix up SQS and Kinesis: 'real-time + replay' means Kinesis…"></textarea>
+    <p class="cap" id="note-status"></p>
+  </section>
+
+  <section class="card" id="page-notes" data-sec="17" data-scope="section" data-pages='{"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump", "base": ""}'>
+    <h2>Question notes (this section)</h2>
+    <p class="cap">Notes you wrote on this section's questions (Course quiz, Stephane, Dojo, Dump). Edit or delete them here.</p>
+    <div class="pn-list"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section class="card" id="mistakes">
+    <h2>My mistakes (this section)</h2>
+    <p class="noprint"><button class="btn" type="button" id="miss-clear" hidden>Clear this section's mistakes</button></p>
+    <div id="miss-list"><p class="muted">Loading…</p></div>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  const SEC = 17;
+  const Q = window.SAA_Q || {};
+  const PAGE = {"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump"};
+  const NAME = { U: "Udemy quiz", S: "Stephane", B: "Bonso", D: "Dump" };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const ids = Object.keys(Q).filter(id => Q[id][0] === SEC);
+
+  function progress() {
+    let done = 0, firstOk = 0, bad = 0;
+    const per = {};
+    ids.forEach(id => {
+      const src = Q[id][5], s = SAAQuiz.status(id);
+      const p = per[src] = per[src] || { n: 0, done: 0, ok: 0 };
+      p.n++;
+      if (s.state === "new") return;
+      done++; p.done++;
+      if (s.first) { firstOk++; p.ok++; }
+      if (s.state === "mistake") bad++;
+    });
+    const pct = ids.length ? Math.round(done / ids.length * 100) : 0;
+    document.querySelector("#m-all i").style.width = pct + "%";
+    document.getElementById("m-text").textContent = done + "/" + ids.length + " questions done" +
+      (done ? " · right first time " + Math.round(firstOk / done * 100) + "%" : "") + " · in the mistake list " + bad;
+    Object.entries(per).forEach(([src, p]) => {
+      const el = document.querySelector('[data-src="' + src + '"]');
+      if (!el) return;
+      el.querySelector(".big").textContent = p.done + "/" + p.n;
+      el.querySelector(".meter i").style.width = (p.n ? Math.round(p.done / p.n * 100) : 0) + "%";
+      el.querySelector(".acc").textContent = p.done ? "right first time " + Math.round(p.ok / p.done * 100) + "%" : "not started";
+    });
+  }
+
+  function mistakes() {
+    const rows = [];
+    ids.forEach(id => {
+      const s = SAAQuiz.status(id);
+      const wrong = SAAQuiz.wrongAttempts(id);  // wrong answers before a "clear" no longer count
+      if (!wrong.length) return;
+      const last = wrong[wrong.length - 1];
+      const chose = last.c.map(i => "ABCDEFGH"[i]).join(",");
+      rows.push({ id, s, chose, when: last.t });
+    });
+    rows.sort((a, b) => (a.s.state === "mistake" ? 0 : 1) - (b.s.state === "mistake" ? 0 : 1) || (a.when < b.when ? 1 : -1));
+    const active = rows.filter(r => r.s.state === "mistake").map(r => r.id);
+    const btn = document.getElementById("miss-clear");
+    btn.hidden = !active.length;
+    btn.textContent = "Clear this section's mistakes (" + active.length + ")";
+    btn.onclick = () => {
+      if (!confirm("Take the " + active.length + " question(s) of Section " + String(SEC).padStart(2, "0") + " off the mistake list? Your answer history stays; a new wrong answer puts a question back.")) return;
+      SAAQuiz.clearMistakes(active).then(() => { progress(); mistakes(); }, () => alert("Could not clear (is the tracker running?)."));
+    };
+    const box = document.getElementById("miss-list");
+    if (!rows.length) { box.innerHTML = '<p class="muted">No mistakes yet.</p>'; return; }
+    box.innerHTML = rows.map(r => {
+      const m = Q[r.id];
+      const state = r.s.state === "mistake"
+        ? (r.s.isDue ? '<span class="pill bad">due</span>' : '<span class="pill">' + SAAQuiz.shortDate(r.s.due) + " again</span>")
+        : '<span class="pill ok">clear</span>';
+      return '<div class="miss"><div class="top"><b class="qz-id">' + esc(r.id) + "</b>" +
+        '<span class="pill">' + NAME[m[5]] + "</span>" + state +
+        '<span class="pill bad">you: ' + esc(r.chose) + '</span><span class="pill ok">right: ' + esc(m[4]) + "</span>" +
+        '<span class="muted">' + SAAQuiz.shortDate(r.when) + "</span></div>" +
+        '<div>' + esc(m[2]) + '… <a href="' + PAGE[m[5]] + ".html#" + encodeURIComponent(r.id) + '">open question</a></div></div>';
+    }).join("");
+  }
+
+  // own note: tracker API when served, browser storage as a fallback
+  const note = document.getElementById("note"), status = document.getElementById("note-status");
+  const KEY = "saa-note-" + SEC;
+  let timer = null;
+  function setStatus(t) { status.textContent = t; }
+  function save() {
+    const text = note.value;
+    SAA.writeLocal(KEY, text);
+    if (!SAA.served) { setStatus("Saved in this browser (opened without the tracker)."); return; }
+    fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: String(SEC), text }) })
+      .then(r => { if (!r.ok) throw new Error(); setStatus("Saved " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })); })
+      .catch(() => setStatus("Not saved on the server; kept in this browser."));
+  }
+  note.addEventListener("input", () => { setStatus("Typing…"); clearTimeout(timer); timer = setTimeout(save, 800); });
+  (SAA.served ? fetch("/api/notes", { cache: "no-store" }).then(r => r.json()).catch(() => ({})) : Promise.resolve({}))
+    .then(all => { note.value = all[String(SEC)] != null ? all[String(SEC)] : (SAA.readLocal(KEY) || ""); });
+
+  SAAQuiz.load().then(() => { progress(); mistakes(); });
+})();
+</script>
+</body>
+</html>

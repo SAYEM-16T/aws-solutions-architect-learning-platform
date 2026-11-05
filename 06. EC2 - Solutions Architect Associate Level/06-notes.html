@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 06 EC2 - SAA Level</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <nav><a href="../index.html">← Index</a> <a href="../mistakes.html">Mistakes</a> <a href="../05.%20EC2%20Fundamentals/05-notes.html">‹ Sec 05</a> <a href="../07.%20EC2%20Instance%20Storage/07-notes.html">Sec 07 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+  <header>
+    <p class="eyebrow">Section 06 · study order #6</p>
+    <h1>EC2 - SAA Level</h1>
+    <p class="sub">Slides: <a href="06-slides-p078-093.pdf" target="_blank" rel="noopener">06-slides-p078-093.pdf</a> (full PDF p78-93). Page reference <code>PDF p. 359 (part p. 8)</code> = page 359 of the full slide PDF = page 8 of this section's PDF part; click to open the PDF at that page.</p>
+    <p class="sub">Loop: note → PDF part → exam points → Part A → Part B → mistakes again after 2 days.</p>
+  </header>
+  <nav class="card toc noprint" aria-label="On this page">
+    <h2>On this page</h2>
+    <ol><li><a href="#overview">EC2 er networking ar placement: IP, Placement Group, ENI, Hibernate</a></li><li><a href="#l1">Public IP, Private IP ar Elastic IP</a></li><li><a href="#l2">Hands-on: stop/start e IP bodlano, Elastic IP attach</a></li><li><a href="#l3">Placement Group: instance gulo hardware e kivabe boshbe</a></li><li><a href="#l5">ENI: EC2 er virtual network card</a></li><li><a href="#l6">Hands-on: ENI banano, attach, move, terminate e ki hoy</a></li><li><a href="#l8">EC2 Hibernate: RAM shoho instance ke ghum parano</a></li><li><a href="#pairs">Confusing pairs</a></li><li><a href="#changes">Course er por ki bodlalo</a></li><li><a href="#exam">Exam e ki mone rakhbo</a></li><li><a href="#part-a">Part A: Udemy quiz (5)</a></li><li><a href="#part-b">Part B: Practice (9)</a></li></ol>
+  </nav>
+<section class="card" id="overview">
+  <p class="num">Age ek nojore</p>
+  <h2>EC2 er networking ar placement: IP, Placement Group, ENI, Hibernate</h2>
+  <p>Section 05 e EC2 chalano shikhecho. Ei section e EC2 er "SA level" jinish: <b>IP kokhon bodlay ar fixed IP kivabe</b> (Elastic IP), <b>instance gulo hardware e kivabe boshbe</b> (Placement Group: Cluster / Spread / Partition), <b>network card alada kore move kora</b> (ENI), ar <b>RAM shoho instance "ghum parano"</b> (Hibernate). Exam e sobcheye beshi ashe <b>placement group er scenario</b>: keyword dekhe Cluster, Spread na Partition bujhte parlei number.</p>
+  <div class="scroll"><table>
+    <tr><th>Topic</th><th>Ek line e</th></tr>
+    <tr><td>Public IP</td><td>Internet theke chena jay, prithibi te unique; <b>stop → start e bodlate pare</b></td></tr>
+    <tr><td>Private IP</td><td>Shudhu private network (AWS er bhitore) e chena jay; stop/start e <b>same thake</b></td></tr>
+    <tr><td>Elastic IP (EIP)</td><td><b>Fixed public IPv4</b>, delete (release) na kora porjonto tomar; ek somoy ek instance e; account e 5 ta (increase kora jay)</td></tr>
+    <tr><td>Public IPv4 er dam</td><td>Public IPv4 ba EIP, use hok ba na hok: <b>$0.005/ghonta</b></td></tr>
+    <tr><td>Cluster placement group</td><td><b>Ek AZ</b>, ek jaygay, <b>low latency, 10 Gbps</b>: HPC / big data. AZ gele sob gelo</td></tr>
+    <tr><td>Spread placement group</td><td>Protita instance <b>alada hardware</b> e, multi-AZ; <b>max 7 instance per AZ per group</b>: critical app</td></tr>
+    <tr><td>Partition placement group</td><td>Partition = alada <b>rack</b>; <b>7 partition per AZ</b>, <b>100s of instance</b>: HDFS, HBase, Cassandra, Kafka</td></tr>
+    <tr><td>Precision time placement group</td><td>(Notun slide) high-precision time source er hardware: distributed DB, financial timestamp</td></tr>
+    <tr><td>ENI</td><td>VPC er <b>virtual network card</b>; <b>ek AZ e bandha</b>; ek instance theke arek instance e move kore failover</td></tr>
+    <tr><td>EC2 Hibernate</td><td><b>RAM er state</b> root EBS volume e (<b>encrypted</b>) likhe rakhe; start e fast, OS restart hoy na</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="l1">
+  <p class="num">Lecture 1 · Private vs Public vs Elastic IP · <a class="pg" href="06-slides-p078-093.pdf#page=2" target="_blank" rel="noopener">PDF p. 79-84</a> <span class="pg-part">(part p. 2-7)</span></p>
+  <h2>Public IP, Private IP ar Elastic IP</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Public IP holo tomar barir <b>postal address</b>: prithibir je keu chithi pathate pare, ar ek address duita bari te hoy na. Private IP holo barir bhitorer <b>room number</b> ("Room 2"): shudhu barir lok bujhe, ar onno barite-o "Room 2" thakte pare. Elastic IP holo <b>nijer kena fixed phone number</b>: sim bodlaleo number tomar-i thake.</p></div>
+  <h3>IPv4 vs IPv6 (<a class="pg" href="06-slides-p078-093.pdf#page=2" target="_blank" rel="noopener">PDF p. 79</a> <span class="pg-part">(part p. 2)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th></th><th>IPv4</th><th>IPv6</th></tr>
+    <tr><td>Dekhte</td><td><code>1.160.10.240</code>: 4 ta number, 3 ta dot, protita <code>[0-255]</code></td><td><code>3ffe:1900:4545:3:200:f8ff:fe21:67cf</code>: lomba, number + letter</td></tr>
+    <tr><td>Kototuku use</td><td>Ekhono <b>sobcheye common</b></td><td>Notun, <b>IoT</b> er shomossa solve kore</td></tr>
+    <tr><td>Address</td><td>Public space e <b>3.7 billion</b> (prai shesh)</td><td>-</td></tr>
+    <tr><td>Course e</td><td><b>Shudhu IPv4</b> use hobe</td><td>AWS support kore</td></tr>
+  </table></div>
+  <h3>Udaharon: duita company (<a class="pg" href="06-slides-p078-093.pdf#page=3" target="_blank" rel="noopener">PDF p. 80</a> <span class="pg-part">(part p. 3)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Company A</span>
+    <div class="flow">
+      <span class="b">Private network<small>192.168.0.1/22</small></span><span class="a">→</span>
+      <span class="b">Internet Gateway<small>public 149.140.72.10</small></span><span class="a">→</span>
+      <span class="b hl">WWW</span><span class="a">→</span>
+      <span class="b">Web Server<small>public 79.216.59.75</small></span>
+    </div>
+    <span class="lbl">Company B</span>
+    <div class="flow">
+      <span class="b">Private network<small>192.168.0.1/22 (same range!)</small></span><span class="a">→</span>
+      <span class="b">Internet Gateway<small>public 253.144.139.205</small></span><span class="a">→</span>
+      <span class="b hl">WWW</span><span class="a">→</span>
+      <span class="b">Server<small>public 211.139.37.43</small></span>
+    </div>
+  </div>
+  <p class="cap">Duita company er private range ekdom same, kono shomossa nai. Internet e jete hole gateway er public IP lage, ar public IP gulo shob alada.</p>
+  <h3>Mul parthokko (<a class="pg" href="06-slides-p078-093.pdf#page=4" target="_blank" rel="noopener">PDF p. 81</a> <span class="pg-part">(part p. 4)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th></th><th>Public IP</th><th>Private IP</th></tr>
+    <tr><td>Ke chinte pare</td><td>Internet (WWW) er je keu</td><td>Shudhu oi <b>private network</b> er machine</td></tr>
+    <tr><td>Unique kothay</td><td><b>Pura web e</b> unique: duita machine er same public IP hoy na</td><td>Shudhu oi private network e unique. <b>Duita alada network (company) e same IP</b> thakte pare</td></tr>
+    <tr><td>Geo-location</td><td>Shohoje kora jay (Google korlei location)</td><td>-</td></tr>
+    <tr><td>Internet e jay kivabe</td><td>Shorashori</td><td><b>NAT + Internet Gateway</b> (proxy er moto) diye</td></tr>
+    <tr><td>Range</td><td>Baki shob</td><td>Shudhu <b>nirdishto kichu range</b> private IP hote pare</td></tr>
+  </table></div>
+  <p class="sub">Private range gulo: <code>10.0.0.0/8</code>, <code>172.16.0.0/12</code> (AWS default VPC ei range e), <code>192.168.0.0/16</code>. Section 27 e detail (<a class="pg" href="../27.%20Networking%20-%20VPC/27-slides-p700-777.pdf#page=7" target="_blank" rel="noopener">PDF p. 706</a> <span class="pg-part">(Section 27 part p. 7)</span>). NAT ar Internet Gateway-o Section 27 e.</p>
+  <h3>Elastic IP (<a class="pg" href="06-slides-p078-093.pdf#page=5" target="_blank" rel="noopener">PDF p. 82-83</a> <span class="pg-part">(part p. 5-6)</span>)</h3>
+  <ul>
+    <li>EC2 instance <b>stop kore abar start</b> korle tar <b>public IP bodlate pare</b>.</li>
+    <li>Instance er jonno <b>fixed public IP</b> lagle → <b>Elastic IP</b>.</li>
+    <li>Elastic IP = ekta <b>public IPv4</b> ja tumi <b>own koro, jotokkhon delete na koro</b>.</li>
+    <li><b>Ek somoy shudhu ek instance e</b> attach kora jay.</li>
+    <li>Kaje lage: instance ba software fail korle, EIP ta <b>druto onno instance e remap</b> kore failure "dhaka" (mask) dewa jay (nijer account er instance e).</li>
+    <li>Account e <b>shudhu 5 ta Elastic IP</b> (AWS ke bole barano jay).</li>
+  </ul>
+  <h3>Instructor er advice: Elastic IP edao (<a class="pg" href="06-slides-p078-093.pdf#page=6" target="_blank" rel="noopener">PDF p. 83</a> <span class="pg-part">(part p. 6)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Upay</th><th>Keno</th></tr>
+    <tr><td><span class="pill bad">Elastic IP</span></td><td>Prai-i <b>kharap architecture</b> er lokkhon; 5 tar limit, scale hoy na</td></tr>
+    <tr><td><span class="pill ok">Random public IP + DNS name</span></td><td>IP bodlaleo DNS name same; Route 53 diye (Section 10), beshi control, beshi scalable</td></tr>
+    <tr><td><span class="pill ok">Load Balancer, public IP-i na</span></td><td><b>AWS er best pattern</b> (Section 8)</td></tr>
+  </table></div>
+  <h3>EC2 te default ki thake (<a class="pg" href="06-slides-p078-093.pdf#page=7" target="_blank" rel="noopener">PDF p. 84</a> <span class="pg-part">(part p. 7)</span>)</h3>
+  <ul>
+    <li>Protita EC2 machine pay: <b>private IP</b> (AWS er internal network er jonno) + <b>public IP</b> (WWW er jonno).</li>
+    <li>SSH korar somoy <b>private IP diye hoy na</b>: tumi oi network e nao (VPN thakle alada kotha). Shudhu <b>public IP</b> diye.</li>
+    <li>Machine <b>stop → start</b> korle public IP bodlate pare.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "Stop/start er por public IPv4 bodle geche, <b>fixed public IPv4</b> chai" → <b>Elastic IP allocate kore attach</b>. OS er bhitore DHCP theke static kora, AWS Support ke bola, "shudhu private IP fixed kora jay": sob bhul (U06-Q1). "Kon IP <b>shudhu EC2/AWS network er bhitor theke</b> reach kora jay" → <b>Private IP</b>; public ar Elastic IP internet theke (B6-Q23). Trap: "EIP best practice" na; scenario te "highly available / scalable" thakle <b>Load Balancer</b> ba <b>DNS (Route 53)</b> beshi bhalo.</div>
+</section>
+
+<section class="card" id="l2">
+  <p class="num">Lecture 2 · Private vs Public vs Elastic IP Hands On · <a class="pg" href="06-slides-p078-093.pdf#page=7" target="_blank" rel="noopener">PDF p. 84</a> <span class="pg-part">(part p. 7)</span></p>
+  <h2>Hands-on: stop/start e IP bodlano, Elastic IP attach</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Instance bondho kore abar chalu korle AWS tomake <b>notun public IP</b> dey, purono ta chole jay. Elastic IP lagale instance bondho thakleo IP tomar kache dhora thake.</p></div>
+  <h3>Ki dekhlam</h3>
+  <div class="scroll"><table>
+    <tr><th>Test</th><th>Fol</th><th>Keno</th></tr>
+    <tr><td>Public IPv4 diye SSH</td><td><span class="pill ok">Kaj kore</span></td><td>Internet (public network) diye AWS e dhuki</td></tr>
+    <tr><td>Bhitore dhukle hostname</td><td>Hostname e <b>private IP</b> dekhay</td><td>Instance nijer private IP jane</td></tr>
+    <tr><td>Private IPv4 diye SSH (laptop theke)</td><td><span class="pill bad">Hoy na</span></td><td>Laptop AWS er private network e nai</td></tr>
+    <tr><td><b>Stop → Start</b> (reboot na)</td><td><b>Notun public IPv4</b>; purono IP te SSH hoy na</td><td>Public IP AWS er pool theke ase-jay</td></tr>
+    <tr><td>Stop → Start e private IP</td><td><b>Same</b></td><td>Bodlanor dorkar nai</td></tr>
+  </table></div>
+  <p class="sub">Reboot e public IP bodlay na; bodlay <b>stop kore start</b> korle.</p>
+  <h3>Elastic IP er dhap</h3>
+  <div class="fig">
+    <span class="lbl">EC2 console → Network &amp; Security → Elastic IPs</span>
+    <div class="flow">
+      <span class="b hl">Allocate<small>Amazon er IPv4 pool theke</small></span><span class="a">→</span>
+      <span class="b hl">Associate<small>Instance ba Network interface</small></span><span class="a">→</span>
+      <span class="b">Use<small>stop/start e IP same</small></span><span class="a">→</span>
+      <span class="b">Disassociate</span><span class="a">→</span>
+      <span class="b hl">Release<small>bill bondho</small></span>
+    </div>
+  </div>
+  <p class="cap">Allocate = kena (bhara newa); Associate = lagano; Release = ferot dewa.</p>
+  <ul>
+    <li><b>Allocate</b>: notun IPv4 toiri, jotokkhon bhara rakho totokkhon tomar.</li>
+    <li><b>Associate</b>: Actions → Associate Elastic IP address. Kar sathe: <b>Instance</b> ba <b>Network interface</b> (ENI, Lecture 5). Instance ar tar <b>private IP</b> choose (instance e ekta private IP chilo).</li>
+    <li>Associate er por instance er <b>Public IPv4 = Elastic IP er value</b>; "Elastic IP addresses" field e-o dekhay.</li>
+    <li>Instance <b>stop</b> korleo public IPv4 dekhay (EIP attached). <b>Start</b> korle IP <b>same</b>, ager SSH command-i kaj kore.</li>
+    <li>Shesh e: <b>Disassociate</b> → <b>Release</b> (na korle bill). Release er por instance abar ekta <b>notun random public IPv4</b> pay. Tarpor instance terminate.</li>
+  </ul>
+  <h3>IPv4 er dam (instructor er update)</h3>
+  <div class="scroll"><table>
+    <tr><th>Ki</th><th>Dam</th></tr>
+    <tr><td>Protita public IPv4 (normal public IP ba Elastic IP), <b>use hok ba na hok</b></td><td>Prai <b>$0.005 per hour</b> (mashe prai $3.50, instructor er hishab)</td></tr>
+    <tr><td>Free tier (notun account)</td><td>Mashe <b>750 ghonta</b> public IPv4 free</td></tr>
+    <tr><td>Bachar upay</td><td>Kaj shesh hole instance <b>terminate</b> ar EIP <b>release</b></td></tr>
+  </table></div>
+  <p class="sub">Public IPv4 charge er detail Section 05 Lecture 15 e. Free tier July 2025 e bodleche: Section 05 er "Course er por ki bodlalo" dekho.</p>
+  <div class="exam"><b>Exam:</b> "Stop/start er por-o same public IP" → <b>Elastic IP</b> (U06-Q1). EIP attach hoy <b>instance</b> e ba <b>ENI</b> te. <b>Disassociate ≠ Release</b>: disassociate korleo EIP account e thake ar bill hoy; release korle chole jay. VPC te stop/start e <b>private IP same</b> thake (B4-Q41).</div>
+</section>
+
+<section class="card" id="l3">
+  <p class="num">Lecture 3 + 4 (hands-on) · EC2 Placement Groups · <a class="pg" href="06-slides-p078-093.pdf#page=8" target="_blank" rel="noopener">PDF p. 85-89</a> <span class="pg-part">(part p. 8-12)</span></p>
+  <h2>Placement Group: instance gulo hardware e kivabe boshbe</h2>
+  <div class="idea"><p><b>Shohoj kore (office er udaharon):</b> <b>Cluster</b> = pura team ek table e: kotha druto, kintu table bhangle sobai bipode. <b>Spread</b> = protita boss alada building e: ekta building e agun lagle baki ra thik, kintu building kom (7 ta). <b>Partition</b> = protita team alada floor e (floor = rack): ek floor er current gele shudhu oi team bondho, ar team e onek lok rakha jay.</p></div>
+  <ul>
+    <li>Kokhono kokhono EC2 instance <b>kothay boshbe</b> (placement strategy) sheta nijer control e chao. Ei strategy define kora hoy <b>placement group</b> diye.</li>
+    <li>AWS er hardware e tumi shorashori haat dao na; shudhu AWS ke bolo instance gulo <b>ekta arekta r tulonay</b> kivabe boshbe.</li>
+    <li>Group banate ekta strategy choose koro (<a class="pg" href="06-slides-p078-093.pdf#page=8" target="_blank" rel="noopener">PDF p. 85</a> <span class="pg-part">(part p. 8)</span>):</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>Strategy</th><th>Ki kore</th><th>Limit / scale</th><th>Pro</th><th>Con</th><th>Use case</th></tr>
+    <tr><td><b>Cluster</b></td><td>Instance gulo <b>ek AZ</b> e, low-latency hardware e pashapashi</td><td>Single AZ</td><td><b>Low latency, 10 Gbps</b>: high performance</td><td><b>AZ fail = shob instance ekshathe fail</b> (high risk)</td><td>Big data job druto shesh, <b>HPC</b>, extremely low latency + high throughput</td></tr>
+    <tr><td><b>Spread</b></td><td>Protita instance <b>alada physical hardware</b> e</td><td><b>Max 7 instance per AZ per group</b>; multi-AZ</td><td>Ekshathe fail howar risk kom</td><td>Group boro kora jay na</td><td><b>Critical app</b>, maximum high availability</td></tr>
+    <tr><td><b>Partition</b></td><td>Instance gulo <b>partition</b> e bhag; protita partition alada <b>rack</b> er set</td><td><b>7 partition per AZ</b>; multi-AZ (same region); <b>100s of instance</b></td><td>Ek partition fail korle onno partition thik</td><td>Ek partition er bhitore instance gulo rack share kore</td><td><b>Hadoop / HDFS, HBase, Cassandra, Kafka</b></td></tr>
+    <tr><td><b>Precision time</b> (notun slide)</td><td>Instance gulo <b>high-precision time source</b> wala hardware e</td><td>-</td><td>Standard NTP er cheye accurate time</td><td>-</td><td>Distributed DB, financial timestamping, event ordering</td></tr>
+  </table></div>
+
+  <h3>Cluster (<a class="pg" href="06-slides-p078-093.pdf#page=9" target="_blank" rel="noopener">PDF p. 86</a> <span class="pg-part">(part p. 9)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Cluster placement group: same AZ, pashapashi</span>
+    <div class="flow">
+      <span class="b hl">EC2</span><span class="a">⇄ <small>10 Gbps</small></span>
+      <span class="b hl">EC2</span><span class="a">⇄ <small>low latency</small></span>
+      <span class="b hl">EC2</span>
+    </div>
+    <span class="lbl">Ek AZ (jemon us-east-1a)</span>
+  </div>
+  <p class="cap">Instance gulor moddhe network khub druto, kintu sob dim ek jhuri te (ek AZ).</p>
+  <ul>
+    <li><b>Pro:</b> Durdanto network: instance gulor moddhe <b>10 Gbps bandwidth</b>, jodi <b>Enhanced Networking</b> enable thake (recommended). Low latency, high throughput.</li>
+    <li><b>Con:</b> AZ fail korle <b>shob instance ekshathe fail</b>. Instructor: ei use case e sadharonoto eta mene neya jay.</li>
+    <li><b>Use case:</b> Big Data job ja druto shesh korte hobe; app jar instance gulor moddhe <b>extremely low latency ar high network throughput</b> lage.</li>
+  </ul>
+
+  <h3>Spread (<a class="pg" href="06-slides-p078-093.pdf#page=10" target="_blank" rel="noopener">PDF p. 87</a> <span class="pg-part">(part p. 10)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">3 AZ, 6 EC2, protita alada hardware e</span>
+    <div class="flow">
+      <span class="b">us-east-1a<small>EC2 → Hardware 1<br>EC2 → Hardware 2</small></span>
+      <span class="b">us-east-1b<small>EC2 → Hardware 3<br>EC2 → Hardware 4</small></span>
+      <span class="b">us-east-1c<small>EC2 → Hardware 5<br>EC2 → Hardware 6</small></span>
+    </div>
+  </div>
+  <p class="cap">Hardware 1 fail korle Hardware 2 er instance thik thake: us-east-1a er duita instance ekshathe pore na.</p>
+  <ul>
+    <li>Cluster er <b>ekdom ulto</b>: lokkho <b>failure risk komano</b>.</li>
+    <li><b>Pro:</b> <b>Multiple AZ</b> e chhoray; simultaneous failure er risk kom; protita EC2 <b>alada physical hardware</b> e.</li>
+    <li><b>Con:</b> <b>7 instance per AZ per placement group</b>. Tai app "bhalo size er, kintu khub boro na" hote hobe. Instructor duibar bolechen "remember".</li>
+    <li><b>Use case:</b> App jar <b>high availability maximize</b> korte hobe; <b>critical app</b> jekhane protita instance er failure onno gulo theke alada thakte hobe.</li>
+  </ul>
+
+  <h3>Partition (<a class="pg" href="06-slides-p078-093.pdf#page=11" target="_blank" rel="noopener">PDF p. 88</a> <span class="pg-part">(part p. 11)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Partition = rack. Protita partition e onek EC2</span>
+    <div class="flow">
+      <span class="b">us-east-1a<small>Partition 1 (rack): EC2 ×4<br>Partition 2 (rack): EC2 ×4</small></span>
+      <span class="b">us-east-1b<small>Partition 3 (rack): EC2 ×4</small></span>
+    </div>
+  </div>
+  <p class="cap">Partition 2 er rack gele shudhu tar 4 ta instance jay; Partition 1 ar 3 thik thake.</p>
+  <ul>
+    <li><b>Ek AZ te max 7 partition</b>; partition gulo same region er <b>multiple AZ</b> e thakte pare.</li>
+    <li><b>Protita partition = AWS er ekta rack</b>. Ek partition er instance onno partition er instance er sathe <b>rack share kore na</b> → rack failure theke alada.</li>
+    <li>Ek partition fail korle <b>tar onek EC2</b> jete pare, kintu <b>onno partition e prabhab nai</b>.</li>
+    <li><b>Hundreds of EC2</b> porjonto: <b>Spread theke eta-i boro parthokko</b> (Spread = 7 per AZ).</li>
+    <li>Kon instance kon partition e: EC2 eta <b>metadata</b> (instance metadata service) theke jante pare.</li>
+    <li>Use case: app nije <b>partition aware</b> (data ar server partition jure bhag kore): <b>HDFS, HBase, Cassandra, Apache Kafka</b> (big data).</li>
+  </ul>
+
+  <h3>Precision time (<a class="pg" href="06-slides-p078-093.pdf#page=12" target="_blank" rel="noopener">PDF p. 89</a> <span class="pg-part">(part p. 12)</span>)</h3>
+  <ul>
+    <li>Slide e notun add hoyeche; lecture video te nai.</li>
+    <li>Instance gulo emon hardware e boshe jar <b>high-precision time source</b> e direct access ache.</li>
+    <li><b>Enhanced Amazon Time Sync Service</b>: standard <b>NTP er cheye beshi accurate</b>.</li>
+    <li><b>PTP Hardware Clock</b> + hardware packet timestamping (<b>shudhu Linux</b>).</li>
+    <li>Use case: <b>distributed database</b>, <b>financial timestamping</b>, <b>event ordering</b>.</li>
+  </ul>
+  <p class="sub">"Course er por ki bodlalo" dekho: AWS docs e eta 4 nombor strategy, ar eta ke cluster group er "parent" kora jay.</p>
+
+  <h3>Hands-on: kothay ki (Lecture 4)</h3>
+  <ol>
+    <li>EC2 console → left menu <b>Network &amp; Security → Placement Groups</b> → Create placement group.</li>
+    <li><code>my-high-performance-group</code> → strategy <b>Cluster</b> (instance kachakachi, maximum network).</li>
+    <li><code>my-critical-group</code> → strategy <b>Spread</b>. <b>Spread level</b>: <b>rack</b> (default, eta-i jante hobe) ba <b>host</b> (shudhu <b>AWS Outposts</b> er jonno).</li>
+    <li><code>my-distributed-group</code> → strategy <b>Partition</b>; partition shonkhya <b>1 theke 7</b> (demo te 4).</li>
+    <li>Instance launch → ekdom niche <b>Advanced details → Placement group name</b> e group select.</li>
+  </ol>
+
+  <div class="exam"><b>Exam:</b> Keyword dekhe strategy:
+    <ul>
+      <li>"<b>Highest network performance</b> between instances", "<b>low network latency</b> compute cluster", "<b>HPC</b>", "big data, performance chai" → <b>Cluster</b> (U06-Q2, B3-Q42, S1-Q23, S4-Q20). Trap: Spot, User Data kernel tuning, Dedicated Instance, Direct Connect, private subnet, multi-AZ: kono tai network latency komay na.</li>
+      <li>"<b>Critical</b> app, <b>maximum availability</b>, AZ failure", "instance gulo ekshathe fail jeno na kore", <b>alpo kichu</b> instance → <b>Spread</b> (U06-Q3).</li>
+      <li>"<b>Hadoop / HDFS / HBase / Cassandra / Kafka</b>", "<b>50 instance per AZ</b>", "large distributed <b>and replicated</b> workload, <b>correlated hardware failure</b> komao" → <b>Partition</b> (S2-Q12, S6-Q40). Spread na: 7 er beshi hoy na. Cluster na: ek AZ, HA nai.</li>
+      <li>"<b>Multi-AZ placement group</b>" bole kichu nai (S6-Q40 er distractor). "Auto Scaling group" placement group na (S1-Q23).</li>
+    </ul>
+  </div>
+  <p class="src">Subtitle e "available T-zones" = Availability Zones, "my-distributor-group" = my-distributed-group; thik kore likhechi.</p>
+</section>
+
+<section class="card" id="l5">
+  <p class="num">Lecture 5 · Elastic Network Interfaces (ENI) - Overview · <a class="pg" href="06-slides-p078-093.pdf#page=13" target="_blank" rel="noopener">PDF p. 90</a> <span class="pg-part">(part p. 13)</span></p>
+  <h2>ENI: EC2 er virtual network card</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> ENI holo phone er <b>SIM card</b>. Phone (EC2) e SIM dhokale number (private IP) pay. Phone noshto hole SIM khule <b>onno phone</b> e dhokale <b>number same</b> thake, lok ager number e-i call kore. Shorto: SIM shudhu <b>oi elakar (AZ er)</b> phone e chole.</p></div>
+  <ul>
+    <li>ENI = <b>Elastic Network Interface</b>: <b>VPC er logical component</b>, ekta <b>virtual network card</b>.</li>
+    <li>ENI-i EC2 instance ke <b>network access</b> dey. EC2 er baire-o ENI use hoy (course e pore dekhbe).</li>
+    <li>Protita EC2 te <b>eth0 = primary ENI</b> thake: network connectivity ar private IP dey.</li>
+    <li>Chaile <b>secondary ENI (eth1)</b> add kora jay: aro ekta private IPv4 pabe.</li>
+  </ul>
+  <h3>Ekta ENI te ki ki thakte pare (<a class="pg" href="06-slides-p078-093.pdf#page=13" target="_blank" rel="noopener">PDF p. 90</a> <span class="pg-part">(part p. 13)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Attribute</th><th>Koyta</th></tr>
+    <tr><td>Private IPv4</td><td><b>Ekta primary</b> + ek ba ekadhik <b>secondary</b></td></tr>
+    <tr><td>Elastic IP (IPv4)</td><td><b>Protita private IPv4 er jonno ekta</b></td></tr>
+    <tr><td>Public IPv4</td><td>Ekta</td></tr>
+    <tr><td>Security group</td><td>Ek ba ekadhik</td></tr>
+    <tr><td>MAC address</td><td>Ekta</td></tr>
+  </table></div>
+  <h3>Duita mul kotha</h3>
+  <ul>
+    <li>ENI <b>EC2 theke alada kore create</b> kora jay, tarpor <b>on the fly attach</b> ba ek instance theke arek instance e <b>move</b> kora jay → <b>failover</b>.</li>
+    <li>ENI <b>ekta specific AZ e bandha</b>. Je AZ e banabe, shudhu oi AZ er instance e attach hobe.</li>
+  </ul>
+  <h3>Failover (<a class="pg" href="06-slides-p078-093.pdf#page=13" target="_blank" rel="noopener">PDF p. 90</a> <span class="pg-part">(part p. 13)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Ek-i AZ</span>
+    <div class="flow">
+      <span class="b">EC2 #1<small>eth0 192.168.0.31 (primary)</small></span><span class="a">←</span>
+      <span class="b hl">eth1 secondary ENI<small>192.168.0.42</small></span><span class="a">→ <small>move</small></span>
+      <span class="b">EC2 #2<small>eth0 primary</small></span>
+    </div>
+  </div>
+  <p class="cap">EC2 #1 e shomossa → eth1 khule EC2 #2 te lagao. 192.168.0.42 private IP ekhon EC2 #2 er; client ager IP tei connect kore.</p>
+  <ul>
+    <li>Instance ke jodi ekta <b>static private IP</b> diye access kora hoy, oi IP ta secondary ENI te rakho. Duita instance er moddhe IP ta "ghuriye" failover kora jay.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "ENI <b>onno AZ</b> er instance e attach kora jay" → <b>False</b> (U06-Q4). "Static private IP, druto network failover onno instance e" → <b>secondary ENI move</b>. Private IP ENI er sathe thake, tai VPC te stop/start e <b>private IP bodlay na</b> (B4-Q41). ENI te ek ba ekadhik <b>security group</b> attach hoy (slide).</div>
+  <p class="sub">ENI attach er 3 naam (B2-Q32): <b>hot attach</b> = instance <b>running</b>, <b>warm attach</b> = instance <b>stopped</b>, <b>cold attach</b> = instance <b>launch</b> er somoy. Secondary ENI detach kora jay (running ba stopped), kintu <b>primary ENI (eth0) detach kora jay na</b>. Source: <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network-interface-attachments.html">Network interface attachments</a>. <span class="pill">amar jana, course e nai</span></p>
+  <p class="src">Subtitle e ENI te "one or more public IPv4" bola; slide e "One Public IPv4", slide er ta niyechi.</p>
+</section>
+
+<section class="card" id="l6">
+  <p class="num">Lecture 6 + course page 7 · Elastic Network Interfaces (ENI) - Hands On, ENI - Extra Reading · <a class="pg" href="06-slides-p078-093.pdf#page=13" target="_blank" rel="noopener">PDF p. 90</a> <span class="pg-part">(part p. 13)</span></p>
+  <h2>Hands-on: ENI banano, attach, move, terminate e ki hoy</h2>
+  <h3>Dhap gulo</h3>
+  <ol>
+    <li>Duita instance launch (Amazon Linux 2, t2.micro, existing SG <code>launch-wizard-1</code>).</li>
+    <li>Instance → <b>Networking</b> tab → Network interfaces: protita instance e <b>ekta</b> ENI. Tar <b>interface ID</b>, public IPv4, private IPv4, private IPv4 DNS.</li>
+    <li>Left menu <b>Network &amp; Security → Network Interfaces</b>: duita ENI, status <b>in-use</b>, alada instance ID.</li>
+    <li><b>Create network interface</b>: description (<code>demo ENI</code>), <b>subnet</b> (eta-i AZ thik kore; instance er AZ <code>us-east-2a</code> nilam), private IPv4 <b>auto-assign</b> ba nijer dewa, <b>security group</b> attach.</li>
+    <li>Notun ENI status <b>available</b> = ekta secondary private IPv4 toiri holo.</li>
+    <li><b>Actions → Attach</b> → ekta instance. Ekhon oi instance e <b>2 ta</b> network interface: primary (public + private IPv4) ar demo ENI (<b>secondary private IPv4</b>).</li>
+    <li><b>Detach</b> (atke gele <b>Force detach</b>) → <b>Attach</b> onno instance e. Prothom instance e 1 ta, ditiyo te 2 ta. Eta-i <b>network failover</b>.</li>
+  </ol>
+  <h3>Instance terminate korle ENI er ki hoy</h3>
+  <div class="scroll"><table>
+    <tr><th>ENI</th><th>Terminate er por</th></tr>
+    <tr><td>Instance er sathe <b>automatically</b> toiri (2 ta)</td><td><b>Auto delete</b></td></tr>
+    <tr><td><b>Nijer haate</b> toiri (demo ENI)</td><td><b>Theke jay</b></td></tr>
+  </table></div>
+  <ul>
+    <li>Nijer ENI banale <b>private IPv4 ar networking er upor beshi control</b>: advanced use case e kaje lage.</li>
+    <li>Instructor: ENI rakhle <b>kono taka lage na</b>, rakhte ba delete korte paro.</li>
+  </ul>
+  <h3>Course page 7: ENI - Extra Reading</h3>
+  <ul>
+    <li>ENI ekta <b>advanced concept</b>, bujhte somoy lage, eta swabhabik.</li>
+    <li>Aro jante AWS blog: <a href="https://aws.amazon.com/blogs/aws/new-elastic-network-interfaces-in-the-virtual-private-cloud/">New: Elastic Network Interfaces in the Virtual Private Cloud</a>.</li>
+    <li>Ekhono na bujhle <b>course atkabe na</b>; egiye jao, course er shesh dike abar fire esho.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> ENI banate <b>subnet</b> choose korte hoy, tai ENI ek AZ e bandha (U06-Q4). Instance er sathe banano ENI terminate e chole jay; alada banano ENI theke jay. "Warm attach" = <b>stopped</b> instance e attach (B2-Q32).</div>
+  <p class="src">Subtitle e "elastic technical interfaces" = Elastic Network Interfaces, "t.2.micro" = t2.micro; thik kore likhechi.</p>
+</section>
+
+<section class="card" id="l8">
+  <p class="num">Lecture 8 + 9 (hands-on) · EC2 Hibernate · <a class="pg" href="06-slides-p078-093.pdf#page=14" target="_blank" rel="noopener">PDF p. 91-93</a> <span class="pg-part">(part p. 14-16)</span></p>
+  <h2>EC2 Hibernate: RAM shoho instance ke ghum parano</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Laptop <b>shut down</b> korle abar on korte boot hoy, sob app abar khulte hoy. Laptop er <b>lid bondho (hibernate)</b> korle khulle sob tab, sob kaj thik jekhane chilo shekhane. EC2 Hibernate = lid bondho kora: RAM er sob kichu disk e likhe rakhe, start e abar RAM e tule dey.</p></div>
+  <h3>Age ja jani: stop, terminate, start (<a class="pg" href="06-slides-p078-093.pdf#page=14" target="_blank" rel="noopener">PDF p. 91</a> <span class="pg-part">(part p. 14)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Kaj</th><th>Ki hoy</th></tr>
+    <tr><td><b>Stop</b></td><td>Disk (EBS) er data thik thake, porer start e paoa jay</td></tr>
+    <tr><td><b>Terminate</b></td><td>Je EBS volume (root) "destroy" hote set kora, sheta harabe; baki volume theke jay</td></tr>
+    <tr><td>Prothom start</td><td>OS boot hoy + <b>EC2 User Data</b> script chale</td></tr>
+    <tr><td>Porer start gulo</td><td>OS boot hoy</td></tr>
+    <tr><td>Tarpor</td><td>App start hoy, <b>cache warm up</b> hoy: <b>eta somoy ney!</b></td></tr>
+  </table></div>
+  <h3>Hibernate ki dey (<a class="pg" href="06-slides-p078-093.pdf#page=15" target="_blank" rel="noopener">PDF p. 92</a> <span class="pg-part">(part p. 15)</span>)</h3>
+  <ul>
+    <li><b>In-memory (RAM) state preserve</b> hoy.</li>
+    <li>Instance boot <b>onek druto</b>: OS <b>stop ba restart hoy na</b>, shudhu "frozen" thake.</li>
+    <li>Bhitore: RAM er state <b>root EBS volume er ekta file</b> e likha hoy.</li>
+    <li>Tai root EBS volume <b>encrypted</b> hote hobe, ar RAM dhorar moto <b>jayga</b> thakte hobe.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Hibernate er dhap (<a class="pg" href="06-slides-p078-093.pdf#page=15" target="_blank" rel="noopener">PDF p. 92</a> <span class="pg-part">(part p. 15)</span>)</span>
+    <div class="flow">
+      <span class="b">Running<small>RAM e data</small></span><span class="a">→ <small>Hibernate</small></span>
+      <span class="b hl">Stopping<small>RAM dump → root EBS (encrypted)</small></span><span class="a">→ <small>Shutdown</small></span>
+      <span class="b">Stopped<small>RAM khali, dump EBS e</small></span><span class="a">→ <small>Start</small></span>
+      <span class="b hl">Running<small>EBS theke RAM e load</small></span>
+    </div>
+  </div>
+  <p class="cap">Start er por instance mone kore se kokhono stop-i hoy ni.</p>
+  <h3>Use case (<a class="pg" href="06-slides-p078-093.pdf#page=15" target="_blank" rel="noopener">PDF p. 92</a> <span class="pg-part">(part p. 15)</span>)</h3>
+  <ul>
+    <li><b>Long-running processing</b>: process kokhono bondho korte chao na.</li>
+    <li><b>RAM state save</b> rakha.</li>
+    <li>Je service <b>initialize hote onek somoy</b> ney: abar initialize na kore chalu rakhte chao.</li>
+  </ul>
+  <h3>Good to know (<a class="pg" href="06-slides-p078-093.pdf#page=16" target="_blank" rel="noopener">PDF p. 93</a> <span class="pg-part">(part p. 16)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Jinish</th><th>Niyom</th></tr>
+    <tr><td>Instance family</td><td>Onek family: C3, C4, C5, I3, M3, M4, R3, R4, T2, T3, …</td></tr>
+    <tr><td>Instance RAM</td><td><b>150 GB er kom</b></td></tr>
+    <tr><td>Instance size</td><td><b>Bare metal e support nai</b></td></tr>
+    <tr><td>AMI / OS</td><td>Amazon Linux 2, Linux AMI, Ubuntu, RHEL, CentOS &amp; <b>Windows</b>…</td></tr>
+    <tr><td><b>Root volume</b></td><td><b>EBS</b> hote hobe, <b>encrypted</b>, <b>instance store na</b>, ar <b>boro</b> (RAM dhorbe)</td></tr>
+    <tr><td>Purchasing option</td><td><b>On-Demand, Reserved, Spot</b></td></tr>
+    <tr><td>Kotodin</td><td>Ekta instance <b>60 din er beshi</b> hibernate thakte pare na</td></tr>
+  </table></div>
+  <p class="sub">Instructor: 150 GB, 60 din er moto limit bodlate pare; exam e limit niye proshno ashe na, shudhu dharona.</p>
+  <h3>Hands-on (Lecture 9)</h3>
+  <ol>
+    <li>Launch instance (Amazon Linux 2, t2.micro, SG <code>launch-wizard-1</code>).</li>
+    <li><b>Advanced details → Stop - Hibernate behavior → Enable</b>. Warning: root volume e RAM er jayga lagbe ar root EBS <b>encrypted</b> hote hobe.</li>
+    <li><b>Storage → Advanced</b> → root EBS volume <b>Encrypted</b>, KMS key default <code>aws/ebs</code>.</li>
+    <li>Size check: root 8 GB, t2.micro er RAM 1 GB → RAM disk e dhorbe, thik ache.</li>
+    <li>EC2 Instance Connect diye dhuke <code>uptime</code>: prothome 0 min, pore 1 min (shesh restart theke koto khon chalu).</li>
+    <li><b>Instance state → Hibernate instance</b>: RAM er data EBS e likhe instance <b>stopped</b> hoy. Tarpor <b>Start</b>.</li>
+    <li>Abar <code>uptime</code>: <b>0 theke shuru hoy na</b>, 2 min dekhay. Normal stop/start hole 0 theke shuru hoto. Mane OS er dik theke instance kokhono stop hoy ni.</li>
+    <li>Shesh e instance terminate.</li>
+  </ol>
+  <div class="exam"><b>Exam:</b> "<b>RAM / in-memory state</b> rakhte chai", "boot <b>druto</b>, app/cache abar warm up korte chai na", "service initialize hote onek somoy" → <b>EC2 Hibernate</b> (normal stop e RAM harabe). Hibernate er shorto: root = <b>encrypted EBS</b>, instance store <b>na</b> → "root volume must be Instance Store" bhul statement (U06-Q5). RAM &lt; 150 GB, On-Demand / Reserved / Spot support: thik. Demo te hibernate <b>launch er somoy enable</b> korechi.</div>
+  <p class="sub">AWS docs theke (<a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/hibernating-prerequisites.html">Hibernation prerequisites</a>, <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-hibernate-overview.html">How hibernation works</a>): hibernation <b>shudhu launch e</b> enable kora jay, existing instance e na. Hibernate er por start e <b>public IPv4 notun</b> hoy (stop er moto), <b>private IPv4 ar Elastic IP thake</b>. <b>Instance store</b> er data harabe. <b>Auto Scaling group</b> ba ECS er instance hibernate kora jay na. Windows e RAM <b>16 GiB</b> porjonto. <span class="pill">amar jana, course e nai</span></p>
+  <p class="src">Subtitle e "stop hibernate behavior" console er "Stop - Hibernate behavior" setting; ar "specific star behavior" bujha jay na (mone hoy "stop behavior"), bad diyechi.</p>
+</section>
+
+<section class="card" id="pairs">
+  <h2>Confusing pairs</h2>
+  <div class="scroll"><table class="pairs">
+    <tr><th>Pair</th><th>Parthokko</th><th>Kokhon konta</th></tr>
+    <tr><td>Public IP vs Private IP</td><td>Public: internet theke, pura web e unique, stop/start e bodlay. Private: shudhu private network e, onno network e same IP thakte pare, stop/start e same</td><td>Laptop theke SSH → public IP. "Shudhu AWS network er bhitore reachable" → private IP</td></tr>
+    <tr><td>Public IP vs Elastic IP</td><td>Public: AWS pool theke, stop/start e bodlay. EIP: tomar nijer fixed public IPv4, release na kora porjonto</td><td>"Fixed public IP" → EIP</td></tr>
+    <tr><td>Elastic IP vs DNS / Load Balancer</td><td>EIP: 5 ta limit, kharap architecture er lokkhon. DNS name / LB: scalable</td><td>Best practice → Route 53 DNS ba Load Balancer; EIP shudhu "fixed IP lagbei" hole</td></tr>
+    <tr><td>Disassociate vs Release (EIP)</td><td>Disassociate: instance theke khule, EIP account e thake, bill chole. Release: AWS ke ferot</td><td>Bill bondho → Release</td></tr>
+    <tr><td>Stop → Start vs Reboot</td><td>Stop → Start e public IP bodlate pare. Reboot e na</td><td>"Kal IP ek, aj alada" → stop/start hoyeche</td></tr>
+    <tr><td>Cluster vs Spread</td><td>Cluster: ek AZ, kachakachi, fast network, high risk. Spread: alada hardware, multi-AZ, 7 per AZ, low risk</td><td>Performance → Cluster; critical HA → Spread</td></tr>
+    <tr><td>Spread vs Partition</td><td>Spread: <b>protita instance</b> alada hardware, max 7 per AZ. Partition: <b>instance er group</b> (partition) alada rack e, 7 partition per AZ, 100s of instance</td><td>Alpo critical instance → Spread; boro distributed (Hadoop, Cassandra, Kafka) → Partition</td></tr>
+    <tr><td>Cluster vs Partition</td><td>Cluster: low latency er jonno ek jaygay. Partition: failure alada rakhar jonno rack e bhag</td><td>HPC → Cluster; HDFS/HBase/Cassandra → Partition</td></tr>
+    <tr><td>Precision time vs Cluster</td><td>Precision time: accurate clock (PTP, enhanced NTP). Cluster: low network latency</td><td>Timestamp / event ordering → Precision time; fast network → Cluster</td></tr>
+    <tr><td>Primary ENI (eth0) vs Secondary ENI (eth1)</td><td>eth0 instance er sathe ashe. eth1 alada banano, detach kore onno instance e move kora jay</td><td>Failover er jonno IP move → secondary ENI</td></tr>
+    <tr><td>ENI vs Elastic IP</td><td>ENI = network card (private IP, SG, MAC). EIP = ekta public IPv4 address, ENI ba instance e lage</td><td>Private IP shoho failover → ENI move; public IP fixed → EIP</td></tr>
+    <tr><td>Hot vs Warm vs Cold attach (ENI)</td><td>Hot = running instance e. Warm = stopped instance e. Cold = launch er somoy</td><td>B2-Q32: warm = stopped</td></tr>
+    <tr><td>Hibernate vs Stop</td><td>Stop: RAM harabe, OS abar boot, app/cache abar warm up. Hibernate: RAM root EBS e save, start e restore, OS restart hoy na</td><td>"In-memory state rakhte chai / fast boot" → Hibernate</td></tr>
+    <tr><td>Hibernate root: EBS vs Instance Store</td><td>Hibernate e root <b>EBS, encrypted</b> lage. Instance store e hoy na</td><td>"Root must be instance store" → bhul (U06-Q5)</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="changes">
+  <h2>Course er por ki bodlalo</h2>
+  <h3>Course er content e</h3>
+  <ul>
+    <li><b>Notun placement strategy: Precision time placement group.</b> Slide e add hoyeche, lecture video te nai. AWS docs e eta 4 nombor strategy: enhanced Amazon Time Sync (NTP), PTP Hardware Clock ar hardware packet timestamping (Linux). <b>Cluster placement group er "parent"</b> hisebe dewa jay (<code>--parent-group-id</code>), tai low latency + precise time ek sathe. Extra charge nai. AWS What's New (30 June 2026) eke "new placement strategy" bole. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-strategies.html">Placement strategies</a>, <a href="https://aws.amazon.com/about-aws/whats-new/2026/06/ec2-time-sync-precision-time-placement-group/">What's New</a></li>
+    <li><b>Elastic IP limit asole per Region.</b> Course e "account e 5 ta"; AWS docs: default <b>5 ta Elastic IP per Region</b>, <b>Service Quotas</b> console theke increase. EIP ek Region er, onno Region e neya jay na. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html">Elastic IP addresses</a></li>
+    <li><b>Elastic IP er dam:</b> associated ba disassociated, <b>sob EIP e charge</b>; running instance er public IPv4 eo charge (Feb 2024 theke, course Lecture 2 te update kora). Purono question er "running instance e attached EIP free" ar thik na. Same link.</li>
+    <li><b>Hibernate er list boro hoyeche.</b> Slide er family (C3, C4, C5, I3, M3, M4, R3, R4, T2, T3) chara ekhon M5-M9, C5-C9, R5-R9, Graviton (M6g, C7g...) ityadi; bare metal ekhono na. RAM: <b>Linux &lt; 150 GiB</b>, <b>Windows ≤ 16 GiB</b>. Root: EBS, encrypted (gp2, gp3, io1, io2). Spot e hibernate korte <b>persistent</b> request lage. <b>60 din</b> er limit ekhono ache. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/hibernating-prerequisites.html">Hibernation prerequisites</a>, <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-hibernate-overview.html">How hibernation works</a></li>
+    <li><b>ENI onno VPC theke-o attach kora jay</b> (nijer VPC, <b>same AZ</b> holei): "multi-homed instance across VPCs". AZ er niyom (U06-Q4) bodlay ni. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network-interface-attachments.html">Network interface attachments</a></li>
+  </ul>
+  <h3>Question e purono jinish</h3>
+  <ul>
+    <li><b>EC2-Classic retire</b> hoye geche (2022-2023); ekhon sob instance VPC te. B4-Q41 er EC2-Classic option gulo ar relevant na; VPC te stop/start e private IP same. <a href="https://aws.amazon.com/blogs/aws/ec2-classic-is-retiring-heres-how-to-prepare/">EC2-Classic is retiring</a></li>
+    <li><b>EC2 instance limit:</b> "notun account e region e 20 instance" purono; ekhon On-Demand quota <b>vCPU</b> e, <b>per Region</b>, <b>Service Quotas</b> theke increase (B2-Q65). <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html">EC2 service quotas</a></li>
+  </ul>
+</section>
+
+<section class="card exam-box" id="exam">
+  <h2>Exam e ki mone rakhbo</h2>
+  <h3>IP: Public, Private, Elastic</h3>
+  <ul>
+    <li>Public IP: internet theke, pura web e unique, geo-locate kora jay. Private IP: shudhu private network e; duita company te same private IP thakte pare; internet e jay <b>NAT + Internet Gateway</b> diye.</li>
+    <li>"Shudhu AWS/EC2 network er bhitor theke reachable" → <b>Private IP</b> (B6-Q23).</li>
+    <li><b>Stop → Start</b> e public IP bodlate pare; private IP same (VPC te stop e private IP thake: B4-Q41). Reboot e IP bodlay na.</li>
+    <li>"Fixed public IPv4 after stop/start" → <b>Elastic IP</b>. OS e static IP, AWS Support: bhul (U06-Q1).</li>
+    <li>EIP: ek somoy <b>ek instance</b> (ba ENI) e; remap kore failure mask; <b>5 ta</b> (per Region, soft limit).</li>
+    <li>EIP <b>edao</b>: bhalo design = random public IP + <b>DNS name</b> (Route 53) ba <b>Load Balancer</b> (public IP-i na).</li>
+    <li>Sob public IPv4 / EIP er dam: <b>$0.005/ghonta</b>, use hok ba na hok. Bill bondho → <b>Release</b> (shudhu disassociate na).</li>
+    <li>Laptop theke SSH: <b>public IP</b> diye; private IP diye hoy na (VPN chara).</li>
+  </ul>
+  <h3>Placement Groups</h3>
+  <ul>
+    <li><b>Cluster</b> = ek AZ, <b>low latency, 10 Gbps</b> (enhanced networking), HPC / big data. Con: AZ fail = sob fail. "Highest network performance / low latency compute cluster" → Cluster (U06-Q2, B3-Q42, S1-Q23, S4-Q20).</li>
+    <li><b>Spread</b> = protita instance alada hardware, multi-AZ, <b>max 7 instance per AZ per group</b>, critical app, max HA (U06-Q3).</li>
+    <li><b>Partition</b> = partition = rack, <b>max 7 partition per AZ</b>, multi-AZ, <b>100s of instance</b>, partition info <b>metadata</b> e; <b>HDFS, HBase, Cassandra, Kafka / Hadoop</b> (S2-Q12, S6-Q40).</li>
+    <li>"50 instance per AZ + HA + Hadoop" → Partition (Spread 7 e atke jay, Cluster ek AZ) (S2-Q12).</li>
+    <li>"Large distributed <b>and replicated</b>, correlated hardware failure komao" → <b>Partition</b>; "Multi-AZ placement group" bole kichu nai (S6-Q40).</li>
+    <li>Network latency komate Spot / User Data / Dedicated / Direct Connect / multi-AZ / ASG kaj kore na → <b>placement group (Cluster)</b> (B3-Q42, S4-Q20, S1-Q23).</li>
+    <li><b>Precision time</b> (notun) = high-precision clock (enhanced NTP, PTP, Linux): distributed DB, financial timestamp, event ordering.</li>
+    <li>Console: Network &amp; Security → Placement Groups; launch e Advanced details → Placement group name. Spread level: rack (default) ba host (Outposts).</li>
+  </ul>
+  <h3>ENI</h3>
+  <ul>
+    <li>ENI = VPC er <b>virtual network card</b>; eth0 primary, eth1 secondary.</li>
+    <li>Ache: primary + secondary private IPv4, <b>protita private IPv4 e ekta EIP</b>, ekta public IPv4, ek ba ekadhik <b>SG</b>, MAC address.</li>
+    <li><b>Ek AZ e bandha</b>: onno AZ er instance e attach hoy na (U06-Q4).</li>
+    <li>Alada banao, attach/move kore <b>failover</b> (private IP onno instance e chole jay).</li>
+    <li>Terminate e: instance er sathe banano ENI <b>delete</b>; nijer banano ENI <b>thake</b>.</li>
+    <li>Hot = running, <b>Warm = stopped</b>, Cold = launch e attach (B2-Q32). Primary ENI detach hoy na.</li>
+  </ul>
+  <h3>Hibernate</h3>
+  <ul>
+    <li>RAM state <b>root EBS volume</b> e file hisebe save → start e restore; OS restart hoy na, boot fast (<code>uptime</code> 0 theke shuru hoy na).</li>
+    <li>Use: long-running process, RAM state save, slow-initializing service.</li>
+    <li>Shorto: root <b>EBS + encrypted + boro</b>, <b>instance store na</b> (U06-Q5); RAM <b>&lt; 150 GB</b>; bare metal na; Linux + Windows; <b>On-Demand, Reserved, Spot</b>; max <b>60 din</b>.</li>
+    <li>Launch e "Stop - Hibernate behavior" Enable + root EBS encrypt. Pore enable kora jay na (docs).</li>
+  </ul>
+  <h3>Question e purono key</h3>
+  <ul>
+    <li>EC2-Classic retired; B4-Q41 er Classic option bad dao, VPC te private IP stop e thake.</li>
+    <li>"20 instance per region" purono; ekhon vCPU-based On-Demand quota, per Region, soft limit, Service Quotas e increase (B2-Q65).</li>
+  </ul>
+</section>
+
+<section class="card qz-part" id="part-a"><div class="qz-part-head"><h2>Part A: Udemy course quiz (5)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">The instructor's own section quiz: warm-up, direct questions. Answer first, then press Check.</p><article class="qz" id="U06-Q1" data-qid="U06-Q1" data-n="1"><div class="qz-top"><span class="qz-num">A1</span><span class="qz-id">U06-Q1</span><span class="pill">Udemy quiz · sec 06 · Q1</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have launched an EC2 instance that will host a NodeJS application. After installing all the required software and configured your application, you noted down the EC2 instance public IPv4 so you can access it. Then, you stopped and then started your EC2 instance to complete the application configuration. After restart, you can't access the EC2 instance, and you found that the EC2 instance public IPv4 has been changed. What should you do to assign a fixed public IPv4 to your EC2 instance?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U06-Q1" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Allocate an Elastic IP and assign it to your EC2 instance</p></span></label></li><li data-i="1"><label><input type="radio" name="U06-Q1" value="1"><span class="qz-l">B</span><span class="qz-o"><p>From inside your EC2 instance OS, change network configuration from DHCP to static and assign it a public IPv4</p></span></label></li><li data-i="2"><label><input type="radio" name="U06-Q1" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Contact AWS Support and request a fixed public IPv4 to your EC2 instance</p></span></label></li><li data-i="3"><label><input type="radio" name="U06-Q1" value="3"><span class="qz-l">D</span><span class="qz-o"><p>This can't be done, you can only assign a fixed private IPv4 to your EC2 instance</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>EC2 instance <b>stop → start</b> korle tar public IPv4 bodlate pare (AWS er pool theke notun IP ashe). Fixed public IPv4 lagle <b>Elastic IP</b> allocate kore instance e associate koro (<a class="pg" href="06-slides-p078-093.pdf#page=5" target="_blank" rel="noopener">PDF p. 82</a> <span class="pg-part">(part p. 5)</span>).</p><p>Elastic IP holo ekta public IPv4 ja tumi own koro jotokkhon release (delete) na koro; ek somoy ek instance e attach hoy. Course hands-on e dekhano: EIP attach thakle stop/start er poreo IP same thake.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> OS er bhitore public IP set kora jay na: instance er OS shudhu private IP dekhe (hostname e private IP), public IP AWS network level e map hoy. Static config dile network-i bhenge jete pare.</li><li><b>C.</b> AWS Support er emon kono 'fixed public IP' service nai; console theke nijei Elastic IP allocate kora jay.</li><li><b>D.</b> Bhul: Elastic IP diye fixed public IPv4 deya jay. Private IP to stop/start e emnitei same thake.</li></ul><p><b>Keyword:</b> <b>public IPv4 changed after stop/start</b> + <b>fixed public IPv4</b> → Elastic IP</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Elastic IP is a public IPv4 that you own as long as you want and you can attach it to one EC2 instance at a time.</p><p><b>C:</b> This can't be done, there's no such thing in AWS Support.</p><p><b>D:</b> You can assign both public and private IPv4 to your EC2 instances.</p></details></div></article><article class="qz" id="U06-Q2" data-qid="U06-Q2" data-n="1"><div class="qz-top"><span class="qz-num">A2</span><span class="qz-id">U06-Q2</span><span class="pill">Udemy quiz · sec 06 · Q2</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have an application performing big data analysis hosted on a fleet of EC2 instances. You want to ensure your EC2 instances have the highest networking performance while communicating with each other. Which EC2 Placement Group should you choose?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U06-Q2" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Spread Placement Group</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U06-Q2" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Cluster Placement Group</p></span></label></li><li data-i="2"><label><input type="radio" name="U06-Q2" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Partition Placement Group</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>Cluster placement group</b> instance gulo ke <b>ek AZ</b> er bhitore low-latency hardware e pashapashi rakhe. Enhanced Networking on thakle instance gulor moddhe <b>10 Gbps</b> bandwidth, low latency, high throughput (<a class="pg" href="06-slides-p078-093.pdf#page=9" target="_blank" rel="noopener">PDF p. 86</a> <span class="pg-part">(part p. 9)</span>).</p><p>Course er use case: Big Data job ja druto shesh korte hobe, ba app jar instance gulor moddhe extremely low latency + high network throughput lage. Ekhane exactly tai chawa hocche.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Spread protita instance alada physical hardware e (multi-AZ) rakhe failure risk komate; instance gulo dure dure thake, tai network performance best na.</li><li><b>C.</b> Partition instance gulo ke alada rack er partition e bhag kore (Hadoop, Cassandra er moto) failure alada rakhar jonno; highest network performance er jonno na.</li></ul><p><b>Keyword:</b> <b>highest networking performance</b> between instances (big data) → Cluster placement group</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Spread Placement Group won't be suitable here as your EC2 instances are placed on different physical hardware. Thus, increases latency between your EC2 instances.</p><p><b>B:</b> Cluster Placement Groups place your EC2 instances next to each other which gives you high-performance computing and networking.</p><p><b>C:</b> Partition Placement Group won't be suitable here as your EC2 instances are grouped into partitions and distributed across different physical hardware. Thus, increases latency between your EC2 instances.</p></details></div></article><article class="qz" id="U06-Q3" data-qid="U06-Q3" data-n="1"><div class="qz-top"><span class="qz-num">A3</span><span class="qz-id">U06-Q3</span><span class="pill">Udemy quiz · sec 06 · Q3</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have a critical application hosted on a fleet of EC2 instances in which you want to achieve maximum availability when there's an AZ failure. Which EC2 Placement Group should you choose?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U06-Q3" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Cluster Placement Group</p></span></label></li><li data-i="1"><label><input type="radio" name="U06-Q3" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Partition Placement Group</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U06-Q3" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Spread Placement Group</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>Spread placement group</b> e protita instance <b>alada physical hardware</b> e thake, ar group ta <b>multiple AZ</b> jure span korte pare. Tai ekta hardware ba ekta AZ fail korleo baki instance gulo bache (<a class="pg" href="06-slides-p078-093.pdf#page=10" target="_blank" rel="noopener">PDF p. 87</a> <span class="pg-part">(part p. 10)</span>).</p><p>Course er use case: app jar <b>maximum high availability</b> lage, ar critical app jekhane protita instance er failure onno gulo theke isolated. Limit: 7 instance per AZ per group.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Cluster sob instance <b>ek AZ</b> te rakhe; AZ fail korle sob instance ekshathe fail kore, ja maximum availability er ulto.</li><li><b>B.</b> Partition boro distributed workload (HDFS, Cassandra) er jonno rack failure alada rakhe, kintu ek partition er onek instance ekshathe pore jete pare. Critical app er protita instance alada rakhte Spread better.</li></ul><p><b>Keyword:</b> <b>critical application</b> + <b>maximum availability</b> (AZ failure) → Spread placement group</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Cluster Placement Groups won't be suitable here your EC2 instances are placed next to each other which gives you high-performance computing and networking.</p><p><b>B:</b> Partition Placement Group won't be suitable here as your EC2 instances are grouped into partitions and distributed across different physical hardware. The question doesn't ask about connectivity between EC2 instances.</p><p><b>C:</b> Spread Placement Group places your EC2 instances on different physical hardware across different AZs.</p></details></div></article><article class="qz" id="U06-Q4" data-qid="U06-Q4" data-n="1"><div class="qz-top"><span class="qz-num">A4</span><span class="qz-id">U06-Q4</span><span class="pill">Udemy quiz · sec 06 · Q4</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Elastic Network Interface (ENI) can be attached to EC2 instances in another AZ.</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U06-Q4" value="0"><span class="qz-l">A</span><span class="qz-o"><p>True</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U06-Q4" value="1"><span class="qz-l">B</span><span class="qz-o"><p>False</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>False</b>. ENI ekta specific <b>Availability Zone</b> e bandha (<a class="pg" href="06-slides-p078-093.pdf#page=13" target="_blank" rel="noopener">PDF p. 90</a> <span class="pg-part">(part p. 13)</span>). ENI banate subnet choose korte hoy, ar subnet ek AZ er; tai shudhu oi AZ er EC2 instance e attach ba move kora jay.</p><p>Failover er jonno ENI ek instance theke arek instance e move kora jay, kintu dui instance-i same AZ e thakte hobe.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Bhul: ENI AZ-bound, onno AZ er instance e attach hoy na. Onno AZ e lagle oi AZ er subnet e notun ENI banate hobe.</li></ul><p><b>Keyword:</b> <b>ENI</b> + <b>another AZ</b> → False (ENI is bound to one AZ)</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>B:</b> Elastic Network Interfaces (ENIs) are bounded to a specific AZ. You can not attach an ENI to an EC2 instance in a different AZ.</p></details></div></article><article class="qz" id="U06-Q5" data-qid="U06-Q5" data-n="1"><div class="qz-top"><span class="qz-num">A5</span><span class="qz-id">U06-Q5</span><span class="pill">Udemy quiz · sec 06 · Q5</span><span class="qz-badge"></span></div><div class="qz-stem"><p>The following are true regarding EC2 Hibernate, <strong>EXCEPT</strong>:</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U06-Q5" value="0"><span class="qz-l">A</span><span class="qz-o"><p>EC2 Instance Root Volume must be an Instance Store volume</p></span></label></li><li data-i="1"><label><input type="radio" name="U06-Q5" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Supports On-Demand and Reserved Instances</p></span></label></li><li data-i="2"><label><input type="radio" name="U06-Q5" value="2"><span class="qz-l">C</span><span class="qz-o"><p>EC2 Instance RAM must be less than 150GB</p></span></label></li><li data-i="3"><label><input type="radio" name="U06-Q5" value="3"><span class="qz-l">D</span><span class="qz-o"><p>EC2 Instance Root Volume type must be an EBS volume</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>EXCEPT proshno: <b>bhul</b> statement ta khujte hobe. Hibernate e RAM er state <b>root EBS volume</b> er ekta file e likha hoy, tai root volume must be <b>EBS, encrypted, not instance store</b>, ar RAM dhorar moto boro (<a class="pg" href="06-slides-p078-093.pdf#page=15" target="_blank" rel="noopener">PDF p. 92-93</a> <span class="pg-part">(part p. 15-16)</span>).</p><p>Tai 'root volume must be Instance Store' bhul → eta-i answer. Baki tin ta (On-Demand/Reserved support, RAM &lt; 150 GB, root EBS) slide onujayi thik.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Thik statement: Hibernate On-Demand, Reserved ar Spot instance e available (<a class="pg" href="06-slides-p078-093.pdf#page=16" target="_blank" rel="noopener">PDF p. 93</a> <span class="pg-part">(part p. 16)</span>). EXCEPT proshne thik statement answer na.</li><li><b>C.</b> Thik statement: instance RAM 150 GB er kom hote hobe (slide er limit; instructor bole limit bodlate pare, exam e dharona-i main).</li><li><b>D.</b> Thik statement: root volume EBS hote hobe (ar encrypted), karon RAM er dump oi EBS e likha hoy.</li></ul><p><b>Keyword:</b> <b>EXCEPT</b> + Hibernate root volume → <b>Instance Store</b> bhul (must be encrypted EBS)</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> To enable EC2 Hibernate, the EC2 Instance Root Volume type must be an EBS volume and must be encrypted to ensure the protection of sensitive content.</p></details></div></article></section>
+<section class="card qz-part" id="part-b"><div class="qz-part-head"><h2>Part B: Practice exam questions (9)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">Everything these questions need is covered up to this section (in your study order). Answer first, ~2 min per question. Then read every explanation, also for the ones you got right.</p><article class="qz" id="B2-Q32" data-qid="B2-Q32" data-n="1"><div class="qz-top"><span class="qz-num">B1</span><span class="qz-id">B2-Q32</span><span class="pill">Bonso set 2 · Q32</span><span class="pill">EC2</span><span class="pill acc">not in course</span><span class="qz-badge"></span></div><div class="qz-stem">When it comes to the ENI attachment to an EC2 instance, what does 'warm attach' refer to?</div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="B2-Q32" value="0"><span class="qz-l">A</span><span class="qz-o">Attaching an ENI to an instance when it is stopped.</span></label></li><li data-i="1"><label><input type="radio" name="B2-Q32" value="1"><span class="qz-l">B</span><span class="qz-o">Attaching an ENI to an instance during the launch process.</span></label></li><li data-i="2"><label><input type="radio" name="B2-Q32" value="2"><span class="qz-l">C</span><span class="qz-o">Attaching an ENI to an instance when it is running.</span></label></li><li data-i="3"><label><input type="radio" name="B2-Q32" value="3"><span class="qz-l">D</span><span class="qz-o">Attaching an ENI to an instance when it is idle.</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>Not in the course:</b> ENI er hot/warm/cold attach terminology course e porano hoy na; shudhu ENI attach/move kora shekhano hoy.</div><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>AWS ENI attach er 3 ta naam dey: <b>hot attach</b> = instance running, <b>warm attach</b> = instance <b>stopped</b>, <b>cold attach</b> = instance launch er somoy. Tai warm attach = stopped instance e ENI attach.</p><p>Note: ei hot/warm/cold naam course e porano hoy na; course e shudhu ENI create, attach ar failover er jonno move kora dekhano hoy (<a class="pg" href="06-slides-p078-093.pdf#page=13" target="_blank" rel="noopener">PDF p. 90</a> <span class="pg-part">(part p. 13)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Launch er somoy attach kora holo <b>cold attach</b>, warm na.</li><li><b>C.</b> Running instance e attach kora holo <b>hot attach</b>, warm na.</li><li><b>D.</b> 'Idle' bole kono instance state nai; attach type gulo running (hot), stopped (warm), launch (cold) diye.</li></ul><p><b>Keyword:</b> <b>warm attach</b> → instance <b>stopped</b> (hot = running, cold = launch)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>An elastic network interface (ENI) is a logical networking component in a VPC that represents a virtual network card. You can attach a network interface to an EC2 instance in the following ways:</p><ol><li>When it's running (hot attach)</li><li>When it's stopped (warm attach)</li><li>When the instance is being launched (cold attach).</li></ol><p>References:</p><p><a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#attach_eni_launch" target="_blank" rel="noopener">http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#attach_eni_launch</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#attach_eni_launch" target="_blank" rel="noopener">http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#attach_eni_launch</a></p></div></article><article class="qz" id="B3-Q42" data-qid="B3-Q42" data-n="1"><div class="qz-top"><span class="qz-num">B2</span><span class="qz-id">B3-Q42</span><span class="pill">Bonso set 3 · Q42</span><span class="pill">EC2</span><span class="qz-badge"></span></div><div class="qz-stem">Which of the following EC2 features should you use to optimize performance for a compute cluster that requires low network latency?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B3-Q42" value="0"><span class="qz-l">A</span><span class="qz-o">Multiple Availability Zones</span></label></li><li data-i="1"><label><input type="radio" name="B3-Q42" value="1"><span class="qz-l">B</span><span class="qz-o">AWS Direct Connect</span></label></li><li data-i="2"><label><input type="radio" name="B3-Q42" value="2"><span class="qz-l">C</span><span class="qz-o">EC2 Dedicated Instances</span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="B3-Q42" value="3"><span class="qz-l">D</span><span class="qz-o">Placement Groups</span></label></li><li data-i="4"><label><input type="radio" name="B3-Q42" value="4"><span class="qz-l">E</span><span class="qz-o">VPC private subnets</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><b>Placement Group</b> diye AWS ke bolo instance gulo hardware e kivabe boshbe. <b>Cluster</b> strategy instance gulo ke ek AZ er low-latency group e pashapashi rakhe: 10 Gbps (Enhanced Networking shoho), low latency, high throughput (<a class="pg" href="06-slides-p078-093.pdf#page=8" target="_blank" rel="noopener">PDF p. 85-86</a> <span class="pg-part">(part p. 8-9)</span>).</p><p>'Compute cluster' + 'low network latency' = Cluster placement group er exact use case.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Multiple AZ availability bare, kintu instance gulo dure thake, tai latency bare, kome na.</li><li><b>B.</b> Direct Connect on-premises data center theke AWS e private dedicated connection; AWS er bhitore instance-to-instance latency komay na.</li><li><b>C.</b> Dedicated Instance mane tomar instance er hardware onno customer er sathe share hoy na; eta isolation/compliance er jonno, network latency er jonno na.</li><li><b>E.</b> Private subnet shudhu internet theke access bondho kore (security); instance gulor moddhe latency komay na.</li></ul><p><b>Keyword:</b> <b>compute cluster</b> + <b>low network latency</b> → Placement Groups (Cluster)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>You can launch EC2 instances in a&nbsp;<em>placement group</em>, which determines how instances are placed on underlying hardware. When you create a placement group, you specify one of the following strategies for the group:</p><ul><li><em>Cluster</em>&mdash;clusters instances into a low-latency group in a single Availability Zone</li><li><em>Spread</em>&mdash;spreads instances across underlying hardware</li></ul><br><p>There is no charge for creating a placement group.</p><p>References:&nbsp;</p><p><a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html</a></p></div></article><article class="qz" id="S1-Q23" data-qid="S1-Q23" data-n="1"><div class="qz-top"><span class="qz-num">B3</span><span class="qz-id">S1-Q23</span><span class="pill">Stephane set 1 · Q23</span><span class="pill">Design High-Performing Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>The planetary research program at an ivy-league university is assisting NASA to find potential landing sites for exploration vehicles of unmanned missions to our neighboring planets. The program uses High Performance Computing (HPC) driven application architecture to identify these landing sites. Which of the following EC2 instance topologies should this application be deployed on?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S1-Q23" value="0"><span class="qz-l">A</span><span class="qz-o"><p>The EC2 instances should be deployed in a spread placement group so that there are no correlated failures</p></span></label></li><li data-i="1"><label><input type="radio" name="S1-Q23" value="1"><span class="qz-l">B</span><span class="qz-o"><p>The EC2 instances should be deployed in a partition placement group so that distributed workloads can be handled effectively</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="S1-Q23" value="2"><span class="qz-l">C</span><span class="qz-o"><p>The EC2 instances should be deployed in a cluster placement group so that the underlying workload can benefit from low network latency and high network throughput</p></span></label></li><li data-i="3"><label><input type="radio" name="S1-Q23" value="3"><span class="qz-l">D</span><span class="qz-o"><p>The EC2 instances should be deployed in an Auto Scaling group so that application meets high availability requirements</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>HPC</b> app e node gulo tightly-coupled: ekta arekta r sathe onek data adan-prodan kore, tai <b>low network latency</b> ar <b>high throughput</b> lage. <b>Cluster placement group</b> instance gulo ek AZ e pashapashi rakhe: 10 Gbps, low latency (<a class="pg" href="06-slides-p078-093.pdf#page=9" target="_blank" rel="noopener">PDF p. 86</a> <span class="pg-part">(part p. 9)</span>).</p><p>Course er use case: big data job ja druto shesh korte hobe, extremely low latency + high network throughput.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Spread correlated failure komay (protita instance alada hardware e, max 7 per AZ); HPC er network performance er jonno na.</li><li><b>B.</b> Partition boro distributed/replicated workload (HDFS, Cassandra, Kafka) er rack failure alada rakhe; HPC er tightly-coupled low latency dey na.</li><li><b>D.</b> Auto Scaling group instance count manage kore (scaling, HA); eta placement group na, network latency komay na.</li></ul><p><b>Keyword:</b> <b>HPC</b> → Cluster placement group (low latency + high throughput)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>The key thing to understand in this question is that HPC workloads need to achieve low-latency network performance necessary for tightly-coupled node-to-node communication that is typical of HPC applications. Cluster placement groups pack instances close together inside an Availability Zone. These are recommended for applications that benefit from low network latency, high network throughput, or both. Therefore this option is the correct answer.</p>
+
+<p>A spread placement group is a group of instances that are each placed on distinct racks, with each rack having its own network and power source. The instances are placed across distinct underlying hardware to reduce correlated failures. A spread placement group can span multiple Availability Zones in the same Region. You can have a maximum of seven running instances per Availability Zone per group.</p>
+
+<p>A partition placement group spreads your instances across logical partitions such that groups of instances in one partition do not share the underlying hardware with groups of instances in different partitions. This strategy is typically used by large distributed and replicated workloads, such as Hadoop, Cassandra, and Kafka. A partition placement group can have partitions in multiple Availability Zones in the same Region. A partition placement group can have a maximum of seven partitions per Availability Zone.</p>
+
+<p>An Auto Scaling group contains a collection of Amazon EC2 instances that are treated as a logical grouping for the purposes of automatic scaling. You do not use Auto Scaling groups per se to meet HPC requirements.</p>
+
+<p>Reference:
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html</p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html</a></p></div></article><article class="qz" id="S2-Q12" data-qid="S2-Q12" data-n="1"><div class="qz-top"><span class="qz-num">B4</span><span class="qz-id">S2-Q12</span><span class="pill">Stephane set 2 · Q12</span><span class="pill">Design Resilient Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A big-data consulting firm is working on a client engagement where the ETL workloads are currently handled via a Hadoop cluster deployed in the on-premises data center. The client wants to migrate their ETL workloads to AWS Cloud. The AWS Cloud solution needs to be highly available with about 50 EC2 instances per Availability Zone. As a solutions architect, which of the following EC2 placement groups would you recommend to handle the distributed ETL workload?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S2-Q12" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Cluster placement group</p></span></label></li><li data-i="1"><label><input type="radio" name="S2-Q12" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Spread placement group</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="S2-Q12" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Partition placement group</p></span></label></li><li data-i="3"><label><input type="radio" name="S2-Q12" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Both Spread placement group and Partition placement group</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>Partition placement group</b> instance gulo ke partition e bhag kore; protita partition alada rack er set e, tai ek rack fail korle shudhu oi partition jay. Same Region er <b>multiple AZ</b> e span kore, ar <b>100s of instance</b> porjonto scale kore (<a class="pg" href="06-slides-p078-093.pdf#page=8" target="_blank" rel="noopener">PDF p. 85</a> <span class="pg-part">(part p. 8)</span>, 88).</p><p>Course er use case-i <b>Hadoop</b>, HDFS, HBase, Cassandra, Kafka. Highly available + 50 instance per AZ + distributed ETL (Hadoop) → Partition.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Cluster sob instance ek AZ te rakhe; AZ fail korle sob jay, tai highly available na.</li><li><b>B.</b> Spread max <b>7 instance per AZ per group</b>; 50 instance per AZ rakha jay na.</li><li><b>D.</b> Spread er 7 per AZ limit er karone eta baad; tai 'both' bhul, shudhu Partition.</li></ul><p><b>Keyword:</b> <b>Hadoop</b> + <b>50 instances per AZ</b> + highly available → Partition placement group</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>You can use placement groups to influence the placement of a group of interdependent instances to meet the needs of your workload. Depending on the type of workload, you can create a placement group using one of the following placement strategies:
+Cluster – packs instances close together inside an Availability Zone. This strategy enables workloads to achieve the low-latency network performance necessary for tightly-coupled node-to-node communication that is typical of HPC applications.
+Partition – spreads your instances across logical partitions such that groups of instances in one partition do not share the underlying hardware with groups of instances in different partitions. This strategy is typically used by large distributed and replicated workloads, such as Hadoop, Cassandra, and Kafka.
+Spread – strictly places a small group of instances across distinct underlying hardware to reduce correlated failures.</p>
+
+<p>Reference:
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html</p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html</a></p><p class="qz-rel">Related: <a href="../22.%20Data%20%26%20Analytics/22-notes.html">Section 22 Data &amp; Analytics</a></p></div></article><article class="qz" id="S4-Q20" data-qid="S4-Q20" data-n="1"><div class="qz-top"><span class="qz-num">B5</span><span class="qz-id">S4-Q20</span><span class="pill">Stephane set 4 · Q20</span><span class="pill">Design Resilient Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You are working as a Solutions Architect for a Big Data processing company that has created a distributed data processing framework that performs best if the network performance between the machines processing the data is high. You are deploying your application on AWS, and care mostly about performance. Which deployment do you recommend?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S4-Q20" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Use Spot Instances</p></span></label></li><li data-i="1"><label><input type="radio" name="S4-Q20" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Use a Placement Group of Spread</p></span></label></li><li data-i="2"><label><input type="radio" name="S4-Q20" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Optimize the EC2 kernel using EC2 User Data</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="S4-Q20" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Use a Placement Group of Cluster</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p>Distributed framework er machine gulor moddhe <b>high network performance</b> lage, ar 'care mostly about performance'. <b>Cluster placement group</b> instance gulo ek AZ e pashapashi rakhe: 10 Gbps (Enhanced Networking), low latency, high throughput (<a class="pg" href="06-slides-p078-093.pdf#page=9" target="_blank" rel="noopener">PDF p. 86</a> <span class="pg-part">(part p. 9)</span>).</p><p>Con ache (AZ fail = sob fail), kintu proshno shudhu performance chay, tai Cluster.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Spot instance cost komay (up to 90% discount), kintu instance-to-instance network performance bare na; ulta jekono shomoy interrupt hote pare.</li><li><b>B.</b> Spread independent failure dey (protita instance alada hardware e), performance na; instance gulo dure thake.</li><li><b>C.</b> User Data shudhu boot e script chalay; network performance mainly instance type ar placement diye bound, kernel tweak diye eta solve hoy na.</li></ul><p><b>Keyword:</b> <b>network performance between machines</b> + <b>care mostly about performance</b> → Cluster placement group</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Spot instances help with costs, but won't help with intra-EC2 network performance. Optimizing the EC2 kernel won't help with network performance as it's bounded by the EC2 instance type mainly. Placements groups are the answer here, where "cluster" guarantees high network performance (correct answer), whereas "spread" would guarantee independent failures between instances.</p></details><p class="qz-rel">Related: <a href="../05.%20EC2%20Fundamentals/05-notes.html">Section 05 EC2 Fundamentals</a></p></div></article><article class="qz" id="S6-Q40" data-qid="S6-Q40" data-n="1"><div class="qz-top"><span class="qz-num">B6</span><span class="qz-id">S6-Q40</span><span class="pill">Stephane set 6 · Q40</span><span class="pill">Design High-Performing Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A Big Data consulting company runs large distributed and replicated workloads on the on-premises data center. The company now wants to move these workloads to Amazon EC2 instances by using the placement groups feature and it wants to minimize correlated hardware failures.</p>
+
+<p>Which of the following represents the correct placement group configuration for the given requirement?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="S6-Q40" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Partition placement groups</p></span></label></li><li data-i="1"><label><input type="radio" name="S6-Q40" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Cluster placement groups</p></span></label></li><li data-i="2"><label><input type="radio" name="S6-Q40" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Spread placement groups</p></span></label></li><li data-i="3"><label><input type="radio" name="S6-Q40" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Multi-AZ placement groups</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Partition placement group</b>: protita partition alada rack er set e (nijer network + power), kono duita partition rack share kore na. Tai ekta hardware/rack failure shudhu oi partition e atke thake → <b>correlated hardware failure</b> kome (<a class="pg" href="06-slides-p078-093.pdf#page=11" target="_blank" rel="noopener">PDF p. 88</a> <span class="pg-part">(part p. 11)</span>).</p><p>Course er use case: <b>large distributed and replicated</b> workload: HDFS, HBase, Cassandra, Kafka. 100s of instance porjonto scale kore.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Cluster sob instance ek AZ e kachakachi rakhe low latency er jonno; AZ gele sob instance ekshathe fail kore, correlated failure bare.</li><li><b>C.</b> Spread-o failure komay, kintu max 7 instance per AZ per group; 'large' distributed workload er jonno chhoto. Large distributed + replicated er answer Partition.</li><li><b>D.</b> 'Multi-AZ placement group' bole kono strategy nai; strategy gulo Cluster, Spread, Partition (slide e notun Precision time-o ache).</li></ul><p><b>Keyword:</b> <b>large distributed and replicated</b> + <b>minimize correlated hardware failures</b> → Partition placement group</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:</p>
+
+<p><strong>Partition placement groups</strong> - Partition placement groups help reduce the likelihood of correlated hardware failures for your application. When using partition placement groups, Amazon EC2 divides each group into logical segments called partitions. Amazon EC2 ensures that each partition within a placement group has its own set of racks. Each rack has its own network and power source. No two partitions within a placement group share the same racks, allowing you to isolate the impact of a hardware failure within your application.</p>
+
+<p>The following image is a simple visual representation of a partition placement group in a single Availability Zone. It shows instances that are placed into a partition placement group with three partitions—Partition 1, Partition 2, and Partition 3. Each partition comprises multiple instances. The instances in a partition do not share racks with the instances in the other partitions, allowing you to contain the impact of a single hardware failure to only the associated partition.</p>
+
+<p>Partition placement groups can be used to deploy large distributed and replicated workloads, such as HDFS, HBase, and Cassandra, across distinct racks. When you launch instances into a partition placement group, Amazon EC2 tries to distribute the instances evenly across the number of partitions that you specify. You can also launch instances into a specific partition to have more control over where the instances are placed.</p>
+
+<p>A partition placement group can have partitions in multiple Availability Zones in the same Region. A partition placement group can have a maximum of seven partitions per Availability Zone. The number of instances that can be launched into a partition placement group is limited only by the limits of your account.</p>
+
+<p>Partition placement groups:
+<img src="../assets/qimg/6b1107e2fb58e447.jpg" alt="" loading="lazy">
+via - <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html#placement-groups-partition" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html#placement-groups-partition</a></p>
+
+<p>Incorrect options:</p>
+
+<p><strong>Cluster placement groups</strong> - A cluster placement group is a logical grouping of instances within a single Availability Zone. A cluster placement group can span peered VPCs in the same Region. Instances in the same cluster placement group enjoy a higher per-flow throughput limit for TCP/IP traffic and are placed in the same high-bisection bandwidth segment of the network. Cluster placement groups are recommended for applications that benefit from low network latency, high network throughput, or both. They are also recommended when the majority of the network traffic is between the instances in the group. As the instances are packed close together inside an Availability Zone, this option is not correct for the given use case.</p>
+
+<p>Cluster placement groups:
+<img src="../assets/qimg/b1f9f27e1607f741.jpg" alt="" loading="lazy">
+via - <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html#placement-groups-partition" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html#placement-groups-partition</a></p>
+
+<p><strong>Spread placement groups</strong> - A spread placement group is a group of instances that are each placed on distinct racks, with each rack having its own network and power source. Spread placement groups are recommended for applications that have a small number of critical instances that should be kept separate from each other. Launching instances in a spread placement group reduces the risk of simultaneous failures that might occur when instances share the same racks. Spread placement groups provide access to distinct racks, and are therefore suitable for mixing instance types or launching instances over time. As the use-case talks about running large distributed and replicated workloads, so it needs more instances, therefore this option is not the right fit for the given use-case.</p>
+
+<p>A spread placement group can span multiple Availability Zones in the same Region. You can have a maximum of seven running instances per Availability Zone per group.</p>
+
+<p>The following image shows seven instances in a single Availability Zone that are placed into a spread placement group. The seven instances are placed on seven different racks.</p>
+
+<p>Spread placement groups:
+<img src="../assets/qimg/8c9839247193045b.jpg" alt="" loading="lazy">
+via - <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html#placement-groups-partition" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html#placement-groups-partition</a></p>
+
+<p><strong>Multi-AZ placement groups</strong> - This is a made-up option, given as a distractor. You should note that the Partition and Spread placement groups can span across multiple Availability Zones in the same Region.</p>
+
+<p>Reference:</p>
+
+<p><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html</a></p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html#placement-groups-partition" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html#placement-groups-partition</a> · <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html</a></p></div></article><article class="qz" id="B4-Q41" data-qid="B4-Q41" data-n="1"><div class="qz-top"><span class="qz-num">B7</span><span class="qz-id">B4-Q41</span><span class="pill">Bonso set 4 · Q41</span><span class="pill">VPC</span><span class="pill warn">⚠ outdated</span><span class="qz-badge"></span></div><div class="qz-stem">Which of the following is incorrect about Private IP addresses?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B4-Q41" value="0"><span class="qz-l">A</span><span class="qz-o">In Amazon EC2 classic, the private IP address is associated exclusively with the instance for its lifetime.</span></label></li><li data-i="1"><label><input type="radio" name="B4-Q41" value="1"><span class="qz-l">B</span><span class="qz-o">In Amazon VPC, an instance retains its private IP addresses when the instance is stopped.</span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="B4-Q41" value="2"><span class="qz-l">C</span><span class="qz-o">In Amazon VPC, an instance does not retain its private IP addresses when the instance is stopped.</span></label></li><li data-i="3"><label><input type="radio" name="B4-Q41" value="3"><span class="qz-l">D</span><span class="qz-o">In Amazon EC2 classic, the private IP addresses are only returned to Amazon EC2 when the instance is stopped or terminated</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>⚠ Outdated:</b> EC2-Classic puropuri retire hoye geche (2022-2023); ekhon sob instance VPC te. Tai A/D er EC2-Classic statements ar relevant na. VPC te stop/start e private IP same thake. <a href="https://aws.amazon.com/blogs/aws/ec2-classic-is-retiring-heres-how-to-prepare/" target="_blank" rel="noopener">source</a></div><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Proshno: kon statement <b>incorrect</b>. VPC te private IPv4 instance er <b>network interface (ENI)</b> er sathe thake; stop → start korle-o private IP <b>same</b> thake, shudhu terminate korle release hoy. Tai C ('VPC te stop e private IP retain kore na') bhul → answer.</p><p>Course hands-on eo dekhano: stop/start e public IP bodlay, kintu private IP bodlay na.</p><p>Aajker kotha: <b>EC2-Classic</b> puropuri retire hoye geche (2022-2023), ekhon sob instance VPC te. Tai A/D er EC2-Classic statement ekhon ar relevant na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Key onujayi eta EC2-Classic er purono thik statement (private IP instance er sathe-i thakto). Incorrect na, tai answer na; ar EC2-Classic ekhon retired.</li><li><b>B.</b> Thik statement: VPC te stop korleo private IP ENI er sathe thake, retain kore. Incorrect statement khujchi, tai eta answer na.</li><li><b>D.</b> EC2-Classic e private IP stop ba terminate e AWS e ferot jeto, tai purono hishabe statement ta thik. Ar EC2-Classic ekhon retired.</li></ul><p><b>Keyword:</b> <b>incorrect</b> + VPC private IP on <b>stop</b> → C (VPC te private IP stop/start e thake)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>For EC2 instances launched in EC2-Classic, AWS releases the private IPv4 address when the instance is stopped or terminated. If you restart your stopped instance, it receives a new private IPv4 address.</p><p>For EC2 instances launched in a VPC, a private IPv4 address remains associated with the network interface when the instance is stopped and restarted. It is only released when the instance is terminated.</p><br><p>References:</p><p><a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html</a></p><p><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html#lifecycle-differences" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html#lifecycle-differences</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html</a> · <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html#lifecycle-differences" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html#lifecycle-differences</a></p><p class="qz-rel">Related: <a href="../27.%20Networking%20-%20VPC/27-notes.html">Section 27 Networking - VPC</a></p></div></article><article class="qz" id="B6-Q23" data-qid="B6-Q23" data-n="1"><div class="qz-top"><span class="qz-num">B8</span><span class="qz-id">B6-Q23</span><span class="pill">Bonso set 6 · Q23</span><span class="pill">EC2</span><span class="qz-badge"></span></div><div class="qz-stem">All Amazon EC2 instances are assigned 2 IP addresses at launch. Which of these two addresses can only be reached from within the Amazon EC2 network?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B6-Q23" value="0"><span class="qz-l">A</span><span class="qz-o">Multiple IP address</span></label></li><li data-i="1"><label><input type="radio" name="B6-Q23" value="1"><span class="qz-l">B</span><span class="qz-o">Public IP address</span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="B6-Q23" value="2"><span class="qz-l">C</span><span class="qz-o">Private IP address</span></label></li><li data-i="3"><label><input type="radio" name="B6-Q23" value="3"><span class="qz-l">D</span><span class="qz-o">Elastic IP Address</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>Private IP</b> diye machine shudhu private network e (AWS/VPC er bhitore) chena jay; internet theke reach kora jay na. Default e protita EC2 pay ekta private IP (AWS internal network er jonno) + ekta public IP (WWW er jonno) (<a class="pg" href="06-slides-p078-093.pdf#page=4" target="_blank" rel="noopener">PDF p. 81</a> <span class="pg-part">(part p. 4)</span>, 84).</p><p>Course hands-on: laptop theke private IP diye SSH hoy na, karon tumi AWS er private network e nao.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> 'Multiple IP address' kono IP type na; launch e default 2 ta IP holo private + public.</li><li><b>B.</b> Public IP internet (WWW) theke reachable; sheta diye-i laptop theke SSH kori.</li><li><b>D.</b> Elastic IP-o ekta public IPv4, internet theke reachable; ar launch e automatic ashe na, nije allocate kore attach korte hoy.</li></ul><p><b>Keyword:</b> <b>can only be reached from within</b> the EC2 network → Private IP</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>A private IPv4 address is an IP address that's not reachable over the Internet. You can use private IPv4 addresses for communication between instances in the same VPC network.</p><p>References:</p><p><a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html</a></p></details><p class="qz-refs">References: <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html</a></p></div></article><article class="qz" id="B2-Q65" data-qid="B2-Q65" data-n="1"><div class="qz-top"><span class="qz-num">B9</span><span class="qz-id">B2-Q65</span><span class="pill">Bonso set 2 · Q65</span><span class="pill">EC2</span><span class="pill warn">⚠ outdated</span><span class="pill acc">not in course</span><span class="qz-badge"></span></div><div class="qz-stem">Using the EC2 API, you requested 40 m5.large On-Demand EC2 instances in a single Availability Zone. 20 instances were successfully created but the other 20 requests failed. <br><br>What's the solution for this and what is the root cause?</div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="B2-Q65" value="0"><span class="qz-l">A</span><span class="qz-o">For new accounts, there is a soft limit of 20 EC2 instances per region. Submit an Amazon EC2 instance Request Form in order to lift this limit.</span></label></li><li data-i="1"><label><input type="radio" name="B2-Q65" value="1"><span class="qz-l">B</span><span class="qz-o">You can only create 20 instances per Availability Zone.  Select a different Availability Zone and retry creating the instances again.</span></label></li><li data-i="2"><label><input type="radio" name="B2-Q65" value="2"><span class="qz-l">C</span><span class="qz-o">A certain Inbound Rule in your Network Access List is preventing you to create more than 20 instances. Remove this rule and the issue will be resolved.</span></label></li><li data-i="3"><label><input type="radio" name="B2-Q65" value="3"><span class="qz-l">D</span><span class="qz-o">The API credentials that you are using has a limit of only 20 requests per hour. Try submitting the request again after one hour.</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>⚠ Outdated:</b> Ekhon EC2 On-Demand limit instance count (20 ta) diye na, vCPU count diye per Region hishab hoy; Service Quotas console theke increase request korte hoy. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html" target="_blank" rel="noopener">source</a></div><div class="qz-note warn"><b>Not in the course:</b> EC2 On-Demand instance/vCPU limit per Region course e porano hoy na.</div><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Thik 20 ta toiri hoye baki 20 fail = account er <b>service limit (quota)</b> e hit. EC2 er ei limit <b>soft limit, per Region</b>; AWS ke increase request korle bariye dey, tarpor abar request pathao.</p><p>Aajker kotha: '20 instance' count-based limit ar nai; ekhon On-Demand quota <b>vCPU count</b> diye per Region hishab hoy, ar <b>Service Quotas</b> console theke increase request kora hoy. Concept same: soft limit, increase chao.</p><p>Note: EC2 instance/vCPU limit course e porano hoy na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Limit AZ-wise na, Region-wise; onno AZ e geleo same Region er quota e atkabe.</li><li><b>C.</b> Network ACL subnet er network traffic allow/deny kore; instance create kora (API call) atkay na, instance count er limit-o dey na.</li><li><b>D.</b> API credential e '20 requests per hour' er moto kono limit nai; problem credential na, account er instance quota. Ek ghonta por-o same quota e atkabe.</li></ul><p><b>Keyword:</b> <b>20 succeeded, other 20 failed</b> → per-Region soft limit, request a limit increase (aaj: vCPU quota, Service Quotas)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Amazon EC2 has a soft limit of 20 instances per region, which can be easily resolved by completing the Amazon EC2 instance request form where your use case and your instance increase will be considered. Limit increases are tied to the region they were requested for.</p><ul><li>Option 2 is incorrect as there is no such limit in the Availability Zone.&nbsp;</li><br><li>Option 3 is incorrect. Network Access List is an optional layer of security for your VPC that acts as a firewall for controlling traffic in and out of one or more subnets. It does not affect the creation of new EC2 instances.</li><br><li>Option 4 is incorrect as there is no problem with your API credentials.&nbsp;</li></ul><br><p>References:</p><p><a href="https://aws.amazon.com/ec2/faqs/#How_many_instances_can_I_run_in_Amazon_EC2 " target="_blank" rel="noopener">https://aws.amazon.com/ec2/faqs/#How_many_instances_can_I_run_in_Amazon_EC2</a></p><p><a href="http://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/ec2/faqs/#How_many_instances_can_I_run_in_Amazon_EC2 " target="_blank" rel="noopener">https://aws.amazon.com/ec2/faqs/#How_many_instances_can_I_run_in_Amazon_EC2 </a> · <a href="http://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html" target="_blank" rel="noopener">http://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html</a> · <a href="https://aws.amazon.com/ec2/faqs/#How_many_instances_can_I_run_in_Amazon_EC2" target="_blank" rel="noopener">https://aws.amazon.com/ec2/faqs/#How_many_instances_can_I_run_in_Amazon_EC2</a></p></div></article><details class="rel-list"><summary>Related questions in other sections (5)</summary><ul><li><a href="../29.%20More%20Solution%20Architectures/29-notes.html#S1-Q64">S1-Q64</a> · Section 29 More Solution Architectures · EC2: Placement Groups</li><li><a href="../24.%20AWS%20Monitoring%20%26%20Audit%20CloudWatch%2C%20CloudTrail%20%26%20Config/24-notes.html#S3-Q57">S3-Q57</a> · Section 24 Monitoring &amp; Audit: CloudWatch, CloudTrail, Config · CloudWatch: EC2 Instance Recovery</li><li><a href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-notes.html#S4-Q9">S4-Q9</a> · Section 08 ELB &amp; ASG · NLB: Static IP per AZ</li><li><a href="../27.%20Networking%20-%20VPC/27-notes.html#S4-Q38">S4-Q38</a> · Section 27 Networking - VPC · VPC: Internet Gateway</li><li><a href="../05.%20EC2%20Fundamentals/05-notes.html#B6-Q8">B6-Q8</a> · Section 05 EC2 Fundamentals · EC2: Elastic IPs</li></ul></details></section>
+</main>
+</body>
+</html>

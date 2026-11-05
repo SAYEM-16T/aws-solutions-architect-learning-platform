@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 21 Databases in AWS</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <nav><a href="../index.html">← Index</a> <a href="../mistakes.html">Mistakes</a> <a href="../20.%20Serverless%20Solution%20Architecture%20Discussions/20-notes.html">‹ Sec 20</a> <a href="../22.%20Data%20%26%20Analytics/22-notes.html">Sec 22 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+  <header>
+    <p class="eyebrow">Section 21 · study order #22</p>
+    <h1>Databases in AWS</h1>
+    <p class="sub">Slides: <a href="21-slides-p516-529.pdf" target="_blank" rel="noopener">21-slides-p516-529.pdf</a> (full PDF p516-529). Page reference <code>PDF p. 359 (part p. 8)</code> = page 359 of the full slide PDF = page 8 of this section's PDF part; click to open the PDF at that page.</p>
+    <p class="sub">Loop: note → PDF part → exam points → Part A → Part B → mistakes again after 2 days.</p>
+  </header>
+  <nav class="card toc noprint" aria-label="On this page">
+    <h2>On this page</h2>
+    <ol><li><a href="#overview">Kon kaaj e kon database: exam er &quot;right database&quot; proshno</a></li><li><a href="#l1">Database bachai: age proshno koro, tarpor type milao</a></li><li><a href="#l2">Amazon RDS: provisioned, managed relational DB</a></li><li><a href="#l3">Amazon Aurora: storage ar compute alada, beshi feature</a></li><li><a href="#l4">Amazon ElastiCache: managed Redis / Memcached cache</a></li><li><a href="#l5">Amazon DynamoDB: serverless NoSQL, exam e beshi ashe</a></li><li><a href="#l6">Amazon S3 database hisabe: boro object er key-value store</a></li><li><a href="#l7">Amazon DocumentDB: MongoDB er jonno &quot;Aurora&quot;</a></li><li><a href="#l8">Amazon Neptune: graph database (social network, fraud, recommendation)</a></li><li><a href="#l9">Amazon Keyspaces: managed, serverless Apache Cassandra</a></li><li><a href="#l10">Amazon QLDB: immutable, cryptographically verifiable ledger</a></li><li><a href="#l11">Amazon Timestream: serverless time series database</a></li><li><a href="#pairs">Confusing pairs</a></li><li><a href="#changes">Course er por ki bodlalo</a></li><li><a href="#exam">Exam e ki mone rakhbo</a></li><li><a href="#part-a">Part A: Udemy quiz (10)</a></li><li><a href="#part-b">Part B: Practice (3)</a></li></ol>
+  </nav>
+<section class="card" id="overview">
+  <p class="num">Age ek nojore</p>
+  <h2>Kon kaaj e kon database: exam er "right database" proshno</h2>
+  <p>Ei section ta mulot <b>summary + notun 5 ta database</b>. RDS, Aurora, ElastiCache (Section 09), DynamoDB (Section 19) ar S3 (Section 12-14) age poracho; ekhane shudhu er <b>database hisabe</b> ek page summary. Notun: <b>DocumentDB, Neptune, Keyspaces, QLDB, Timestream</b>. Exam e proshno prai shob shomoy ekta scenario: "ei data, ei requirement → kon database?" Tai <b>keyword chena</b>-i asol kaaj.</p>
+  <div class="scroll"><table>
+    <tr><th>Service</th><th>Ek line e</th></tr>
+    <tr><td>Amazon RDS</td><td>Managed <b>relational</b> DB (PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2, Custom): SQL, join, transaction = <b>OLTP</b>. Instance + EBS provision korte hoy</td></tr>
+    <tr><td>Amazon Aurora</td><td>AWS er cloud-native PostgreSQL / MySQL: storage <b>6 copy, 3 AZ</b>, self-healing, auto-grow; Serverless, Global (&lt; 1 s), Cloning</td></tr>
+    <tr><td>Amazon ElastiCache</td><td>Managed <b>Redis / Memcached</b>: in-memory, <b>sub-millisecond</b>, cache + session; <b>app code bodlate hoy</b>, SQL nai</td></tr>
+    <tr><td>Amazon DynamoDB</td><td>AWS er nijer <b>serverless NoSQL</b> (key-value / JSON document): ms latency, DAX (<b>microsecond</b>), Streams, Global Tables (active-active), flexible schema</td></tr>
+    <tr><td>Amazon S3</td><td><b>Object</b> er key-value store: boro file, serverless, unlimited; choto onek object er jonno bhalo na</td></tr>
+    <tr><td>Amazon DocumentDB</td><td>"<b>MongoDB</b> er Aurora": JSON store / query / index, 3 AZ, storage 10 GB kore bare</td></tr>
+    <tr><td>Amazon Neptune</td><td><b>Graph</b> database: social network, knowledge graph, fraud detection, recommendation; Neptune Streams</td></tr>
+    <tr><td>Amazon Keyspaces</td><td>Managed <b>Apache Cassandra</b>: serverless, <b>CQL</b>, IoT / time-series data</td></tr>
+    <tr><td>Amazon QLDB</td><td><b>Ledger</b>: immutable journal, cryptographic hash diye verify, central authority (financial transaction). Ekhon end of support</td></tr>
+    <tr><td>Amazon Timestream</td><td><b>Time series</b> database: serverless, trillions event/day, recent data memory te, IoT / real-time analytics</td></tr>
+    <tr><td>Redshift / Athena / EMR / OpenSearch</td><td>Analytics (OLAP, SQL on S3, big data) ar search: shudhu naam ekhane, <b>Section 22 e detail</b></td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="l1">
+  <p class="num">Lecture 1 · Choosing the Right Database · <a class="pg" href="21-slides-p516-529.pdf#page=2" target="_blank" rel="noopener">PDF p. 517-518</a> <span class="pg-part">(part p. 2-3)</span></p>
+  <h2>Database bachai: age proshno koro, tarpor type milao</h2>
+  <div class="idea"><p><b>Shohoj kore (dokan er almari):</b> Kapor rakhte almari, bai rakhte bookshelf, taka rakhte locker. Shob jinish ek almari te rakha jay, kintu kaaj kothin hoy. Database o temni: data er <b>shape</b> (table, JSON, graph, time point, file) ar <b>kivabe porbe</b> (join, key diye, relation dhore, time diye) dekhe database bachai.</p></div>
+  <h3>Requirement er proshno gulo (<a class="pg" href="21-slides-p516-529.pdf#page=2" target="_blank" rel="noopener">PDF p. 517</a> <span class="pg-part">(part p. 2)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Dimension</th><th>Ki jiggesh korbo</th></tr>
+    <tr><td>Workload</td><td>Read-heavy, write-heavy, na balanced? Throughput koto? Din e fluctuate kore? Scale korte hobe?</td></tr>
+    <tr><td>Data volume</td><td>Koto data, koto din rakhbo? Barbe? Average object size? Kivabe access hoy?</td></tr>
+    <tr><td>Durability</td><td>Data koto durable hote hobe? <b>Source of truth</b> kon ta?</td></tr>
+    <tr><td>Latency / user</td><td>Latency requirement? Koto concurrent user?</td></tr>
+    <tr><td>Data model / query</td><td>Kivabe query korbo? <b>Join</b> lagbe? Structured na semi-structured?</td></tr>
+    <tr><td>Schema</td><td>Strong schema na flexibility? Reporting? Search? RDBMS na NoSQL?</td></tr>
+    <tr><td>Cost</td><td>License cost ache (Oracle, SQL Server)? Cloud-native DB (Aurora) te switch korbo?</td></tr>
+  </table></div>
+  <h3>Database types (<a class="pg" href="21-slides-p516-529.pdf#page=3" target="_blank" rel="noopener">PDF p. 518</a> <span class="pg-part">(part p. 3)</span>)</h3>
+  <ul>
+    <li><b>RDBMS (= SQL / OLTP)</b>: RDS, Aurora. <b>Join</b> er jonno best.</li>
+    <li><b>NoSQL</b> (sadharonoto join nai, SQL nai; exception ache): DynamoDB (~JSON), ElastiCache (key/value), Neptune (graph), DocumentDB (MongoDB), Keyspaces (Cassandra).</li>
+    <li><b>Object store</b>: S3 (boro object), Glacier (backup / archive).</li>
+    <li><b>Data warehouse (= SQL analytics / BI)</b>: Redshift (<b>OLAP</b>), Athena, EMR.</li>
+    <li><b>Search</b>: OpenSearch (JSON): free text, unstructured search.</li>
+    <li><b>Graph</b>: Neptune: data er moddhe relationship.</li>
+    <li><b>Ledger</b>: QLDB (Quantum Ledger Database).</li>
+    <li><b>Time series</b>: Timestream.</li>
+    <li>Kichu database (Redshift, Athena, EMR, OpenSearch) <b>Section 22 (Data &amp; Analytics)</b> e detail.</li>
+  </ul>
+  <h3>Boro table: kon need e kon database</h3>
+  <p class="sub">Puro section er sar. Data model, managed / serverless, ar question e kon shobdo dekhle konta. (Serverless / provisioned column ta lecture gulo theke.)</p>
+  <div class="scroll"><table>
+    <tr><th>Type (data model)</th><th>Service</th><th>Managed vs serverless</th><th>Query / latency</th><th>Ei shobdo dekhle</th></tr>
+    <tr><td>Relational (table, join)</td><td><b>RDS</b></td><td>Managed, instance + EBS <b>provision</b> koro</td><td>SQL, transaction</td><td>"relational", "SQL", "join", "OLTP", "transactions (insert/update/delete)", Oracle / SQL Server / MySQL / PostgreSQL / MariaDB / DB2 lift-and-shift</td></tr>
+    <tr><td>Relational (cloud-native)</td><td><b>Aurora</b></td><td>Managed cluster; <b>Aurora Serverless</b> option</td><td>SQL (MySQL / PostgreSQL compatible)</td><td>"6 copies / 3 AZ", "max storage replica", "self-healing", "global &lt; 1 s", "clone for test", "unpredictable OLTP" (Serverless)</td></tr>
+    <tr><td>Key-value, in-memory</td><td><b>ElastiCache</b></td><td>Managed, instance type provision</td><td>Key/value, <b>sub-ms</b>, SQL na</td><td>"Redis", "Memcached", "cache DB query", "session store", "in-memory"; "code change chara" thakle ElastiCache na</td></tr>
+    <tr><td>Key-value + document (NoSQL)</td><td><b>DynamoDB</b></td><td><b>Serverless</b> (on-demand / provisioned + auto scaling)</td><td>Key diye, ms; DAX e <b>microsecond</b></td><td>"serverless NoSQL", "flexible / rapidly evolving schema", "session data + TTL", "active-active multi-region", "item ~100s KB", "millions of users"</td></tr>
+    <tr><td>Object (key = path)</td><td><b>S3</b> (+ Glacier)</td><td><b>Serverless</b>, infinite scale</td><td>Key (object path) diye GET</td><td>"boro file / object (MB-GB)", "static files", "durable key-value for files", "website hosting", archive → Glacier</td></tr>
+    <tr><td>Document (JSON)</td><td><b>DocumentDB</b></td><td>Managed cluster (Aurora er moto)</td><td>MongoDB API, JSON query / index</td><td>"<b>MongoDB</b>", "JSON documents", "MongoDB migrate, code change na"</td></tr>
+    <tr><td>Graph</td><td><b>Neptune</b></td><td>Managed cluster, 3 AZ, 15 read replica</td><td>Graph query, ms, billions relation</td><td>"friends of friends", "social network", "highly connected", "knowledge graph", "fraud detection", "recommendation"</td></tr>
+    <tr><td>Wide-column (Cassandra)</td><td><b>Keyspaces</b></td><td><b>Serverless</b> (on-demand / provisioned + auto scaling)</td><td><b>CQL</b>, single-digit ms</td><td>"<b>Apache Cassandra</b>", "CQL"</td></tr>
+    <tr><td>Ledger (immutable journal)</td><td><b>QLDB</b></td><td><b>Serverless</b>, central authority</td><td>SQL</td><td>"<b>immutable</b>", "<b>cryptographically verifiable</b>", "financial transaction history", "ledger", "central" (decentralized hole Managed Blockchain)</td></tr>
+    <tr><td>Time series</td><td><b>Timestream</b></td><td><b>Serverless</b></td><td>SQL + time series function</td><td>"IoT sensor readings", "time series", "trillions of events per day", "metrics over time"</td></tr>
+    <tr><td>Data warehouse (OLAP)</td><td>Redshift (Athena, EMR)</td><td>Section 22</td><td>SQL analytics / BI</td><td>"OLAP", "analytics", "BI", "data warehouse"</td></tr>
+    <tr><td>Search</td><td>OpenSearch</td><td>Section 22</td><td>Free text search</td><td>"free text search", "unstructured search"</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Decision path (shohoj)</span>
+    <div class="flow">
+      <span class="b">Join / SQL / OLTP?</span><span class="a">→ <small>haan</small></span>
+      <span class="b hl">RDS / Aurora<small>spike unpredictable → Aurora Serverless</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">Shudhu cache?</span><span class="a">→</span>
+      <span class="b hl">ElastiCache<small>ba DynamoDB + DAX</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">NoSQL, serverless, key diye?</span><span class="a">→</span>
+      <span class="b hl">DynamoDB</span>
+    </div>
+    <div class="flow">
+      <span class="b">Specific engine / shape?</span><span class="a">→</span>
+      <span class="b">MongoDB<small>DocumentDB</small></span>
+      <span class="b">Cassandra<small>Keyspaces</small></span>
+      <span class="b">Graph<small>Neptune</small></span>
+      <span class="b">Ledger<small>QLDB</small></span>
+      <span class="b">Time series<small>Timestream</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">Boro file?</span><span class="a">→</span>
+      <span class="b hl">S3</span>
+    </div>
+  </div>
+  <p class="cap">Prothome data shape ar query style, tarpor "serverless / no capacity planning / no code change" er moto constraint.</p>
+  <div class="exam"><b>Exam:</b> Lecture e Stephane bole eta shudhu overview, mukhosto korte hobe na, kintu <b>type → service</b> mapping ta mukhosto rakho. "Relational + SQL + insert/update/delete" → <b>RDS</b> (U21-Q1). OLTP = relational; NoSQL (DynamoDB) OLTP proshne bhul (S6-Q17). Redshift = <b>OLAP</b> analytics, OLTP na. OpenSearch = search, graph traversal na (S4-Q11).</div>
+  <p class="src">Subtitle e "Amazon is free" = Amazon S3, "joint capabilities" = join capabilities: slide diye thik korechi.</p>
+</section>
+
+<section class="card" id="l2">
+  <p class="num">Lecture 2 · RDS Summary · <a class="pg" href="21-slides-p516-529.pdf#page=4" target="_blank" rel="noopener">PDF p. 519</a> <span class="pg-part">(part p. 4)</span></p>
+  <h2>Amazon RDS: provisioned, managed relational DB</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> RDS = tomar chena PostgreSQL / MySQL, kintu patch, backup, failover AWS kore. Tobe server size (instance) ar disk (EBS) tumi-i thik koro, tai eta <b>provisioned</b>, serverless na. Detail <b>Section 09 e</b>.</p></div>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Engine</td><td>PostgreSQL, MySQL, Oracle, SQL Server, DB2, MariaDB, <b>Custom</b></td></tr>
+    <tr><td>Capacity</td><td>Instance size + EBS volume type &amp; size <b>provision</b>; <b>storage auto-scaling</b> ache</td></tr>
+    <tr><td>Read scaling</td><td><b>Read Replica</b>: analytics / reporting production DB te na chaliye replica te</td></tr>
+    <tr><td>HA</td><td><b>Multi-AZ</b>: standby shudhu disaster er jonno, <b>standby te query kora jay na</b></td></tr>
+    <tr><td>Security</td><td>IAM, <b>Security Group</b> (network), <b>KMS</b> (at rest), <b>SSL/TLS</b> (in transit); username/password ba <b>IAM authentication</b></td></tr>
+    <tr><td>Backup</td><td>Automated backup <b>35 din</b> porjonto + <b>point-in-time restore</b> (notun DB banay); long-term → <b>manual snapshot</b></td></tr>
+    <tr><td>Maintenance</td><td>Managed + scheduled maintenance, <b>downtime</b> hoy (engine / OS patch)</td></tr>
+    <tr><td>Credentials</td><td>IAM auth (RDS Proxy diye enforce kora jay), <b>Secrets Manager</b> integration</td></tr>
+    <tr><td>RDS Custom</td><td>Underlying instance e access + customize: <b>Oracle &amp; SQL Server</b></td></tr>
+    <tr><td>Use case</td><td>Relational dataset (RDBMS / <b>OLTP</b>), SQL query, transaction</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "relational, SQL, transactions (insert / update / delete)" → <b>RDS</b> (U21-Q1). Analytics production ke slow korche → <b>Read Replica</b>, Multi-AZ na. Underlying OS access → <b>RDS Custom</b>. RDS e <b>built-in auto-scaling replica nai</b>, replica / Multi-AZ nije banao: tai "max storage replica + auto scale" proshne Aurora (U21-Q4).</div>
+  <p class="src">Subtitle e "at risk encryption" = at-rest, "intrinsic encryption" = in-flight (SSL/TLS) encryption.</p>
+</section>
+
+<section class="card" id="l3">
+  <p class="num">Lecture 3 · Aurora Summary · <a class="pg" href="21-slides-p516-529.pdf#page=5" target="_blank" rel="noopener">PDF p. 520</a> <span class="pg-part">(part p. 5)</span></p>
+  <h2>Amazon Aurora: storage ar compute alada, beshi feature</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Aurora te disk (storage) ekta shared, AWS-managed layer: data <b>6 copy, 3 AZ</b> te, nije sare (self-healing), nije bare. Upore DB instance gulo (writer + reader) shei shared storage pore. Tai replica banano, failover, clone shob druto. Detail <b>Section 09 e</b>.</p></div>
+  <div class="fig">
+    <span class="lbl">Aurora cluster</span>
+    <div class="flow">
+      <span class="b">App</span><span class="a">→ <small>write</small></span>
+      <span class="b hl">Writer endpoint<small>primary instance</small></span>
+      <span class="a">+</span>
+      <span class="b">Reader endpoint<small>read replicas, auto-scaling</small></span>
+    </div>
+    <div class="flow">
+      <span class="a">↓ <small>duijon i ek storage</small></span>
+      <span class="b hl">Shared storage volume<small>6 copies × 3 AZ, auto-grow</small></span>
+    </div>
+  </div>
+  <p class="cap">Compute (instance) ar storage alada: storage HA, compute cluster multi-AZ.</p>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Compatibility</td><td><b>PostgreSQL / MySQL</b> compatible API</td></tr>
+    <tr><td>Storage</td><td><b>6 replica, 3 AZ</b> (bodlano jay na), highly available, <b>self-healing</b>, <b>auto-scaling</b></td></tr>
+    <tr><td>Compute</td><td>DB instance er cluster, multi-AZ; <b>read replica auto-scaling</b></td></tr>
+    <tr><td>Endpoints</td><td><b>Writer endpoint</b> ar <b>reader endpoint</b> (custom endpoint o)</td></tr>
+    <tr><td>Security / monitoring / maintenance</td><td><b>RDS er moto</b></td></tr>
+    <tr><td>Backup / restore</td><td>Option gulo jano (Section 09 er lecture)</td></tr>
+    <tr><td>Aurora Serverless</td><td><b>Unpredictable / intermittent</b> workload, <b>capacity planning nai</b></td></tr>
+    <tr><td>Aurora Global</td><td>Protita secondary region e <b>16 ta read instance</b> porjonto, storage replication <b>&lt; 1 second</b>; problem hole secondary ke <b>promote</b> kore primary</td></tr>
+    <tr><td>Aurora Machine Learning</td><td>Aurora theke <b>SageMaker &amp; Comprehend</b> diye ML</td></tr>
+    <tr><td>Database Cloning</td><td>Existing cluster theke notun cluster (test / staging), <b>snapshot restore er cheye fast</b></td></tr>
+    <tr><td>Use case</td><td>RDS er moto, kintu <b>kom maintenance, beshi flexibility / performance / feature</b></td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "OLTP + built-in auto-scaling + <b>maximum storage replica</b>" → <b>Aurora</b> (6 copy) (U21-Q4). "OLTP + <b>unpredictable spike</b>, age theke jani na" → <b>Aurora Serverless</b>; DynamoDB on-demand spike handle kore kintu NoSQL, OLTP relational na (S6-Q17). "Cross-region DR, &lt; 1 s replication" → <b>Aurora Global</b>. "Production theke test DB druto" → <b>Cloning</b>.</div>
+</section>
+
+<section class="card" id="l4">
+  <p class="num">Lecture 4 · ElastiCache Summary · <a class="pg" href="21-slides-p516-529.pdf#page=6" target="_blank" rel="noopener">PDF p. 521</a> <span class="pg-part">(part p. 6)</span></p>
+  <h2>Amazon ElastiCache: managed Redis / Memcached cache</h2>
+  <div class="idea"><p><b>Shohoj kore (pocket e notebook):</b> Barbar library (database) e giye ek-i boi khojar bodole dorkari kotha pocket er notebook (cache, RAM) e likhe rakho: khub druto (<b>sub-millisecond</b>). Kintu notebook dekhar obbhash (app code) tomakei toiri korte hobe. Detail <b>Section 09 e</b>.</p></div>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Ki</td><td>Managed <b>Redis / Memcached</b> (RDS er moto offering, kintu cache er jonno)</td></tr>
+    <tr><td>Speed</td><td><b>In-memory</b> data store, <b>sub-millisecond</b> latency</td></tr>
+    <tr><td>Capacity</td><td>ElastiCache <b>instance type</b> select koro (e.g. <code>cache.m6g.large</code>)</td></tr>
+    <tr><td>Scaling / HA</td><td><b>Clustering</b> (Redis), <b>Multi-AZ</b>, Read Replica (sharding)</td></tr>
+    <tr><td>Security</td><td>IAM, Security Group, KMS, <b>Redis AUTH</b></td></tr>
+    <tr><td>Backup</td><td>Backup / snapshot / point-in-time restore</td></tr>
+    <tr><td>Maintenance</td><td>Managed + scheduled</td></tr>
+    <tr><td>Boro shorto</td><td><b>Application code change lage</b> ElastiCache use korte</td></tr>
+    <tr><td>Use case</td><td>Key/value store, <b>frequent read, kom write</b>, DB query result cache, website <b>session data</b>; <b>SQL use kora jay na</b></td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "Redis API compatible caching" → <b>ElastiCache</b> (U21-Q2). "Caching <b>without code change</b>" → ElastiCache <b>na</b> (DynamoDB hole <b>DAX</b>). ElastiCache <b>primary NoSQL database na</b>, cache layer (S3-Q32). Boro file durable rakhte ElastiCache na: in-memory, durable na (U21-Q6). OLTP relational query ElastiCache e hoy na (S6-Q17).</div>
+</section>
+
+<section class="card" id="l5">
+  <p class="num">Lecture 5 · DynamoDB Summary · <a class="pg" href="21-slides-p516-529.pdf#page=7" target="_blank" rel="noopener">PDF p. 522</a> <span class="pg-part">(part p. 7)</span></p>
+  <h2>Amazon DynamoDB: serverless NoSQL, exam e beshi ashe</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> DynamoDB = AWS er nijer (proprietary) key-value + document database. Server nai, table banao ar use koro. Schema flexible, tai notun field jog korte migration lage na. Detail <b>Section 19 e</b>.</p></div>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Ki</td><td>AWS proprietary, managed <b>serverless NoSQL</b>, <b>millisecond</b> latency</td></tr>
+    <tr><td>Capacity mode</td><td><b>Provisioned</b> (+ optional auto scaling): dhire dhire bare / kome emon smooth workload. <b>On-demand</b>: capacity provision nai, <b>unpredictable / hothat steep spike</b></td></tr>
+    <tr><td>Cache bodli</td><td>Key/value store hisabe <b>ElastiCache er jaygay</b> bosano jay: session data + <b>TTL</b> (nirdishto shomoy por row expire)</td></tr>
+    <tr><td>HA</td><td>Highly available, <b>default e multi-AZ</b>; read ar write <b>decoupled</b>; <b>transaction</b> capability</td></tr>
+    <tr><td>DAX</td><td>DynamoDB er read cache cluster, <b>microsecond</b> read latency, fully compatible</td></tr>
+    <tr><td>Security</td><td>Authentication + authorization <b>IAM</b> diye</td></tr>
+    <tr><td>Event processing</td><td><b>DynamoDB Streams</b> → Lambda (protita change e Lambda), ba <b>Kinesis Data Streams</b> e pathao (Firehose integration, <b>1 bochor</b> porjonto retention)</td></tr>
+    <tr><td>Global Tables</td><td><b>Active-active</b> multi-region: je kono region theke read + write</td></tr>
+    <tr><td>Backup</td><td><b>PITR</b> on korle automated backup, <b>35 din</b> er je kono point e restore (<b>notun table</b>); long-term → <b>on-demand backup</b> (notun table e restore)</td></tr>
+    <tr><td>S3 export / import</td><td>PITR window er moddhe S3 e export <b>RCU khoroch chara</b>; S3 theke import <b>WCU chara</b> notun table e</td></tr>
+    <tr><td>Schema</td><td><b>Rapidly evolving schema</b> er jonno great</td></tr>
+    <tr><td>Use case</td><td>Serverless app development, <b>choto document (100s KB)</b>, distributed serverless cache</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "Fully managed NoSQL + <b>in-memory caching</b> + million user, elastic scale" → <b>DynamoDB (+ DAX)</b>; DocumentDB te in-memory cache layer nai, ElastiCache primary DB na (S3-Q32). "Serverless NoSQL + global" → DynamoDB Global Tables (U21-Q3, course er answer). "Flexible / rapidly changing schema" → DynamoDB. Boro file (100 MB) DynamoDB te na: item max <b>400 KB</b> (Section 19) (U21-Q6). OLTP relational proshne DynamoDB on-demand / provisioned dutoi bhul (S6-Q17).</div>
+  <p class="src">Subtitle e "dynamicDB" = DynamoDB, "Pointing Time" = Point-in-time, "right capacity units" = write capacity units, "standing the data" = sending the data.</p>
+</section>
+
+<section class="card" id="l6">
+  <p class="num">Lecture 6 · S3 Summary · <a class="pg" href="21-slides-p516-529.pdf#page=8" target="_blank" rel="noopener">PDF p. 523</a> <span class="pg-part">(part p. 8)</span></p>
+  <h2>Amazon S3 database hisabe: boro object er key-value store</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> S3 o ek dhoroner key-value store: <b>key = object er puro path</b>, value = file. Boro file er jonno darun, kintu lakh lakh choto record (row) rakhar jonno na: sheta DynamoDB er kaaj. Detail <b>Section 12-14 e</b>.</p></div>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Model</td><td>Object er <b>key / value store</b>; <b>boro object</b> e bhalo, onek choto object e na</td></tr>
+    <tr><td>Scale</td><td>Serverless, infinite scale, <b>versioning</b></td></tr>
+    <tr><td>Max object size</td><td>Slide: <b>50 TB</b>. Video bole 5 TB (purono; "Course er por ki bodlalo" dekho)</td></tr>
+    <tr><td>Tiers</td><td>S3 Standard, Infrequent Access, Intelligent-Tiering, Glacier + <b>lifecycle policy</b> diye transition</td></tr>
+    <tr><td>Features</td><td>Versioning, Encryption, Replication, <b>MFA-Delete</b>, Access Logs</td></tr>
+    <tr><td>Security</td><td>IAM, <b>Bucket Policy</b>, ACL, <b>Access Points</b>, <b>Object Lambda</b> (app e pathanor age object modify), CORS, <b>Object Lock / Vault Lock</b> (Glacier)</td></tr>
+    <tr><td>Encryption</td><td><b>SSE-S3, SSE-KMS</b> (nijer KMS key), <b>SSE-C</b>, client-side, TLS in transit, default encryption</td></tr>
+    <tr><td>Batch</td><td><b>S3 Batch Operations</b> (e.g. unencrypted object encrypt, replication on korar age purono file copy); file list → <b>S3 Inventory</b></td></tr>
+    <tr><td>Performance</td><td><b>Multi-part upload</b> (parallel), <b>Transfer Acceleration</b>, <b>S3 Select</b> (shudhu dorkari data)</td></tr>
+    <tr><td>Automation</td><td><b>S3 Event Notifications</b> → SNS, SQS, Lambda, EventBridge (notun object create hole react)</td></tr>
+    <tr><td>Use case</td><td>Static files, <b>boro file er key-value store</b>, website hosting</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "100 MB file, <b>reliable + durable key-value store</b>" → <b>S3</b>; DynamoDB item 400 KB, ElastiCache durable na, Aurora relational (U21-Q6). Unencrypted purono object encrypt → <b>S3 Batch Operations</b> (+ Inventory). Encryption / Object Lock / replication er detail Section 13-14 e.</div>
+  <p class="src">Subtitle e "client site" = client-side. Video bole Transfer Acceleration "ek region theke onno region e"; Section 13 er moto mone rakho: dur theke <b>edge location diye</b> bucket e upload fast.</p>
+</section>
+
+<section class="card" id="l7">
+  <p class="num">Lecture 7 · DocumentDB · <a class="pg" href="21-slides-p516-529.pdf#page=9" target="_blank" rel="noopener">PDF p. 524</a> <span class="pg-part">(part p. 9)</span></p>
+  <h2>Amazon DocumentDB: MongoDB er jonno "Aurora"</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Aurora jemon PostgreSQL / MySQL er AWS-version, DocumentDB temni <b>MongoDB</b> er AWS-version. MongoDB app er driver / code ek-i rekhe database ta AWS ke manage korte dao.</p></div>
+  <div class="fig">
+    <span class="lbl">Analogy</span>
+    <div class="flow">
+      <span class="b">PostgreSQL / MySQL</span><span class="a">→ <small>AWS implementation</small></span>
+      <span class="b hl">Aurora</span>
+    </div>
+    <div class="flow">
+      <span class="b">MongoDB<small>NoSQL, JSON</small></span><span class="a">→ <small>AWS implementation</small></span>
+      <span class="b hl">DocumentDB</span>
+    </div>
+  </div>
+  <p class="cap">Ek-i rokom "deployment concept": cluster, 3 AZ replication, storage auto-grow.</p>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Ki</td><td><b>NoSQL</b> document DB, <b>MongoDB compatible</b>; MongoDB = <b>JSON</b> data store, query, index</td></tr>
+    <tr><td>Deployment</td><td>Aurora er moto concept</td></tr>
+    <tr><td>HA</td><td>Fully managed, highly available, <b>3 AZ</b> e replication</td></tr>
+    <tr><td>Storage</td><td>Automatically <b>10 GB increment</b> e bare</td></tr>
+    <tr><td>Scale</td><td><b>Millions of requests per second</b> workload porjonto scale</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "<b>MongoDB</b>" dekhle → <b>DocumentDB</b>. "MongoDB migrate, high scalability + availability, <b>code change chara</b>" → DocumentDB; "<b>RDS for MongoDB</b>" bole kichu nai (U21-Q7). "NoSQL" dekhle DocumentDB ar DynamoDB dutoi mathay rakho. Course er U21-Q3: "managed NoSQL <b>Serverless</b> + <b>global</b>" → course answer <b>DynamoDB</b> (tokhon DocumentDB e serverless chilo na); ajke DocumentDB e Global Clusters ar Serverless dutoi ache, "Course er por ki bodlalo" dekho.</div>
+</section>
+
+<section class="card" id="l8">
+  <p class="num">Lecture 8 · Neptune + Neptune Streams · <a class="pg" href="21-slides-p516-529.pdf#page=10" target="_blank" rel="noopener">PDF p. 525-526</a> <span class="pg-part">(part p. 10-11)</span></p>
+  <h2>Amazon Neptune: graph database (social network, fraud, recommendation)</h2>
+  <div class="idea"><p><b>Shohoj kore (Facebook):</b> User er friend ache, post e comment, comment e like, user post share kore. Shob kichu ekta arekta r shathe <b>jora</b> (node + edge) = graph. "Mike er friend der post e mot koto like?" emon proshno table-join diye kothin ar slow; graph DB te eta-i shohoj kaaj.</p></div>
+  <div class="fig">
+    <span class="lbl">Graph dataset</span>
+    <div class="flow">
+      <span class="b">User Mike</span><span class="a">→ <small>friend</small></span>
+      <span class="b">User Ana</span><span class="a">→ <small>posted</small></span>
+      <span class="b">Post</span><span class="a">← <small>likes</small></span>
+      <span class="b">Users</span>
+    </div>
+  </div>
+  <p class="cap">Relationship-i data: Neptune ei rokom complex traversal query optimize kore.</p>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Ki</td><td>Fully managed <b>graph</b> database</td></tr>
+    <tr><td>HA</td><td><b>3 AZ</b> e highly available, <b>15 read replica</b> porjonto</td></tr>
+    <tr><td>Kaaj</td><td><b>Highly connected dataset</b> er app; complex + hard query er jonno optimized</td></tr>
+    <tr><td>Scale</td><td><b>Billions of relations</b> store, graph query <b>milliseconds</b> e</td></tr>
+    <tr><td>Use case</td><td><b>Knowledge graph</b> (Wikipedia), <b>fraud detection</b>, <b>recommendation engine</b>, <b>social networking</b></td></tr>
+  </table></div>
+  <h3>Neptune Streams (<a class="pg" href="21-slides-p516-529.pdf#page=11" target="_blank" rel="noopener">PDF p. 526</a> <span class="pg-part">(part p. 11)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Neptune Streams flow</span>
+    <div class="flow">
+      <span class="b">App writes</span><span class="a">→</span>
+      <span class="b">Neptune cluster</span><span class="a">→</span>
+      <span class="b hl">Neptune Streams<small>ordered, no duplicate</small></span><span class="a">→ <small>HTTP GET (Streams API)</small></span>
+      <span class="b">Streams reader app</span><span class="a">→</span>
+      <span class="b">S3 / OpenSearch / ElastiCache / onno region er Neptune</span>
+    </div>
+  </div>
+  <p class="cap">Graph e protita change er real-time, strictly ordered sequence; REST API diye pora jay.</p>
+  <ul>
+    <li>Graph data er <b>protita change</b> er real-time <b>ordered sequence</b>.</li>
+    <li>Write er <b>shathe shathe</b> change stream e available.</li>
+    <li><b>No duplicates, strict order</b>.</li>
+    <li>Stream data <b>HTTP REST API</b> diye access.</li>
+    <li>Use case: change hole <b>notification</b>; graph data <b>onno data store e sync</b> (S3, OpenSearch, ElastiCache); <b>cross-region replicate</b> (stream pore target Neptune cluster e likho).</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "social media, friends, likes, <b>friends of Mike er post e likes</b>", "highly connected", "graph" → <b>Neptune</b>. RDS / Aurora o kaaj korbe kintu graph DB beshi uposhukto; QLDB ledger, OpenSearch / ElasticSearch search, Redshift OLAP (U21-Q5, S4-Q11). Graph change real-time onno store e → <b>Neptune Streams</b>.</div>
+  <p class="src">Subtitle e "think no more than Neptune" mane "Neptune chara ar kichu bhebo na".</p>
+</section>
+
+<section class="card" id="l9">
+  <p class="num">Lecture 9 · Keyspaces (for Apache Cassandra) · <a class="pg" href="21-slides-p516-529.pdf#page=12" target="_blank" rel="noopener">PDF p. 527</a> <span class="pg-part">(part p. 12)</span></p>
+  <h2>Amazon Keyspaces: managed, serverless Apache Cassandra</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Cassandra holo open-source distributed NoSQL DB. Nije cluster chalano kothin (node, repair, scaling). Keyspaces e ek-i CQL query, kintu server AWS er, ar <b>serverless</b>: traffic onujayi nije bare kome.</p></div>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Ki</td><td>Managed <b>Apache Cassandra-compatible</b> database</td></tr>
+    <tr><td>Model</td><td><b>Serverless</b>, scalable, highly available, fully managed</td></tr>
+    <tr><td>Scaling</td><td>App er traffic onujayi table <b>automatically up/down</b></td></tr>
+    <tr><td>Replication</td><td>Table <b>3 bar</b> replicate, multiple AZ e</td></tr>
+    <tr><td>Query</td><td><b>Cassandra Query Language (CQL)</b></td></tr>
+    <tr><td>Performance</td><td>Je kono scale e <b>single-digit millisecond</b>, 1000s request/s</td></tr>
+    <tr><td>Capacity</td><td><b>On-demand</b> ba <b>provisioned + auto-scaling</b> (DynamoDB er moto)</td></tr>
+    <tr><td>Backup</td><td>Encryption, backup, <b>PITR 35 din</b></td></tr>
+    <tr><td>Use case</td><td><b>IoT device info</b>, <b>time-series data</b></td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "<b>Apache Cassandra</b>" ba "<b>CQL</b>" dekhle → <b>Keyspaces</b>, ar kichu na (U21-Q8). DynamoDB o NoSQL kintu Cassandra-compatible na; DocumentDB = MongoDB; Timestream = time series DB, Cassandra na.</div>
+</section>
+
+<section class="card" id="l10">
+  <p class="num">Lecture 10 · QLDB (Quantum Ledger Database) · slide nai, list e naam <a class="pg" href="21-slides-p516-529.pdf#page=3" target="_blank" rel="noopener">PDF p. 518</a> <span class="pg-part">(part p. 3)</span></p>
+  <h2>Amazon QLDB: immutable, cryptographically verifiable ledger</h2>
+  <div class="idea"><p><b>Shohoj kore (bank er passbook):</b> Ledger = financial transaction er khata. Passbook e ekbar entry hole muche fela jay na; bhul hole notun entry diye thik koro. QLDB te protita change ekta <b>journal</b> e jog hoy, ar protitar <b>cryptographic hash</b> hoy, tai keu kichu delete / modify korle dhora pore.</p></div>
+  <div class="fig">
+    <span class="lbl">Journal</span>
+    <div class="flow">
+      <span class="b">Change 1<small>hash</small></span><span class="a">→</span>
+      <span class="b">Change 2<small>hash</small></span><span class="a">→</span>
+      <span class="b">Change 3<small>hash</small></span><span class="a">→</span>
+      <span class="b hl">Verify<small>je keu, kichu muche jay ni</small></span>
+    </div>
+  </div>
+  <p class="cap">Append-only journal + cryptographic hash = immutable, verifiable history.</p>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Ki</td><td>Financial transaction er <b>ledger</b>; fully managed, <b>serverless</b>, highly available, <b>3 AZ</b> replication</td></tr>
+    <tr><td>Kaaj</td><td>App data te somoy er shathe <b>shob change er history</b> review</td></tr>
+    <tr><td>Immutable</td><td>Likhle ar <b>remove / modify kora jay na</b></td></tr>
+    <tr><td>Verify</td><td>Journal e protita modification er <b>cryptographic hash</b>; je keu verify korte pare kichu delete / modify hoy ni</td></tr>
+    <tr><td>Performance</td><td>Common ledger blockchain framework er cheye <b>2-3x</b> better</td></tr>
+    <tr><td>Query</td><td><b>SQL</b> diye data manipulate</td></tr>
+  </table></div>
+  <h3>QLDB vs Amazon Managed Blockchain</h3>
+  <div class="scroll"><table>
+    <tr><th></th><th>QLDB</th><th>Managed Blockchain</th></tr>
+    <tr><td>Authority</td><td><b>Central</b> (Amazon er ekta central database e journal)</td><td><b>Decentralized</b></td></tr>
+    <tr><td>Kokhon</td><td>Central ledger, financial regulation er shathe mile</td><td>Decentralization lagbe (blockchain)</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "financial transactions", "<b>immutable</b>", "<b>cryptographically verifiable</b>", "ledger", "history of all changes" → <b>QLDB</b> (U21-Q9). Decentralized / blockchain → Managed Blockchain. Aurora relational, DocumentDB JSON, Neptune graph: kono tai built-in cryptographic verification dey na. Mone rakho: QLDB <b>31 July 2025 e end of support</b>; course / practice answer tobuo QLDB.</div>
+  <p class="src">Ei lecture er jonno PDF e alada QLDB slide nai (shudhu <a class="pg" href="21-slides-p516-529.pdf#page=3" target="_blank" rel="noopener">PDF p. 518</a> <span class="pg-part">(part p. 3)</span> er list e naam). Subtitle e "availability T zones" = Availability Zones.</p>
+</section>
+
+<section class="card" id="l11">
+  <p class="num">Lecture 11 · Timestream · <a class="pg" href="21-slides-p516-529.pdf#page=13" target="_blank" rel="noopener">PDF p. 528-529</a> <span class="pg-part">(part p. 13-14)</span></p>
+  <h2>Amazon Timestream: serverless time series database</h2>
+  <div class="idea"><p><b>Shohoj kore (thermometer er khata):</b> Protita reading er sathe ekta <b>time</b> thake: "10:00 e 31°C, 10:01 e 31.5°C". Emon point er series = time series. Relational DB te rakhle slow + dami; Timestream eta-r jonno banano: recent data memory te, purono data sosta storage e.</p></div>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Summary</th></tr>
+    <tr><td>Ki</td><td>Fully managed, fast, scalable, <b>serverless</b> time series DB</td></tr>
+    <tr><td>Scaling</td><td>Capacity automatically up / down</td></tr>
+    <tr><td>Scale</td><td>Din e <b>trillions of events</b> store + analyze</td></tr>
+    <tr><td>Cost / speed</td><td>Relational DB er cheye <b>1000s times faster</b> ar <b>1/10th cost</b> (time series data te)</td></tr>
+    <tr><td>Query</td><td><b>Scheduled queries</b>, multi-measure records, <b>SQL compatibility</b></td></tr>
+    <tr><td>Storage tiering</td><td><b>Recent data memory te</b>, historical data <b>cost-optimized storage</b> e</td></tr>
+    <tr><td>Analytics</td><td>Built-in time series analytics function: <b>near real-time</b> pattern khoja</td></tr>
+    <tr><td>Security</td><td>Encryption in transit + at rest</td></tr>
+    <tr><td>Use case</td><td><b>IoT apps</b>, operational applications, <b>real-time analytics</b></td></tr>
+  </table></div>
+  <h3>Architecture (<a class="pg" href="21-slides-p516-529.pdf#page=14" target="_blank" rel="noopener">PDF p. 529</a> <span class="pg-part">(part p. 14)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Ingest → Timestream → consume</span>
+    <div class="flow">
+      <span class="b">AWS IoT</span>
+      <span class="b">Kinesis Data Streams<small>→ Lambda</small></span>
+      <span class="b">Prometheus / Telegraf</span>
+      <span class="b">Kinesis Data Streams / MSK<small>→ Managed Service for Apache Flink</small></span>
+    </div>
+    <div class="flow">
+      <span class="a">↓</span>
+      <span class="b hl">Amazon Timestream</span>
+      <span class="a">↓</span>
+    </div>
+    <div class="flow">
+      <span class="b">QuickSight<small>dashboard</small></span>
+      <span class="b">SageMaker<small>ML</small></span>
+      <span class="b">Grafana</span>
+      <span class="b">Je kono JDBC app<small>SQL</small></span>
+    </div>
+  </div>
+  <p class="cap">Slide e "Kinesis Data Analytics for Apache Flink" = ekhon Amazon Managed Service for Apache Flink (Section 22).</p>
+  <div class="exam"><b>Exam:</b> "<b>thousands of sensors</b>, protiti second e reading, store + <b>fast analytics</b>", "IoT", "time series" → <b>Timestream</b> (U21-Q10). S3 e store hoy kintu fast time-series analytics na; ElastiCache durable store na; Neptune graph. Stephane bole high level e jana-i jotheshto.</div>
+</section>
+
+<section class="card" id="pairs">
+  <h2>Confusing pairs</h2>
+  <div class="scroll"><table class="pairs">
+    <tr><th>A vs B</th><th>Difference</th><th>Kokhon konta</th></tr>
+    <tr><td>RDS vs Aurora</td><td>RDS: instance + EBS provision, replica / Multi-AZ nije setup. Aurora: storage 6 copy / 3 AZ, auto-grow, self-healing, replica auto-scaling, Serverless, Global, Cloning</td><td>Specific engine (Oracle, SQL Server, DB2, MariaDB) → RDS. "Max replica, auto scale, kom maintenance, cloud-native" → Aurora</td></tr>
+    <tr><td>Aurora Serverless vs DynamoDB on-demand</td><td>Duitai unpredictable load e auto scale. Aurora = <b>relational / SQL</b>; DynamoDB = <b>NoSQL</b></td><td>"OLTP / relational / SQL + spike" → Aurora Serverless (S6-Q17). "Serverless NoSQL + spike" → DynamoDB on-demand</td></tr>
+    <tr><td>ElastiCache vs DAX</td><td>ElastiCache: je kono DB er shamne cache, <b>app code change</b>, sub-ms. DAX: shudhu DynamoDB er jonno, API compatible, <b>microsecond</b></td><td>"DynamoDB read fast, code change na" → DAX. "RDS query cache / session store, Redis" → ElastiCache</td></tr>
+    <tr><td>ElastiCache vs DynamoDB (session store)</td><td>ElastiCache in-memory, provisioned instance. DynamoDB serverless, durable, <b>TTL</b> diye expire</td><td>Duitai session store hote pare; "serverless" / "TTL" → DynamoDB; "Redis / in-memory sub-ms" → ElastiCache</td></tr>
+    <tr><td>DynamoDB vs DocumentDB</td><td>Duitai NoSQL / JSON. DynamoDB = AWS proprietary API, serverless. DocumentDB = <b>MongoDB-compatible</b>, cluster (Aurora-style)</td><td>"MongoDB / no code change" → DocumentDB (U21-Q7). "Serverless NoSQL + global, MongoDB chhere dite raji" → course answer DynamoDB (U21-Q3)</td></tr>
+    <tr><td>DynamoDB vs S3 (key-value)</td><td>DynamoDB item max 400 KB, choto record. S3 object 50 TB porjonto, boro file</td><td>"100 MB file, durable key-value" → S3 (U21-Q6). "Choto JSON item, fast lookup" → DynamoDB</td></tr>
+    <tr><td>DynamoDB vs Keyspaces</td><td>Duitai serverless NoSQL, on-demand / provisioned. Keyspaces = <b>Cassandra / CQL</b> compatible</td><td>"Apache Cassandra" → Keyspaces (U21-Q8). Notun serverless app → DynamoDB</td></tr>
+    <tr><td>Keyspaces vs Timestream (IoT)</td><td>Duitai IoT / time-series er use case e ashe. Keyspaces = Cassandra wide-column; Timestream = purpose-built <b>time series</b> + analytics function</td><td>"Cassandra" → Keyspaces. "Sensor reading, time series, fast analytics" → Timestream (U21-Q10)</td></tr>
+    <tr><td>Neptune vs RDS / Aurora (relationship)</td><td>Relational e join diye relation; onek hop (friends of friends) hole kothin + slow. Neptune graph traversal er jonno optimized</td><td>"Social network, friends, likes, highly connected" → Neptune (U21-Q5, S4-Q11)</td></tr>
+    <tr><td>Neptune vs OpenSearch</td><td>Neptune = relationship query. OpenSearch = <b>free text / unstructured search</b></td><td>"Search by any word" → OpenSearch (Section 22). "Relation traverse" → Neptune</td></tr>
+    <tr><td>QLDB vs Managed Blockchain</td><td>QLDB: <b>central authority</b>, immutable journal + cryptographic verify. Managed Blockchain: <b>decentralized</b></td><td>"Immutable, verifiable, central ledger, financial" → QLDB (U21-Q9). "Decentralized, multiple party" → Managed Blockchain</td></tr>
+    <tr><td>RDS / Aurora (OLTP) vs Redshift (OLAP)</td><td>OLTP = transaction (insert / update / delete). OLAP = boro analytics query, BI</td><td>"Transactions" → RDS / Aurora (U21-Q1). "Analytics / data warehouse" → Redshift (Section 22)</td></tr>
+    <tr><td>Neptune Streams vs DynamoDB Streams</td><td>Duitai change er ordered stream. Neptune Streams: <b>HTTP REST API</b> diye pora. DynamoDB Streams: <b>Lambda</b> integration</td><td>Graph change sync → Neptune Streams. DynamoDB change e Lambda → DynamoDB Streams</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="changes">
+  <h2>Course er por ki bodlalo</h2>
+  <ul>
+    <li><b>QLDB end of support (31 July 2025):</b> AWS er "Services in Full Shutdown" list e <b>Amazon QLDB, end of support July 31, 2025</b>; ar use kora jay na. AWS er blog e QLDB theke <b>Aurora PostgreSQL</b> e migrate ar audit use case e Aurora PostgreSQL diye replace er guide. Course / practice question er answer tobuo "immutable + cryptographically verifiable ledger" → <b>QLDB</b>; notun exam e QLDB ashbe kina nishchit na. <a href="https://docs.aws.amazon.com/general/latest/gr/qldb.html">AWS full shutdown list (QLDB)</a> · <a href="https://aws.amazon.com/blogs/database/migrate-an-amazon-qldb-ledger-to-amazon-aurora-postgresql/">Migrate QLDB to Aurora PostgreSQL</a> · <a href="https://aws.amazon.com/blogs/database/replace-amazon-qldb-with-amazon-aurora-postgresql-for-audit-use-cases/">Replace QLDB for audit use cases</a></li>
+    <li><b>Timestream for LiveAnalytics notun customer der jonno bondho (20 June 2025):</b> course e je serverless Timestream dekhano holo, tar ekhon naam <b>Timestream for LiveAnalytics</b>. Existing customer cholbe; notun customer ke AWS <b>Amazon Timestream for InfluxDB</b> (similar functionality, single-digit ms query) dekhte bole. Exam answer "time series / IoT sensor" → <b>Timestream</b>. <a href="https://docs.aws.amazon.com/timestream/latest/developerguide/AmazonTimestreamForLiveAnalytics-availability-change.html">Timestream for LiveAnalytics availability change</a></li>
+    <li><b>DocumentDB: Global Clusters ar Serverless:</b> <b>Global Clusters</b> (June 2021): primary + <b>10</b> ta read-only secondary region porjonto, lag sadharonoto <b>&lt; 1 second</b>. <b>DocumentDB Serverless</b> GA (31 July 2025, DocumentDB 5.0 theke): demand onujayi capacity auto scale. Aro: <b>Elastic Clusters</b> (millions reads/writes per second, petabyte), <b>15</b> read replica, vector search. Tai U21-Q3 er explanation ("DocumentDB e serverless / global nai") ekhon purono; MongoDB migration e DocumentDB-o fit kore. Course answer <b>DynamoDB</b>. <a href="https://aws.amazon.com/about-aws/whats-new/2025/07/amazon-documentdb-serverless/">DocumentDB Serverless GA</a> · <a href="https://aws.amazon.com/about-aws/whats-new/2021/06/announcing-global-clusters-for-amazon-documentdb-with-mongodb-compatibility/">DocumentDB Global Clusters</a> · <a href="https://aws.amazon.com/documentdb/features/">DocumentDB features</a></li>
+    <li><b>Neptune: Serverless ar Neptune Analytics:</b> <b>Neptune Serverless</b> GA (Oct 2022): capacity auto scale (shudhu compute). <b>Neptune Analytics</b> GA (Nov 2023): boro graph data druto analyze korar alada analytics engine (graph algorithm, vector search). Exam er "graph → Neptune" ek-i. <a href="https://aws.amazon.com/about-aws/whats-new/2022/10/amazon-neptune-serverless-generally-available/">Neptune Serverless GA</a> · <a href="https://aws.amazon.com/about-aws/whats-new/2023/11/amazon-neptune-analytics/">Neptune Analytics GA</a></li>
+    <li><b>Keyspaces Multi-Region Replication:</b> active-active, fully managed replication; March 2025 e 6 region er limit theke <b>sob available region</b> e expand. Course e nai; "Cassandra → Keyspaces" ek-i. <a href="https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-keyspaces-multi-region-replication-aws-regions/">Keyspaces Multi-Region Replication all Regions</a></li>
+    <li><b>ElastiCache Serverless (27 Nov 2023) ar Valkey (Oct 2024):</b> Serverless e node type / shard / replica select korte hoy na, capacity planning nai, multi-AZ (slide er "instance type select koro" ekhon ekta option matro). Redis ke ekhon "Redis OSS" bola hoy, notun engine <b>Valkey</b> (Section 09 e detail). "Code change lage" point ta ek-i. <a href="https://aws.amazon.com/about-aws/whats-new/2023/11/amazon-elasticache-serverless/">ElastiCache Serverless</a> · <a href="https://aws.amazon.com/about-aws/whats-new/2024/10/amazon-elasticache-valkey/">ElastiCache Valkey</a></li>
+    <li><b>Aurora:</b> Global Database ekhon <b>10</b> ta secondary region porjonto (protita te 16 read instance); Aurora Serverless <b>v1 bondho (31 March 2025)</b>, ekhon "Aurora Serverless" mane v2. Detail Section 09 er "Course er por ki bodlalo" card e. <a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-global-database.html">Using Aurora Global Database</a> · <a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.Aurora_Fea_Regions_DB-eng.Feature.ServerlessV1.html">Aurora Serverless v1</a></li>
+    <li><b>S3 er kichu feature:</b> max object <b>50 TB</b> (2 Dec 2025; video 5 TB bole). <b>S3 Select</b> notun customer pay na (25 July 2024). <b>S3 Object Lambda</b> notun customer der jonno bondho (7 Nov 2025). Standalone vault-based <b>Amazon Glacier</b> notun customer ney na (15 Dec 2025); archive er jonno S3 Glacier storage class. Detail Section 12-14 e. <a href="https://aws.amazon.com/about-aws/whats-new/2025/12/amazon-s3-maximum-object-size-50-tb/">S3 50 TB</a> · <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/selecting-content-from-objects.html">S3 Select</a> · <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/amazons3-ol-change.html">S3 Object Lambda availability change</a> · <a href="https://aws.amazon.com/s3/glacier/pricing/">Amazon Glacier</a></li>
+    <li><b>Naam bodlano:</b> Elasticsearch Service → <b>Amazon OpenSearch Service</b> (8 Sep 2021; S4-Q11 e "ElasticSearch" naam); Kinesis Data Analytics for Apache Flink → <b>Amazon Managed Service for Apache Flink</b> (Aug 2023, Timestream architecture slide); Kinesis Data Firehose → <b>Amazon Data Firehose</b> (Feb 2024, DynamoDB lecture). <a href="https://docs.aws.amazon.com/opensearch-service/latest/developerguide/rename.html">OpenSearch rename</a> · <a href="https://aws.amazon.com/about-aws/whats-new/2023/08/amazon-managed-service-apache-flink/">Managed Service for Apache Flink</a> · <a href="https://aws.amazon.com/about-aws/whats-new/2024/02/amazon-data-firehose-formerly-kinesis-data-firehose/">Amazon Data Firehose</a></li>
+    <li><b>DynamoDB</b> er notun change (on-demand 50% sosta, configurable PITR 1-35 din, global tables strong consistency) Section 19 er card e ache.</li>
+  </ul>
+</section>
+
+<section class="card exam-box" id="exam">
+  <h2>Exam e ki mone rakhbo</h2>
+  <h3>Keyword → database</h3>
+  <ul>
+    <li>"Relational, SQL, transactions (insert / update / delete)", "OLTP", "join" → <b>RDS</b> / <b>Aurora</b> (U21-Q1). DocumentDB / DynamoDB NoSQL, ElastiCache cache.</li>
+    <li>"OLTP + built-in auto-scaling + <b>max storage replica</b>" → <b>Aurora</b> (6 copy, 3 AZ, self-healing) (U21-Q4). RDS e built-in nai.</li>
+    <li>"OLTP + <b>unpredictable spike</b>" → <b>Aurora Serverless</b>; DynamoDB on-demand / provisioned NoSQL tai bhul, ElastiCache cache (S6-Q17).</li>
+    <li>"<b>Redis / Memcached</b> API", "in-memory cache", "session store", "sub-ms" → <b>ElastiCache</b> (U21-Q2). RDS, DynamoDB, OpenSearch Redis-compatible na.</li>
+    <li>"Caching <b>without code change</b>" → ElastiCache <b>na</b>; DynamoDB hole <b>DAX</b> (microsecond).</li>
+    <li>"Fully managed NoSQL + <b>in-memory caching</b> + million user, elastic" → <b>DynamoDB (+ DAX)</b> (S3-Q32). DocumentDB e in-memory cache nai, ElastiCache primary DB na, RDS relational.</li>
+    <li>"Serverless NoSQL", "flexible / rapidly evolving schema", "session + TTL", "active-active multi-region" → <b>DynamoDB</b>.</li>
+    <li>"Boro file (100 MB) durable key-value" → <b>S3</b>; DynamoDB item 400 KB, ElastiCache durable na (U21-Q6).</li>
+    <li>"<b>MongoDB</b>", "no code change" → <b>DocumentDB</b>; "RDS for MongoDB" nai (U21-Q7).</li>
+    <li>"MongoDB migrate + managed NoSQL <b>serverless</b> + <b>global</b>" → course answer <b>DynamoDB</b> (U21-Q3). Ajke DocumentDB e Serverless + Global Clusters ache, kintu course key DynamoDB.</li>
+    <li>"Social network, friends, likes, <b>highly connected</b>, knowledge graph, fraud detection, recommendation" → <b>Neptune</b> (U21-Q5, S4-Q11). RDS / Aurora "kaaj korbe" kintu best na; OpenSearch search, QLDB ledger, Redshift OLAP.</li>
+    <li>"<b>Apache Cassandra</b>", "CQL" → <b>Keyspaces</b> (U21-Q8).</li>
+    <li>"Financial transactions, <b>immutable</b>, <b>cryptographically verifiable</b>, ledger" → <b>QLDB</b> (U21-Q9). Decentralized → Managed Blockchain. (QLDB ekhon end of support, answer tobuo QLDB.)</li>
+    <li>"Thousands of <b>sensors</b>, reading per second, <b>time series</b>, fast analytics", "IoT" → <b>Timestream</b> (U21-Q10). S3 / ElastiCache / Neptune na.</li>
+    <li>"Analytics / BI / OLAP / data warehouse" → Redshift; "free text search" → OpenSearch (Section 22).</li>
+  </ul>
+  <h3>Numbers (slide)</h3>
+  <ul>
+    <li>RDS / DynamoDB / Keyspaces backup PITR <b>35 din</b>. RDS long-term → manual snapshot; DynamoDB → on-demand backup (notun table e restore).</li>
+    <li>Aurora storage <b>6 copy, 3 AZ</b>; Aurora Global <b>&lt; 1 s</b>, region e <b>16</b> read instance.</li>
+    <li>Neptune <b>3 AZ</b>, <b>15</b> read replica, billions relation, ms query.</li>
+    <li>DocumentDB <b>3 AZ</b>, storage <b>10 GB</b> increment, millions req/s. Keyspaces table <b>3 copy</b>, single-digit ms.</li>
+    <li>ElastiCache <b>sub-ms</b>; DynamoDB <b>ms</b>; DAX <b>microsecond</b>. DynamoDB item <b>100s KB</b> (max 400 KB). S3 object <b>50 TB</b> (purono 5 TB).</li>
+    <li>QLDB: ledger blockchain framework er cheye <b>2-3x</b> fast. Timestream: <b>trillions</b> events/day, relational er cheye <b>1000s times faster, 1/10th cost</b>.</li>
+  </ul>
+  <h3>Traps</h3>
+  <ul>
+    <li>Serverless (no capacity planning): DynamoDB, S3, Keyspaces, QLDB, Timestream, Aurora Serverless. Course e <b>provisioned</b>: RDS, Aurora cluster, ElastiCache, DocumentDB, Neptune.</li>
+    <li>Multi-AZ standby te query <b>kora jay na</b>; read scale → Read Replica.</li>
+    <li>ElastiCache te <b>SQL nai</b>, durable primary store na.</li>
+    <li>"NoSQL" dekhle DynamoDB ar DocumentDB dutoi bhabo; engine naam (MongoDB / Cassandra) thakle sheta-i decide kore.</li>
+    <li>Graph change real-time onno store / region e → <b>Neptune Streams</b> (HTTP REST API, ordered, no duplicates).</li>
+  </ul>
+</section>
+
+<section class="card qz-part" id="part-a"><div class="qz-part-head"><h2>Part A: Udemy course quiz (10)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">The instructor's own section quiz: warm-up, direct questions. Answer first, then press Check.</p><article class="qz" id="U21-Q1" data-qid="U21-Q1" data-n="1"><div class="qz-top"><span class="qz-num">A1</span><span class="qz-id">U21-Q1</span><span class="pill">Udemy quiz · sec 21 · Q1</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Which database helps you store relational datasets, with SQL language compatibility and the capability of processing transactions such as insert, update, and delete?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q1" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon DocumentDB</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U21-Q1" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon RDS</p></span></label></li><li data-i="2"><label><input type="radio" name="U21-Q1" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon DynamoDB</p></span></label></li><li data-i="3"><label><input type="radio" name="U21-Q1" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon ElastiCache</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>Relational dataset + SQL + transaction (insert, update, delete)</b> = RDBMS / OLTP. Course er database type slide e RDBMS (SQL / OLTP) mane <b>RDS ba Aurora</b> (<a class="pg" href="21-slides-p516-529.pdf#page=3" target="_blank" rel="noopener">PDF p. 518</a> <span class="pg-part">(part p. 3)</span>).</p><p>RDS summary (<a class="pg" href="21-slides-p516-529.pdf#page=4" target="_blank" rel="noopener">PDF p. 519</a> <span class="pg-part">(part p. 4)</span>): managed PostgreSQL / MySQL / Oracle / SQL Server / DB2 / MariaDB, use case "store relational datasets, perform SQL queries, transactions". Tai <b>Amazon RDS</b>.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> DocumentDB holo MongoDB-compatible NoSQL document (JSON) database; relational table ar SQL er jonno na.</li><li><b>C.</b> DynamoDB key-value / document NoSQL; transaction kora gele-o relational format ar SQL language nai.</li><li><b>D.</b> ElastiCache in-memory cache (Redis / Memcached); slide bole SQL use kora jay na, primary relational DB na.</li></ul><p><b>Keyword:</b> <b>relational datasets</b> + <b>SQL</b> + <b>transactions</b> → Amazon RDS</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>C:</b> Amazon DynamoDB is a key-value, document, NoSQL database. It does not have SQL and does not store the data in a relational format, but can be used for transactional processing.</p><p><b>D:</b> Amazon ElastiCache is a caching technology and it doesn't have SQL capabilities.</p></details></div></article><article class="qz" id="U21-Q2" data-qid="U21-Q2" data-n="1"><div class="qz-top"><span class="qz-num">A2</span><span class="qz-id">U21-Q2</span><span class="pill">Udemy quiz · sec 21 · Q2</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Which AWS service provides you with caching capability that is compatible with Redis API?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q2" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon RDS</p></span></label></li><li data-i="1"><label><input type="radio" name="U21-Q2" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon DynamoDB</p></span></label></li><li data-i="2"><label><input type="radio" name="U21-Q2" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon OpenSearch</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U21-Q2" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon ElastiCache</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><b>ElastiCache</b> = managed <b>Redis / Memcached</b> (<a class="pg" href="21-slides-p516-529.pdf#page=6" target="_blank" rel="noopener">PDF p. 521</a> <span class="pg-part">(part p. 6)</span>): in-memory data store, sub-millisecond latency. Redis API compatible caching chaile ekmatro uttor eta-i.</p><p>Ajke Redis ke docs e "Redis OSS" bole, ar Valkey engine o ache (Section 09); concept ek-i.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> RDS relational database, caching service na, Redis API o bojhe na.</li><li><b>B.</b> DynamoDB key-value store hisabe ElastiCache er jaygay bosano jay, kintu Redis API support kore na (nijer API).</li><li><b>C.</b> OpenSearch search / indexing service, HTTP API diye kaaj kore; Redis-compatible cache na.</li></ul><p><b>Keyword:</b> <b>caching</b> + <b>Redis API</b> → ElastiCache</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon RDS does not have caching capability and it is based on JDBC and not compatible with Redis API.</p><p><b>B:</b> Amazon DynamoDB can be used as a substitute for Redis but it does not support Redis API.</p><p><b>C:</b> Amazon OpenSearch helps you in indexing and searching through your data. It leverages HTTP for client interactions.</p><p><b>D:</b> Amazon ElastiCache is a fully managed in-memory data store, compatible with Redis or Memcached.</p></details></div></article><article class="qz" id="U21-Q3" data-qid="U21-Q3" data-n="1"><div class="qz-top"><span class="qz-num">A3</span><span class="qz-id">U21-Q3</span><span class="pill">Udemy quiz · sec 21 · Q3</span><span class="pill warn">⚠ outdated</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You want to migrate an on-premises MongoDB NoSQL database to AWS. You don't want to manage any database servers, so you want to use a managed NoSQL Serverless database, that provides you with high availability, durability, and reliability, and the capability to take your database global. Which database should you choose?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q3" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon RDS</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U21-Q3" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon DynamoDB</p></span></label></li><li data-i="2"><label><input type="radio" name="U21-Q3" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon DocumentDB</p></span></label></li><li data-i="3"><label><input type="radio" name="U21-Q3" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon Aurora</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>⚠ Outdated:</b> Explanation bole DocumentDB er serverless ar global feature nai - eta ekhon puran. DocumentDB Global Clusters (2021 theke) ar DocumentDB Serverless (July 2025 GA) dutoi ache, tai MongoDB migration e C (DocumentDB) o ekhon fit kore. Course/exam er answer ekhono DynamoDB. <a href="https://aws.amazon.com/about-aws/whats-new/2025/07/amazon-documentdb-serverless/" target="_blank" rel="noopener">source</a></div><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>Course er answer <b>DynamoDB</b>: chawa holo <b>managed NoSQL Serverless</b>, HA + durability, ar <b>global</b> korar khomota. DynamoDB serverless, default e multi-AZ, ar <b>Global Tables</b> diye active-active multi-region (<a class="pg" href="21-slides-p516-529.pdf#page=7" target="_blank" rel="noopener">PDF p. 522</a> <span class="pg-part">(part p. 7)</span>).</p><p>MongoDB theke DynamoDB te gele data model / code bodlate hobe, kintu question er decisive shobdo "serverless" + "global". Course likhar shomoy DocumentDB e serverless / global option chilo na, tai DynamoDB.</p><p><b>Ajke:</b> DocumentDB e Global Clusters (2021) ar DocumentDB Serverless (July 2025 GA) dutoi ache, tai C-o ekhon fit kore; exam / course key tobuo DynamoDB.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> RDS relational, SQL-based; NoSQL na, serverless o na (instance provision lage).</li><li><b>C.</b> Course er explanation: DocumentDB MongoDB-compatible, kintu tokhon serverless ar global feature chilo na. Ajke dutoi ache, tai bastobe defensible; tobu course key DynamoDB.</li><li><b>D.</b> Aurora relational (MySQL / PostgreSQL compatible), NoSQL na.</li></ul><p><b>Keyword:</b> <b>managed NoSQL Serverless</b> + <b>take your database global</b> → DynamoDB (Global Tables)</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon RDS is a relational, SQL-based database.</p><p><b>B:</b> Amazon DynamoDB is a key-value, document, NoSQL database.</p><p><b>C:</b> Amazon DocumentDB is a NoSQL databases and it might work perfectly here. But the questions states that the database must be Serverless and wants to take the database global. DocumentDB doesn't have a Serverless option and it doesn't have a global database feature.</p><p><b>D:</b> Amazon Aurora is a relational, SQL-based database.</p></details></div></article><article class="qz" id="U21-Q4" data-qid="U21-Q4" data-n="1"><div class="qz-top"><span class="qz-num">A4</span><span class="qz-id">U21-Q4</span><span class="pill">Udemy quiz · sec 21 · Q4</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You are looking to perform Online Transaction Processing (OLTP). You would like to use a database that has built-in auto-scaling capabilities and provides you with the maximum number of replicas for its underlying storage. What AWS service do you recommend?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q4" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon ElastiCache</p></span></label></li><li data-i="1"><label><input type="radio" name="U21-Q4" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon Neptune</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U21-Q4" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon Aurora</p></span></label></li><li data-i="3"><label><input type="radio" name="U21-Q4" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon RDS</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>Aurora</b> storage e data <b>6 replica, 3 AZ</b> te (bodlano jay na), self-healing, storage <b>auto-scaling</b>; read replica o auto-scale hoy (<a class="pg" href="21-slides-p516-529.pdf#page=5" target="_blank" rel="noopener">PDF p. 520</a> <span class="pg-part">(part p. 5)</span>). Tai "OLTP + built-in auto-scaling + underlying storage er maximum replica" → Aurora.</p><p>Aurora PostgreSQL / MySQL compatible relational DB, tai OLTP er jonno thik.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> ElastiCache in-memory cache, OLTP database na, SQL nai.</li><li><b>B.</b> Neptune graph database; highly connected data er jonno, OLTP relational workload er jonno na.</li><li><b>D.</b> RDS e built-in storage replication ei rokom nai: read replica ar Multi-AZ nije enable korte hoy, data 6 copy hoy na.</li></ul><p><b>Keyword:</b> <b>OLTP</b> + <b>built-in auto-scaling</b> + <b>maximum replicas for storage</b> → Aurora (6 copies, 3 AZ)</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon ElastiCache is an in-memory data store, provides you with caching capabilities. It is compatible with Redis and Memcached. It does not support OLTP.</p><p><b>C:</b> Amazon Aurora is a MySQL and PostgreSQL-compatible relational database. It features a distributed, fault-tolerant, self-healing storage system that auto-scales up to 128TB per database instance. It delivers high performance and availability with up to 15 low-latency read replicas, point-in-time recovery, continuous backup to Amazon S3, and replication across 3 AZs.</p><p><b>D:</b> Amazon RDS does not have built-in auto-scaling and data replication capabilities. You need to create RDS Read Replicas and enable Multi-AZ.</p></details></div></article><article class="qz" id="U21-Q5" data-qid="U21-Q5" data-n="1"><div class="qz-top"><span class="qz-num">A5</span><span class="qz-id">U21-Q5</span><span class="pill">Udemy quiz · sec 21 · Q5</span><span class="qz-badge"></span></div><div class="qz-stem"><p>As a Solutions Architect, a startup company asked you for help as they are working on an architecture for a social media website where users can be friends with each other, and like each other's posts. The company plan on performing some complicated queries such as <em>"What are the number of likes on the posts that have been posted by the friends of Mike?"</em>. Which database do you recommend?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q5" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon RDS</p></span></label></li><li data-i="1"><label><input type="radio" name="U21-Q5" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon QLDB</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U21-Q5" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon Neptune</p></span></label></li><li data-i="3"><label><input type="radio" name="U21-Q5" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon OpenSearch</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Friends, likes, posts sob ekta arektar shathe jora = <b>graph dataset</b>. "Mike er friend der post e koto like" = graph traversal query.</p><p><b>Neptune</b> fully managed graph DB, highly connected dataset er complex query er jonno optimized, billions relation ms e query; use case social networking (<a class="pg" href="21-slides-p516-529.pdf#page=10" target="_blank" rel="noopener">PDF p. 525</a> <span class="pg-part">(part p. 10)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> RDS diye join kore kora jay, kintu onek hop er relationship query kothin ar slow; graph DB beshi uposhukto.</li><li><b>B.</b> QLDB immutable financial ledger, relationship query er jonno na.</li><li><b>D.</b> OpenSearch free text / unstructured search er jonno; kaaj chalano jay kintu graph traversal er jonno banano na.</li></ul><p><b>Keyword:</b> <b>social media</b>, <b>friends</b>, <b>likes</b>, complex relationship query → Neptune</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> This would work, but a graph database is better suited.</p><p><b>C:</b> Amazon Neptune is a fast, reliable, fully-managed graph database service that makes it easy to build and run applications that work with highly connected datasets.</p><p><b>D:</b> This would work, but a graph database is better suited.</p></details></div></article><article class="qz" id="U21-Q6" data-qid="U21-Q6" data-n="1"><div class="qz-top"><span class="qz-num">A6</span><span class="qz-id">U21-Q6</span><span class="pill">Udemy quiz · sec 21 · Q6</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have a set of files, 100MB each, that you want to store in a reliable and durable key-value store. Which AWS service do you recommend?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q6" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon Aurora</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U21-Q6" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon S3</p></span></label></li><li data-i="2"><label><input type="radio" name="U21-Q6" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon DynamoDB</p></span></label></li><li data-i="3"><label><input type="radio" name="U21-Q6" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon ElastiCache</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>S3 = object er key-value store</b> (key = bucket e object er puro path). Boro object er jonno great, serverless, infinitely scale, durable (<a class="pg" href="21-slides-p516-529.pdf#page=8" target="_blank" rel="noopener">PDF p. 523</a> <span class="pg-part">(part p. 8)</span>). 100 MB file rakhar jonno sothik.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Aurora relational database; boro file (BLOB) rakhar jonno na.</li><li><b>C.</b> DynamoDB item max 400 KB, tai 100 MB file rakha jay na; choto document (100s KB) er jonno.</li><li><b>D.</b> ElastiCache in-memory cache, durable na, boro object rakhar jonno na.</li></ul><p><b>Keyword:</b> <b>files, 100 MB each</b> + <b>durable key-value store</b> → S3</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>B:</b> Amazon S3 is indeed a key-value store! (where the key is the full path of the object in the bucket)</p><p><b>C:</b> Amazon DynamoDB can not be used to store big objects. The maximum item size in DynamoDB is 400KB.</p><p><b>D:</b> Amazon ElastiCache is a fully managed in-memory data store, compatible with Redis or Memcached. It can not be used to store big objects, in addition to it is not durable.</p></details></div></article><article class="qz" id="U21-Q7" data-qid="U21-Q7" data-n="1"><div class="qz-top"><span class="qz-num">A7</span><span class="qz-id">U21-Q7</span><span class="pill">Udemy quiz · sec 21 · Q7</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A company has an on-premises website that uses ReactJS as its frontend, NodeJS as its backend, and MongoDB for the database. There are some issues with the self-hosted MongoDB database as there is a lot of maintenance required and they don’t have and can’t afford the resources or experience to handle those issues. So, a decision was made to migrate the website to AWS. They have decided to host the frontend ReactJS application in an S3 bucket and the NodeJS backend on a set of EC2 instances. Which AWS service can they use to migrate the MongoDB database that provides them with high scalability and availability without making any code changes?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q7" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon ElastiCache</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U21-Q7" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon DocumentDB</p></span></label></li><li data-i="2"><label><input type="radio" name="U21-Q7" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon RDS for MongoDB</p></span></label></li><li data-i="3"><label><input type="radio" name="U21-Q7" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon Neptune</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>DocumentDB</b> holo MongoDB er jonno AWS er "Aurora": <b>MongoDB-compatible</b>, fully managed, 3 AZ replication, storage auto-grow, millions req/s porjonto scale (<a class="pg" href="21-slides-p516-529.pdf#page=9" target="_blank" rel="noopener">PDF p. 524</a> <span class="pg-part">(part p. 9)</span>).</p><p>MongoDB-compatible bole NodeJS backend er MongoDB driver / query ek-i thake: <b>code change lage na</b>, ar maintenance AWS er.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> ElastiCache Redis / Memcached cache; MongoDB compatible na, primary database o na.</li><li><b>C.</b> "RDS for MongoDB" bole kono service nai; RDS shudhu relational engine (PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2).</li><li><b>D.</b> Neptune graph database; MongoDB document model ar API er shathe compatible na.</li></ul><p><b>Keyword:</b> <b>MongoDB</b> migrate + <b>no code changes</b> → DocumentDB</p></div></article><article class="qz" id="U21-Q8" data-qid="U21-Q8" data-n="1"><div class="qz-top"><span class="qz-num">A8</span><span class="qz-id">U21-Q8</span><span class="pill">Udemy quiz · sec 21 · Q8</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A company using a self-hosted on-premises Apache Cassandra database which they want to migrate to AWS. Which AWS service can they use which provides them with a fully managed, highly available, and scalable Apache Cassandra database?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q8" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon DocumentDB</p></span></label></li><li data-i="1"><label><input type="radio" name="U21-Q8" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon DynamoDB</p></span></label></li><li data-i="2"><label><input type="radio" name="U21-Q8" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon Timestream</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U21-Q8" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon Keyspaces</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><b>Amazon Keyspaces</b> = managed <b>Apache Cassandra-compatible</b> database: serverless, scalable, highly available, 3 copy across AZ, <b>CQL</b> diye query (<a class="pg" href="21-slides-p516-529.pdf#page=12" target="_blank" rel="noopener">PDF p. 527</a> <span class="pg-part">(part p. 12)</span>). Course: "Apache Cassandra dekhle Keyspaces".</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> DocumentDB MongoDB-compatible, Cassandra na.</li><li><b>B.</b> DynamoDB NoSQL ar serverless, kintu Cassandra / CQL compatible na; migrate korte code bodlate hobe.</li><li><b>C.</b> Timestream time series database, Cassandra-compatible na.</li></ul><p><b>Keyword:</b> <b>Apache Cassandra</b> fully managed → Amazon Keyspaces</p></div></article><article class="qz" id="U21-Q9" data-qid="U21-Q9" data-n="1"><div class="qz-top"><span class="qz-num">A9</span><span class="qz-id">U21-Q9</span><span class="pill">Udemy quiz · sec 21 · Q9</span><span class="pill warn">⚠ outdated</span><span class="qz-badge"></span></div><div class="qz-stem"><p>An online payment company is using AWS to host its infrastructure. Due to the application’s nature, they have a strict requirement to store an accurate record of financial transactions such as credit and debit transactions. Those transactions must be stored in secured, immutable, encrypted storage which can be cryptographically verified. Which AWS service is best suited for this use case?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U21-Q9" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon DocumentDB</p></span></label></li><li data-i="1"><label><input type="radio" name="U21-Q9" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon Aurora</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U21-Q9" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon QLDB</p></span></label></li><li data-i="3"><label><input type="radio" name="U21-Q9" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon Neptune</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>⚠ Outdated:</b> Amazon QLDB 31 July 2025 e end of support (full shutdown) hoye geche, ekhon ar use kora jay na; AWS ledger/audit use case er jonno Aurora PostgreSQL e migrate korte bole. Course/exam er answer ekhono QLDB ('immutable, cryptographically verifiable' = QLDB). <a href="https://docs.aws.amazon.com/general/latest/gr/qldb.html" target="_blank" rel="noopener">source</a></div><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>QLDB</b> = ledger database: fully managed, serverless, 3 AZ. Journal e protita change er <b>cryptographic hash</b> hoy, tai data <b>immutable</b> ar je keu <b>cryptographically verify</b> korte pare kichu delete / modify hoy ni. Financial transaction er jonno course er answer.</p><p><b>Ajke:</b> QLDB 31 July 2025 e end of support (full shutdown); AWS ledger / audit er jonno Aurora PostgreSQL e migrate korte bole. Course / exam answer tobuo QLDB.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> DocumentDB JSON document DB; immutable journal ba cryptographic verification nai.</li><li><b>B.</b> Aurora relational DB; data update / delete kora jay, built-in cryptographic verification nai.</li><li><b>D.</b> Neptune graph DB, relationship query er jonno; ledger na.</li></ul><p><b>Keyword:</b> <b>financial transactions</b> + <b>immutable</b> + <b>cryptographically verified</b> → QLDB</p></div></article><article class="qz" id="U21-Q10" data-qid="U21-Q10" data-n="1"><div class="qz-top"><span class="qz-num">A10</span><span class="qz-id">U21-Q10</span><span class="pill">Udemy quiz · sec 21 · Q10</span><span class="pill warn">⚠ outdated</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A startup is working on developing a new project to reduce forest fires due to climate change. The startup is developing sensors that will be spread across the entire forest to make some readings such as temperature, humidity, and pressures which will help detect the forest fires before it happens. They are going to have thousands of sensors that are going to store a lot of readings each second. There is a requirement to store those readings and do fast analytics so they can predict if there is a fire. Which AWS service can they use to store those readings?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U21-Q10" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon Timestream</p></span></label></li><li data-i="1"><label><input type="radio" name="U21-Q10" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon Neptune</p></span></label></li><li data-i="2"><label><input type="radio" name="U21-Q10" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon S3</p></span></label></li><li data-i="3"><label><input type="radio" name="U21-Q10" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon ElastiCache</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>⚠ Outdated:</b> Amazon Timestream for LiveAnalytics 20 June 2025 theke new customer der jonno bondho; new user der jonno Timestream for InfluxDB ache. Time-series data = Timestream, course/exam er answer ekhono eta-i. <a href="https://docs.aws.amazon.com/timestream/latest/developerguide/AmazonTimestreamForLiveAnalytics-availability-change.html" target="_blank" rel="noopener">source</a></div><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Sensor er reading (temperature, humidity, pressure) protita second e = <b>time series</b> data. <b>Timestream</b> serverless time series DB: trillions events/day, recent data memory te, built-in time series analytics function diye near real-time pattern; use case IoT, real-time analytics (<a class="pg" href="21-slides-p516-529.pdf#page=13" target="_blank" rel="noopener">PDF p. 528</a> <span class="pg-part">(part p. 13)</span>).</p><p><b>Ajke:</b> Timestream for LiveAnalytics 20 June 2025 theke notun customer der jonno bondho; notun user der jonno Timestream for InfluxDB. Exam answer tobuo Timestream.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Neptune graph database; sensor reading er time series data ar fast time-based analytics er jonno na.</li><li><b>C.</b> S3 e store kora jay, kintu fast time series analytics database na.</li><li><b>D.</b> ElastiCache in-memory cache, durable long-term store na, analytics o na.</li></ul><p><b>Keyword:</b> <b>thousands of sensors</b>, <b>readings each second</b>, <b>fast analytics</b> → Timestream</p></div></article></section>
+<section class="card qz-part" id="part-b"><div class="qz-part-head"><h2>Part B: Practice exam questions (3)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">Everything these questions need is covered up to this section (in your study order). Answer first, ~2 min per question. Then read every explanation, also for the ones you got right.</p><article class="qz" id="S6-Q17" data-qid="S6-Q17" data-n="1"><div class="qz-top"><span class="qz-num">B1</span><span class="qz-id">S6-Q17</span><span class="pill">Stephane set 6 · Q17</span><span class="pill">Design Resilient Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>The engineering team at an IT company is deploying an Online Transactional Processing (OLTP) application, which will have unpredictable spikes of usage, that they do not know in advance.</p>
+
+<p>Which database would you recommend using?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="S6-Q17" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Aurora Serverless</p></span></label></li><li data-i="1"><label><input type="radio" name="S6-Q17" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon ElastiCache</p></span></label></li><li data-i="2"><label><input type="radio" name="S6-Q17" value="2"><span class="qz-l">C</span><span class="qz-o"><p>DynamoDB with Provisioned Capacity and Auto Scaling</p></span></label></li><li data-i="3"><label><input type="radio" name="S6-Q17" value="3"><span class="qz-l">D</span><span class="qz-o"><p>DynamoDB with On-Demand Capacity</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>OLTP</b> = relational database er kaaj (RDS / Aurora). "Unpredictable spike, age theke jani na" → <b>Aurora Serverless</b>: unpredictable / intermittent workload, <b>capacity planning nai</b>, nije scale kore (<a class="pg" href="21-slides-p516-529.pdf#page=5" target="_blank" rel="noopener">PDF p. 520</a> <span class="pg-part">(part p. 5)</span>).</p><p>DynamoDB on-demand o spike handle kore, kintu NoSQL, relational OLTP na; tai eta course er intended answer.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> ElastiCache cache layer, primary OLTP database na, SQL / relational query nai.</li><li><b>C.</b> DynamoDB NoSQL; tachara provisioned + auto scaling dhire bara workload er jonno, hothat unpredictable spike er jonno na.</li><li><b>D.</b> On-demand spike handle kore thik, kintu DynamoDB NoSQL, relational OLTP er jonno course eta bad dey.</li></ul><p><b>Keyword:</b> <b>OLTP</b> + <b>unpredictable spikes</b> → Aurora Serverless</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:</p>
+
+<p><strong>Aurora Serverless</strong></p>
+
+<p>Amazon Aurora Serverless is an on-demand, auto-scaling configuration for Amazon Aurora (MySQL-compatible and PostgreSQL-compatible editions), where the database will automatically start up, shut down, and scale capacity up or down based on your application's needs. It enables you to run your database in the cloud without managing any database instances. It's a simple, cost-effective option for infrequent, intermittent, or unpredictable workloads. The database design for an OLTP application fits the relational model, therefore you can infer an OLTP system as a Relational Database.</p>
+
+<p>Aurora Serverless is the perfect way to create a database that can scale down to 0 servers, and scale up to many servers, as an OLTP database. So this is the correct option.</p>
+
+<p>Incorrect options:</p>
+
+<p><strong>DynamoDB with Provisioned Capacity and Auto Scaling</strong></p>
+
+<p><strong>DynamoDB with On-Demand Capacity</strong></p>
+
+<p>Amazon DynamoDB is a key-value and document database that delivers single-digit millisecond performance at any scale. It's a fully managed, multi-region, multi-master, durable database with built-in security, backup and restore, and in-memory caching for internet-scale applications.</p>
+
+<p>DynamoDB is a NoSQL database and doesn't do relational queries, therefore it's a choice we have to eliminate, even though the two modes proposed here help us cope with an unpredictable amount of usage. So both these options are incorrect.</p>
+
+<p><strong>Amazon ElastiCache</strong> - Amazon ElastiCache allows you to seamlessly set up, run, and scale popular open-Source compatible in-memory data stores in the cloud. Build data-intensive apps or boost the performance of your existing databases by retrieving data from high throughput and low latency in-memory data stores. Amazon ElastiCache is a popular choice for real-time use cases like Caching, Session Stores, Gaming, Geospatial Services, Real-Time Analytics, and Queuing. Elasticache is used as a caching layer in front of relational databases. ElastiCache is a NoSQL database and doesn't facilitate relational queries, so this option is ruled out.</p>
+
+<p>References:</p>
+
+<p><a href="https://aws.amazon.com/rds/aurora/serverless/" target="_blank" rel="noopener">https://aws.amazon.com/rds/aurora/serverless/</a></p>
+
+<p><a href="https://aws.amazon.com/rds/" target="_blank" rel="noopener">https://aws.amazon.com/rds/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/rds/aurora/serverless/" target="_blank" rel="noopener">https://aws.amazon.com/rds/aurora/serverless/</a> · <a href="https://aws.amazon.com/rds/" target="_blank" rel="noopener">https://aws.amazon.com/rds/</a></p></div></article><article class="qz" id="S3-Q32" data-qid="S3-Q32" data-n="1"><div class="qz-top"><span class="qz-num">B2</span><span class="qz-id">S3-Q32</span><span class="pill">Stephane set 3 · Q32</span><span class="pill">Design High-Performing Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A media streaming company is looking to migrate its on-premises infrastructure into the AWS Cloud. The engineering team is looking for a fully managed NoSQL database solution with in-memory caching to maintain low latency that is critical for real-time scenarios such as video streaming and interactive content. The team expects the number of concurrent users to touch up to a million so the database should be able to scale elastically. As a solutions architect, which of the following AWS services would you recommend for this use-case?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="S3-Q32" value="0"><span class="qz-l">A</span><span class="qz-o"><p>DynamoDB</p></span></label></li><li data-i="1"><label><input type="radio" name="S3-Q32" value="1"><span class="qz-l">B</span><span class="qz-o"><p>DocumentDB</p></span></label></li><li data-i="2"><label><input type="radio" name="S3-Q32" value="2"><span class="qz-l">C</span><span class="qz-o"><p>ElastiCache</p></span></label></li><li data-i="3"><label><input type="radio" name="S3-Q32" value="3"><span class="qz-l">D</span><span class="qz-o"><p>RDS</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>DynamoDB</b> fully managed serverless NoSQL, elastically scale kore (on-demand / auto scaling). <b>DAX</b> diye built-in <b>in-memory cache</b>, microsecond read latency (<a class="pg" href="21-slides-p516-529.pdf#page=7" target="_blank" rel="noopener">PDF p. 522</a> <span class="pg-part">(part p. 7)</span>).</p><p>Tai "fully managed NoSQL + in-memory caching + million concurrent user" er ek-matro full match DynamoDB (+ DAX).</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> DocumentDB fully managed NoSQL (MongoDB), kintu er nijer in-memory caching layer nai.</li><li><b>C.</b> ElastiCache cache layer, fully managed primary NoSQL database na; app code change o lage.</li><li><b>D.</b> RDS relational (SQL) database, NoSQL na.</li></ul><p><b>Keyword:</b> <b>fully managed NoSQL</b> + <b>in-memory caching</b> + <b>scale elastically</b> → DynamoDB (+ DAX)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:
+"DynamoDB"</p>
+
+<p>Amazon DynamoDB is a key-value and document database that delivers single-digit millisecond performance at any scale. It's a fully managed, multi-region, multi-master, durable database with built-in security, backup and restore, and in-memory caching for internet-scale applications. DAX is a DynamoDB-compatible caching service that enables you to benefit from fast in-memory performance for demanding applications. Companies use caching through DynamoDB Accelerator (DAX) when they have high read volumes or need submillisecond read latency.</p>
+
+<p>Incorrect options:
+"DocumentDB" - Amazon DocumentDB is a fast, scalable, highly available, and fully managed document database service that supports MongoDB workloads. As a document database, Amazon DocumentDB makes it easy to store, query, and index JSON data. Although DocumentDB is fully managed, it does not have an in-memory caching layer.</p>
+
+<p>"ElastiCache" - Amazon ElastiCache allows you to set up popular open-Source compatible in-memory data stores in the cloud. You can build data-intensive apps or boost the performance of your existing databases by retrieving data from high throughput and low latency in-memory data stores such as Redis and Memcached. Elasticache is used as a caching layer. It's not a fully managed NoSQL database.</p>
+
+<p>"RDS" - RDS makes it easy to set up, operate, and scale a relational database in the cloud. It provides cost-efficient and resizable capacity while automating time-consuming administration tasks such as hardware provisioning, database setup, patching, and backups. It's not a NoSQL database.</p>
+
+<p>References:
+https://aws.amazon.com/dynamodb/</p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/dynamodb/" target="_blank" rel="noopener">https://aws.amazon.com/dynamodb/</a></p></div></article><article class="qz" id="S4-Q11" data-qid="S4-Q11" data-n="1"><div class="qz-top"><span class="qz-num">B3</span><span class="qz-id">S4-Q11</span><span class="pill">Stephane set 4 · Q11</span><span class="pill">Design Resilient Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>As a Solutions Architect, you plan on creating a social media website where users can be friends with each other, and like each other's posts. You plan on performing some complicated queries such as "What are the number of likes on the posts that have been posted by the friends of Mike?". What database do you suggest?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="S4-Q11" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Neptune</p></span></label></li><li data-i="1"><label><input type="radio" name="S4-Q11" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Redshift</p></span></label></li><li data-i="2"><label><input type="radio" name="S4-Q11" value="2"><span class="qz-l">C</span><span class="qz-o"><p>ElasticSearch</p></span></label></li><li data-i="3"><label><input type="radio" name="S4-Q11" value="3"><span class="qz-l">D</span><span class="qz-o"><p>RDS - Aurora</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>Renamed:</b> Elasticsearch Service -&gt; Amazon OpenSearch Service (the answer is the same).</div><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Friends ar likes er moto <b>highly connected</b> data ar "friends of Mike er post e likes" query = graph traversal. <b>Neptune</b> graph DB, social network, knowledge graph, recommendation er jonno optimized (<a class="pg" href="21-slides-p516-529.pdf#page=10" target="_blank" rel="noopener">PDF p. 525</a> <span class="pg-part">(part p. 10)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Redshift data warehouse (OLAP analytics / BI), relationship traverse er jonno na.</li><li><b>C.</b> ElasticSearch (ekhon Amazon OpenSearch Service) free text search er jonno, graph query er jonno na.</li><li><b>D.</b> Aurora relational; join diye kora jay kintu onek hop er relationship query complex ar slow, graph DB best.</li></ul><p><b>Keyword:</b> <b>social media</b>, <b>friends</b>, <b>likes</b>, complicated relationship query → Neptune</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Here, we need a graph database due to the highly connected datasets and queries, therefore Neptune is our best answer</p></details><p class="qz-rel">Related: <a href="../22.%20Data%20%26%20Analytics/22-notes.html">Section 22 Data &amp; Analytics</a> · <a href="../09.%20AWS%20Fundamentals%20RDS%20%2B%20Aurora%20%2B%20ElastiCache/09-notes.html">Section 09 RDS + Aurora + ElastiCache</a></p></div></article><details class="rel-list"><summary>Related questions in other sections (7)</summary><ul><li><a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html#S2-Q5">S2-Q5</a> · Section 19 Serverless Overview · Aurora: Global Aurora</li><li><a href="../09.%20AWS%20Fundamentals%20RDS%20%2B%20Aurora%20%2B%20ElastiCache/09-notes.html#S2-Q16">S2-Q16</a> · Section 09 RDS + Aurora + ElastiCache · ElastiCache: Redis vs Memcached</li><li><a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html#S2-Q57">S2-Q57</a> · Section 19 Serverless Overview · Aurora: Aurora Serverless</li><li><a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html#S4-Q10">S4-Q10</a> · Section 19 Serverless Overview · DynamoDB: Basics</li><li><a href="../12.%20Amazon%20S3%20Introduction/12-notes.html#S4-Q50">S4-Q50</a> · Section 12 Amazon S3 Introduction · RDS: Overview</li><li><a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html#S5-Q7">S5-Q7</a> · Section 19 Serverless Overview · Aurora: Global Aurora</li><li><a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html#B2-Q60">B2-Q60</a> · Section 19 Serverless Overview · DynamoDB: Basics</li></ul></details></section>
+</main>
+</body>
+</html>

@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 23 Machine Learning</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <nav><a href="../index.html">← Index</a> <a href="../mistakes.html">Mistakes</a> <a href="../22.%20Data%20%26%20Analytics/22-notes.html">‹ Sec 22</a> <a href="../24.%20AWS%20Monitoring%20%26%20Audit%20CloudWatch%2C%20CloudTrail%20%26%20Config/24-notes.html">Sec 24 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+  <header>
+    <p class="eyebrow">Section 23 · study order #24</p>
+    <h1>Machine Learning</h1>
+    <p class="sub">Slides: <a href="23-slides-p563-577.pdf" target="_blank" rel="noopener">23-slides-p563-577.pdf</a> (full PDF p563-577). Page reference <code>PDF p. 359 (part p. 8)</code> = page 359 of the full slide PDF = page 8 of this section's PDF part; click to open the PDF at that page.</p>
+    <p class="sub">Loop: note → PDF part → exam points → Part A → Part B → mistakes again after 2 days.</p>
+  </header>
+  <nav class="card toc noprint" aria-label="On this page">
+    <h2>On this page</h2>
+    <ol><li><a href="#overview">Machine Learning: keyword dekhe service chena</a></li><li><a href="#l1">Amazon Rekognition: image ar video te ki ache</a></li><li><a href="#l2">Amazon Transcribe: kotha theke lekha (speech → text)</a></li><li><a href="#l3">Amazon Polly: lekha theke kotha (text → speech)</a></li><li><a href="#l4">Amazon Translate: bhasha bodlao</a></li><li><a href="#l5">Amazon Lex (chatbot) + Amazon Connect (contact center)</a></li><li><a href="#l6">Amazon Comprehend: NLP (text er mane bujha)</a></li><li><a href="#l7">Amazon Comprehend Medical: doctor er note theke info</a></li><li><a href="#l8">Amazon SageMaker (SageMaker AI): nijer ML model banao</a></li><li><a href="#l9">Amazon Kendra: ML-powered document search</a></li><li><a href="#l10">Amazon Personalize: real-time personalized recommendation</a></li><li><a href="#l11">Amazon Textract: scan kora document theke data</a></li><li><a href="#l12">ML summary: use case / keyword → service</a></li><li><a href="#pairs">Confusing pairs</a></li><li><a href="#changes">Course er por ki bodlalo</a></li><li><a href="#exam">Exam e ki mone rakhbo</a></li><li><a href="#part-a">Part A: Udemy quiz (14)</a></li><li><a href="#part-b">Part B: Practice (1)</a></li></ol>
+  </nav>
+<section class="card" id="overview">
+  <p class="num">Age ek nojore</p>
+  <h2>Machine Learning: keyword dekhe service chena</h2>
+  <p>Ei section e AWS er <b>ready-made ML service</b> gulo: tomake model banate hoy na, API call korlei kaaj. Exam e proshno prai shob shomoy <b>"keyword → service"</b>: "speech to text" → Transcribe, "text to speech" → Polly, "NLP" → Comprehend, "chatbot" → Lex, "recommendation" → Personalize. Tai protita service er <b>ek line</b> ar <b>use case</b> mukhostho thaka-i asol. Shudhu <b>SageMaker</b> alada: sheta nijer model build / train / deploy korar platform. Section 17 e porecho Kinesis Data Firehose; Comprehend Medical e real-time data er jonno sheta abar ashbe.</p>
+  <div class="scroll"><table>
+    <tr><th>Service</th><th>Ek line e</th><th>Mone rakhar trick</th></tr>
+    <tr><td>Amazon Rekognition</td><td><b>Image ar video</b> e object, people, text, scene, face khuje; <b>content moderation</b></td><td>Re-<b>cog</b>nition = chokh (dekhe chena)</td></tr>
+    <tr><td>Amazon Transcribe</td><td><b>Speech → text</b> (ASR); PII <b>redaction</b>; multi-language detect</td><td>Transcript = lekha copy</td></tr>
+    <tr><td>Amazon Polly</td><td><b>Text → speech</b>; Lexicon + SSML</td><td>Polly = kotha bola pakhi (parrot)</td></tr>
+    <tr><td>Amazon Translate</td><td>Ek bhasha theke onno bhasha (<b>translation</b>, localization)</td><td>Naam-i kaaj</td></tr>
+    <tr><td>Amazon Lex</td><td><b>Chatbot</b>: ASR + <b>intent</b> bujhe (NLU); Alexa er technology</td><td>Lex ~ Alexa</td></tr>
+    <tr><td>Amazon Connect</td><td>Cloud <b>contact center</b> (call receive, contact flow)</td><td>Call "connect" kore</td></tr>
+    <tr><td>Amazon Comprehend</td><td><b>NLP</b>: sentiment, key phrase, entity, language, topic</td><td>Text "comprehend" (bujha) kore</td></tr>
+    <tr><td>Amazon Comprehend Medical</td><td><b>Clinical text</b> e NLP; <b>PHI</b> detect (DetectPHI API)</td><td>Comprehend + doctor er note</td></tr>
+    <tr><td>Amazon SageMaker (ekhon SageMaker AI)</td><td>Developer / data scientist der <b>nijer ML model build, train, deploy</b> platform</td><td>Baki shob ready-made; SageMaker = nije banao</td></tr>
+    <tr><td>Amazon Kendra</td><td>ML-powered <b>document search</b> (natural language question → answer)</td><td>Office er "Google"</td></tr>
+    <tr><td>Amazon Personalize</td><td>Real-time <b>personalized recommendation</b> (Amazon.com er technology)</td><td>"Customers also bought..."</td></tr>
+    <tr><td>Amazon Textract</td><td>Scanned document theke <b>text, handwriting, form, table</b> extract</td><td>Text + extract</td></tr>
+    <tr><td>Amazon Forecast</td><td>Highly accurate <b>forecast</b> (summary lecture e naam ache, slide e nai)</td><td>Bhobishyot er hisab</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="l1">
+  <p class="num">Lecture 1 · Rekognition Overview · <a class="pg" href="23-slides-p563-577.pdf#page=2" target="_blank" rel="noopener">PDF p. 564-565</a> <span class="pg-part">(part p. 2-3)</span></p>
+  <h2>Amazon Rekognition: image ar video te ki ache</h2>
+  <div class="idea"><p><b>Shohoj kore (CCTV er shamne ekjon smart guard):</b> Chobi ba video dao, Rekognition bolbe "ekhane manush ache, mountain bike ache, ei lok hashche, ei jon celebrity". ML diye <b>dekha ar chena</b> er kaaj. Text, audio na: shudhu <b>image ar video</b>.</p></div>
+  <h3>Ki kore (<a class="pg" href="23-slides-p563-577.pdf#page=2" target="_blank" rel="noopener">PDF p. 564</a> <span class="pg-part">(part p. 2)</span>)</h3>
+  <ul>
+    <li>Image ar video te <b>object, people, text, scene</b> khuje (ML diye).</li>
+    <li><b>Facial analysis</b> ar <b>facial search</b>: user verification, <b>people counting</b> (chobite koto jon).</li>
+    <li>Nijer <b>"familiar faces"</b> database banano jay, ba <b>celebrity</b> der sathe compare.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>Use case</th><th>Example</th></tr>
+    <tr><td><b>Labeling</b></td><td>Chobite "golden retriever", "dog", "rock", "outdoors"</td></tr>
+    <tr><td><b>Content Moderation</b></td><td>Chobi / video sobar jonno appropriate kina</td></tr>
+    <tr><td><b>Text Detection</b></td><td>Daur protijogitay runner er bib number pora</td></tr>
+    <tr><td><b>Face Detection and Analysis</b></td><td>Gender, age range, emotion (hashche, chokh khola)</td></tr>
+    <tr><td><b>Face Search and Verification</b></td><td>Security app e manush verify</td></tr>
+    <tr><td><b>Celebrity Recognition</b></td><td>Famous manush chena</td></tr>
+    <tr><td><b>Pathing</b></td><td>Sports game analysis: football match e ke kothay jacche (real-time analytics). Feature ta ekhon bondho, niche "Course er por ki bodlalo" dekho</td></tr>
+  </table></div>
+  <h3>Content Moderation (<a class="pg" href="23-slides-p563-577.pdf#page=3" target="_blank" rel="noopener">PDF p. 565</a> <span class="pg-part">(part p. 3)</span>): exam er important feature</h3>
+  <ul>
+    <li><b>Inappropriate, unwanted, offensive</b> content detect kore, <b>image ar video</b> duto-tei.</li>
+    <li>Kothay: <b>social media, broadcast media, advertising, e-commerce</b>: <b>safer user experience</b>.</li>
+    <li><b>Minimum Confidence Threshold</b> set koro: tar upore hole item <b>flagged</b>. Threshold <b>kom</b> dile <b>beshi match</b> (beshi flag) hobe.</li>
+    <li>Confidence = Rekognition koto nishchit je eta asolei inappropriate.</li>
+    <li>Flag kora content <b>Amazon Augmented AI (A2I)</b> e optional <b>manual (human) review</b> e pathano jay: rakhbe na delete korbe, manush decide kore.</li>
+    <li>Post korar <b>age</b> detect korte hoy emon <b>regulation comply</b> korte help kore.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Content moderation flow</span>
+    <div class="flow">
+      <span class="b">Image / video</span><span class="a">→</span>
+      <span class="b hl">Rekognition<small>moderation</small></span><span class="a">→</span>
+      <span class="b">Confidence level<small>vs Minimum Threshold</small></span><span class="a">→ <small>flagged</small></span>
+      <span class="b">Amazon A2I<small>optional manual review</small></span>
+    </div>
+  </div>
+  <p class="cap">Machine age auto flag kore, tarpor dorkar hole manush final decision ney.</p>
+  <div class="exam"><b>Exam:</b> "Find <b>objects, people, text, scenes</b> in <b>images and videos</b>" → <b>Rekognition</b> (U23-Q3). "Inappropriate / offensive image ba video auto detect + <b>minimum confidence threshold</b> + <b>manual review</b>" → <b>Rekognition content moderation</b> (+ A2I) (U23-Q10). Face detection, celebrity, labeling → Rekognition. Polly / Lex / Translate / Kendra image dekhe na. Spelling trap: service er naam <b>Rekognition</b> (k diye); "Amazon Recognition" bole option thakle sheta bhul banan.</div>
+  <p class="src">Subtitle e "CTO of AWS" bola ache (demo chobi); exam e dorkar nai, bad diyechi.</p>
+</section>
+
+<section class="card" id="l2">
+  <p class="num">Lecture 2 · Transcribe Overview · <a class="pg" href="23-slides-p563-577.pdf#page=4" target="_blank" rel="noopener">PDF p. 566</a> <span class="pg-part">(part p. 4)</span></p>
+  <h2>Amazon Transcribe: kotha theke lekha (speech → text)</h2>
+  <div class="idea"><p><b>Shohoj kore (steno-typist):</b> Meeting er recording dao, Transcribe shob kotha <b>likhe</b> dibe. Shathe phone number, naam er moto gopon info <b>kete dite</b> pare (redaction). Mix bhasha (English + French) holeo nije chine ney.</p></div>
+  <div class="scroll"><table>
+    <tr><th>Point</th><th>Detail</th></tr>
+    <tr><td>Kaaj</td><td><b>Speech → text</b>, automatically</td></tr>
+    <tr><td>Technology</td><td>Deep learning process <b>ASR</b> (Automatic Speech Recognition): druto ar accurate</td></tr>
+    <tr><td><b>PII Redaction</b></td><td>Personally Identifiable Information (naam, boyosh, phone, Social Security Number) <b>automatically remove</b>. Demo: naam ar phone number transcript e hidden</td></tr>
+    <tr><td><b>Automatic Language Identification</b></td><td><b>Multi-lingual audio</b> (English + French ek-i audio te) nije detect kore</td></tr>
+    <tr><td>Streaming</td><td>Console demo te "Start streaming": bola kotha real time e text hoy</td></tr>
+  </table></div>
+  <h3>Use cases</h3>
+  <ul>
+    <li><b>Customer service call</b> transcribe.</li>
+    <li><b>Closed captioning ar subtitling</b> automate.</li>
+    <li>Media asset er <b>metadata</b> banano → <b>fully searchable archive</b>.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Transcribe</span>
+    <div class="flow">
+      <span class="b">Audio<small>call, video</small></span><span class="a">→</span>
+      <span class="b hl">Transcribe<small>ASR + PII redaction</small></span><span class="a">→</span>
+      <span class="b">Text<small>subtitle, transcript</small></span>
+    </div>
+  </div>
+  <div class="exam"><b>Exam:</b> "<b>Speech-to-text</b>", "subtitles", "audio → text" → <b>Transcribe</b> (U23-Q8). "Call record korar <b>age PII remove</b>" → <b>Transcribe</b> (redaction), Polly / Translate / Rekognition na (U23-Q11). "Call center er audio analyze" → age <b>Transcribe</b> diye text, tarpor text analyze (S5-Q58). Ulta "text → speech" Transcribe na, <b>Polly</b> (U23-Q1).</div>
+  <p class="src">Subtitle e "reduction" = Redaction (slide e "Redaction").</p>
+</section>
+
+<section class="card" id="l3">
+  <p class="num">Lecture 3 · Polly Overview · <a class="pg" href="23-slides-p563-577.pdf#page=5" target="_blank" rel="noopener">PDF p. 567-568</a> <span class="pg-part">(part p. 5-6)</span></p>
+  <h2>Amazon Polly: lekha theke kotha (text → speech)</h2>
+  <div class="idea"><p><b>Shohoj kore (Transcribe er ulta):</b> Lekha dao, Polly <b>manusher moto gola</b> diye pore shunabe. App ke "kotha bolano" jay. Kothay thamte hobe, fish-fish kore bolte hobe (whisper), "AWS" ke "Amazon Web Services" bolte hobe: egulo control kora jay.</p></div>
+  <ul>
+    <li>Deep learning diye <b>text → lifelike speech</b>; <b>applications that talk</b> (<a class="pg" href="23-slides-p563-577.pdf#page=5" target="_blank" rel="noopener">PDF p. 567</a> <span class="pg-part">(part p. 5)</span>).</li>
+    <li>Console demo: <b>Neural</b> engine = shobcheye natural, human-like; voice choose kora jay (e.g. Joanna).</li>
+  </ul>
+  <h3>Lexicon vs SSML (<a class="pg" href="23-slides-p563-577.pdf#page=6" target="_blank" rel="noopener">PDF p. 568</a> <span class="pg-part">(part p. 6)</span>): exam e duto naam-i chai</h3>
+  <div class="scroll"><table>
+    <tr><th>Feature</th><th>Ki kore</th><th>Example</th></tr>
+    <tr><td><b>Pronunciation Lexicons</b></td><td>Kono <b>word er uccharon</b> customize. Lexicon upload kore <b>SynthesizeSpeech</b> operation e use</td><td><b>Stylized word</b>: "St3ph4ne" → "Stephane". <b>Acronym</b>: "AWS" → "Amazon Web Services"</td></tr>
+    <tr><td><b>SSML</b> (Speech Synthesis Markup Language)</td><td>Plain text er bodole <b>markup kora document</b> theke speech; <b>kivabe</b> bolbe tar beshi control</td><td><b>Emphasize</b> word / phrase, <b>phonetic pronunciation</b>, <b>breathing sound, whispering</b>, <b>Newscaster</b> speaking style, <b>break</b> (e.g. 3 second thama)</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Polly</span>
+    <div class="flow">
+      <span class="b">Text<small>+ SSML tag</small></span><span class="a">→</span>
+      <span class="b hl">Polly<small>+ Lexicon</small></span><span class="a">→</span>
+      <span class="b">Audio<small>lifelike speech</small></span>
+    </div>
+  </div>
+  <p class="cap">Lexicon = "kon word kivabe uccharon"; SSML = "kivabe bolbe" (thama, fish-fish, emphasis).</p>
+  <div class="exam"><b>Exam:</b> "<b>Text to speech</b>", "lifelike speech", "app that talks" → <b>Polly</b>; Transcribe na (U23-Q1). Blank-fill: "word er pronunciation customize (Amazon EC2 → Amazon Elastic Compute Cloud)" = <b>Pronunciation Lexicons</b>; "emphasize, breathing, whispering" = <b>SSML</b> (U23-Q12). Trap: <b>SAML</b> (Security Assertion Markup Language) = federation / SSO, Polly er sathe kono shomporko nai.</div>
+</section>
+
+<section class="card" id="l4">
+  <p class="num">Lecture 4 · Translate Overview · <a class="pg" href="23-slides-p563-577.pdf#page=7" target="_blank" rel="noopener">PDF p. 569</a> <span class="pg-part">(part p. 7)</span></p>
+  <h2>Amazon Translate: bhasha bodlao</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Tomar website English e. Bangladesh, France, Brazil er user der jonno nijer bhashay dekhate chao. Translate <b>natural ar accurate</b> anubad kore dey, onek boro volume er text o druto.</p></div>
+  <ul>
+    <li><b>Natural and accurate language translation.</b></li>
+    <li>Content <b>localize</b> kora: <b>website ar application</b>, <b>international users</b> der jonno.</li>
+    <li><b>Large volumes of text</b> efficiently translate.</li>
+    <li>Demo: English → French, Portuguese, Hindi.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "Document / website <b>onno bhashay</b>, natural ar accurate" → <b>Translate</b> (U23-Q6). Transcribe (speech → text) ar Polly (text → speech) bhasha bodlay na. "WordTranslator" bole kono AWS service nai.</div>
+</section>
+
+<section class="card" id="l5">
+  <p class="num">Lecture 5 · Lex + Connect Overview · <a class="pg" href="23-slides-p563-577.pdf#page=8" target="_blank" rel="noopener">PDF p. 570</a> <span class="pg-part">(part p. 8)</span></p>
+  <h2>Amazon Lex (chatbot) + Amazon Connect (contact center)</h2>
+  <div class="idea"><p><b>Shohoj kore (hospital er phone line):</b> Tumi phone korle "Connect" call ta dhore (call center). Tarpor ekta robot (Lex) tomar kotha shune bujhe nay tumi <b>ki chao</b> ("kal 3 tay Tom er sathe appointment"), ar Lambda ke diye CRM e appointment boshiye dey. Manush agent chara-i kaaj hoye gelo.</p></div>
+  <div class="scroll"><table>
+    <tr><th></th><th>Amazon Lex</th><th>Amazon Connect</th></tr>
+    <tr><td>Ki</td><td><b>Alexa</b> er same technology</td><td>Cloud-based <b>virtual contact center</b></td></tr>
+    <tr><td>Kaaj</td><td><b>ASR</b> (speech → text) + <b>Natural Language Understanding (NLU)</b>: text / caller er <b>intent</b> chene</td><td>Call <b>receive</b>, <b>contact flow</b> banano</td></tr>
+    <tr><td>Banay</td><td><b>Chatbot</b>, <b>call center bot</b></td><td>Contact center</td></tr>
+    <tr><td>Integration</td><td>Intent pele <b>Lambda</b> invoke</td><td>Onno <b>CRM</b> system ba AWS service</td></tr>
+    <tr><td>Cost point</td><td>-</td><td><b>No upfront payment</b>, traditional contact center er cheye <b>80% sosta</b></td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Smart contact center</span>
+    <div class="flow">
+      <span class="b">Phone call<small>"appointment chai"</small></span><span class="a">→ <small>call</small></span>
+      <span class="b">Connect</span><span class="a">→ <small>stream</small></span>
+      <span class="b hl">Lex<small>intent recognized</small></span><span class="a">→ <small>invoke</small></span>
+      <span class="b">Lambda</span><span class="a">→ <small>schedule</small></span>
+      <span class="b">CRM</span>
+    </div>
+  </div>
+  <p class="cap">Connect = phone line / call center; Lex = kotha bujhe intent ber kore; Lambda = asol kaaj kore.</p>
+  <div class="exam"><b>Exam:</b> "<b>Chatbot</b>", "speech-to-text <b>+ customer er intention</b> recognize" → <b>Lex</b> (U23-Q2). Transcribe shudhu text banay, <b>intent bujhe na</b> (NLU nai); Connect nije speech → text / intent kore na, sheta contact center. "Cloud <b>contact center</b>, call receive, contact flow" → <b>Connect</b>. "Lex = ASR, Connect = contact center" (lecture er shesh line).</div>
+  <p class="src">Subtitle e "lender function" = Lambda function (slide e Lambda).</p>
+</section>
+
+<section class="card" id="l6">
+  <p class="num">Lecture 6 · Comprehend Overview · <a class="pg" href="23-slides-p563-577.pdf#page=9" target="_blank" rel="noopener">PDF p. 571</a> <span class="pg-part">(part p. 9)</span></p>
+  <h2>Amazon Comprehend: NLP (text er mane bujha)</h2>
+  <div class="idea"><p><b>Shohoj kore (hajar ta customer email):</b> Ek-ek kore pora shombhob na. Comprehend shob email pore bolbe: "kon bhashay lekha, kon product / jaygar naam ache, customer khushi na raag (sentiment), ar kon kon topic e email gulo bhag kora jay." Unstructured text → structured insight.</p></div>
+  <ul>
+    <li><b>Natural Language Processing (NLP)</b>. Exam e "NLP" dekhle <b>Comprehend</b>.</li>
+    <li><b>Fully managed ar serverless</b>.</li>
+    <li>ML diye text er moddhe <b>insight ar relationship</b> khuje.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>Comprehend ki ber kore</th><th>Mane</th></tr>
+    <tr><td>Language</td><td>Text ta kon bhashay</td></tr>
+    <tr><td>Key phrase, entity</td><td>Key phrase, <b>places, people, brands, events</b></td></tr>
+    <tr><td><b>Sentiment</b></td><td>Text koto <b>positive ba negative</b></td></tr>
+    <tr><td>Syntax</td><td><b>Tokenization</b> ar <b>parts of speech</b> diye analyze</td></tr>
+    <tr><td><b>Topic</b></td><td>Text file er collection <b>automatically topic onujayi organize</b> (topic modeling)</td></tr>
+  </table></div>
+  <h3>Use cases</h3>
+  <ul>
+    <li><b>Customer interaction (email)</b> analyze: kon jinish positive ba negative experience er karon.</li>
+    <li><b>Article group</b> kora Comprehend er ber kora <b>topic</b> diye.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "<b>NLP</b>", "sentiment", "key phrase / entity", "articles <b>group by topic</b>" → <b>Comprehend</b> (U23-Q5). Translate (bhasha bodlay), Lex (chatbot), Rekognition (image) na. Note: topic modeling feature ekhon notun customer der jonno bondho (niche "Course er por ki bodlalo"), kintu exam answer <b>Comprehend</b>.</div>
+  <p class="src">Subtitle e "It also has audio" kotha ta bujha jay ni (slide e nai), bad diyechi.</p>
+</section>
+
+<section class="card" id="l7">
+  <p class="num">Lecture 7 · Comprehend Medical Overview · <a class="pg" href="23-slides-p563-577.pdf#page=10" target="_blank" rel="noopener">PDF p. 572</a> <span class="pg-part">(part p. 10)</span></p>
+  <h2>Amazon Comprehend Medical: doctor er note theke info</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Doctor er hate lekha note e ache "45 bochorer school teacher, ei osudh 500 mg din e duibar". Comprehend Medical ei <b>clinical text</b> theke boyosh, osudh er naam, dose, frequency, procedure alada kore structured data banay, ar <b>PHI</b> (patient er gopon health info) khuje dey.</p></div>
+  <ul>
+    <li><b>Unstructured clinical text</b> theke useful info detect kore return kore: <b>physician's notes, discharge summaries, test results, case notes</b>.</li>
+    <li><b>NLP</b> diye <b>Protected Health Information (PHI)</b> detect: <b>DetectPHI API</b>.</li>
+    <li>Console demo: age, profession, procedure name + date, osudh er generic name, strength, dosage, route, frequency: shob entity hisabe organized.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Input er tin rasta</span>
+    <div class="flow">
+      <span class="b">Documents<small>Amazon S3</small></span><span class="a">→</span>
+      <span class="b hl">Comprehend Medical<small>DetectPHI</small></span>
+    </div>
+    <div class="flow">
+      <span class="b">Real-time data<small>Kinesis Data Firehose</small></span><span class="a">→</span>
+      <span class="b hl">Comprehend Medical</span>
+    </div>
+    <div class="flow">
+      <span class="b">Patient er kotha (voice)</span><span class="a">→</span>
+      <span class="b">Transcribe<small>speech → text</small></span><span class="a">→</span>
+      <span class="b hl">Comprehend Medical</span>
+    </div>
+  </div>
+  <p class="cap">Comprehend Medical shudhu text pore; voice hole age Transcribe.</p>
+  <div class="exam"><b>Exam:</b> "Unstructured <b>medical / clinical text</b> (doctor's notes, clinical trial report, radiology report)", "<b>PHI</b> identify", "HIPAA" → <b>Comprehend Medical</b> (U23-Q14). Rekognition (image), Polly (speech), Translate (bhasha) na. HIPAA eligible kotha ta course slide e nai; AWS doc bole "HIPAA Eligible Service" (<a href="https://docs.aws.amazon.com/comprehend-medical/latest/dev/comprehendmedical-welcome.html">What is Comprehend Medical?</a>).</div>
+  <p class="src">Subtitle e "consult" = console.</p>
+</section>
+
+<section class="card" id="l8">
+  <p class="num">Lecture 8 · SageMaker Overview · <a class="pg" href="23-slides-p563-577.pdf#page=11" target="_blank" rel="noopener">PDF p. 573</a> <span class="pg-part">(part p. 11)</span></p>
+  <h2>Amazon SageMaker (SageMaker AI): nijer ML model banao</h2>
+  <div class="idea"><p><b>Shohoj kore (ready-made khabar vs nijer rannaghor):</b> Ager service gulo ready-made khabar: Translate, Polly, Transcribe ek-ekta nirdishto kaaj kore. SageMaker holo <b>pura rannaghor</b>: tomar developer / data scientist nije recipe (model) banabe, test korbe, tarpor serve korbe. Beshi power, kintu beshi kothin.</p></div>
+  <ul>
+    <li><b>Fully managed</b> service, <b>developers / data scientists</b> der jonno <b>ML model build</b> korte. Slide er title ekhon "Amazon SageMaker AI".</li>
+    <li>Shadharonoto shob step <b>ek jaygay</b> kora kothin, plus computation er jonno <b>server provision</b> korte hoy: SageMaker ei jhamela komay.</li>
+    <li>Ready-made service gulor cheye <b>higher level</b> ar <b>beshi involved</b>.</li>
+  </ul>
+  <h3>ML process (simplified): exam score predict (<a class="pg" href="23-slides-p563-577.pdf#page=11" target="_blank" rel="noopener">PDF p. 573</a> <span class="pg-part">(part p. 11)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Step</th><th>Example e ki hoy</th></tr>
+    <tr><td>1. Historical data</td><td>Hajar student er data: IT experience koto bochor, AWS experience, course e koto shomoy, koyta practice exam</td></tr>
+    <tr><td>2. <b>Label</b></td><td>Kon column ki, ar protita student er asol score (670, 890, 934...). Labeling practically kothin</td></tr>
+    <tr><td>3. <b>Build</b></td><td>Historical data theke score predict korar ML model</td></tr>
+    <tr><td>4. <b>Train and Tune</b></td><td>Model ke shomoy er sathe refine, data ar output er sathe better fit</td></tr>
+    <tr><td>5. <b>Apply model (deploy)</b></td><td>Notun student er data dile model predict kore: "PASS WITH 906"</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">SageMaker e pura cycle</span>
+    <div class="flow">
+      <span class="b">Historical data</span><span class="a">→</span>
+      <span class="b">Label</span><span class="a">→</span>
+      <span class="b hl">Build<small>ML model</small></span><span class="a">→</span>
+      <span class="b hl">Train &amp; Tune</span><span class="a">→</span>
+      <span class="b">Deploy<small>new data → prediction</small></span>
+    </div>
+  </div>
+  <p class="cap">Labeling, building, training, tuning, deploying: shob SageMaker er moddhe.</p>
+  <div class="exam"><b>Exam:</b> "Developer / data scientist nijer ML model <b>build, train, deploy</b>" → <b>SageMaker</b> (U23-Q7). Polly, Comprehend, Personalize ready-made nirdishto kaaj kore; custom model banay na. Naam "SageMaker" ba "SageMaker AI" dutoi same service dhoro.</div>
+  <p class="src">Subtitle e "CLAP practitioner" = Cloud Practitioner, "competitions" = computations.</p>
+</section>
+
+<section class="card" id="l9">
+  <p class="num">Lecture 9 · Kendra Overview · <a class="pg" href="23-slides-p563-577.pdf#page=12" target="_blank" rel="noopener">PDF p. 574</a> <span class="pg-part">(part p. 12)</span></p>
+  <h2>Amazon Kendra: ML-powered document search</h2>
+  <div class="idea"><p><b>Shohoj kore (office er nijer Google):</b> Company r hajar PDF, Word, SharePoint page, FAQ. Tumi likhle "IT support desk kothay?", Kendra shob document pore uttor dey: "<b>1st floor</b>". Link er list na, <b>sorasori answer</b>.</p></div>
+  <ul>
+    <li><b>Fully managed document search service</b>, ML powered.</li>
+    <li>Document er <b>bhitor theke answer</b> extract: text, PDF, HTML, PowerPoint, MS Word, FAQs...</li>
+    <li><b>Natural language search</b> (Google er moto prosno kore).</li>
+    <li>User interaction / feedback theke shikhe preferred result upore ane: <b>Incremental Learning</b>.</li>
+    <li>Search result <b>manually fine-tune</b>: data er importance, <b>freshness</b>, custom filter.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Kendra</span>
+    <div class="flow">
+      <span class="b">Data sources<small>S3, RDS, Google Drive, SharePoint, OneDrive, 3rd party, custom</small></span><span class="a">→ <small>indexing</small></span>
+      <span class="b hl">Kendra<small>Knowledge Index (ML)</small></span><span class="a">→</span>
+      <span class="b">User<small>"Where is the IT support desk?" → "1st floor"</small></span>
+    </div>
+  </div>
+  <div class="exam"><b>Exam:</b> "<b>Document search</b> service powered by ML", "natural language question er answer document theke" → <b>Kendra</b> (U23-Q9). Comprehend text <b>analyze</b> kore (sentiment, topic), search kore na; Translate / Polly search kore na. Kendra ekhon maintenance mode e (niche dekho), exam answer tobuo <b>Kendra</b>.</div>
+</section>
+
+<section class="card" id="l10">
+  <p class="num">Lecture 10 · Personalize Overview · <a class="pg" href="23-slides-p563-577.pdf#page=13" target="_blank" rel="noopener">PDF p. 575</a> <span class="pg-part">(part p. 13)</span></p>
+  <h2>Amazon Personalize: real-time personalized recommendation</h2>
+  <div class="idea"><p><b>Shohoj kore (Amazon.com er "tumi eta o pochondo korte paro"):</b> Ekjon onek gardening tool kineche; porer bar take next gardening tool suggest koro. Amazon.com nijer site e je technology use kore, Personalize diye sheta tomar app e.</p></div>
+  <ul>
+    <li><b>Fully managed ML service</b>: apps with <b>real-time personalized recommendations</b>.</li>
+    <li>Example: personalized product recommendation / <b>re-ranking</b>, <b>customized direct marketing</b>.</li>
+    <li><b>Same technology used by Amazon.com</b>.</li>
+    <li>Integrate kore existing <b>website, app, SMS, email marketing</b> system e.</li>
+    <li><b>Days e implement, months na</b>: nije ML solution build, train, deploy korte hoy na.</li>
+    <li>Use case: <b>retail store, media and entertainment</b>.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Personalize</span>
+    <div class="flow">
+      <span class="b">S3<small>read data (user interaction)</small></span><span class="a">→</span>
+      <span class="b hl">Personalize</span><span class="a">→ <small>customized personalized API</small></span>
+      <span class="b">Websites, mobile apps, SMS, emails</span>
+    </div>
+    <div class="flow">
+      <span class="b">Personalize API<small>real-time data integration</small></span><span class="a">→</span>
+      <span class="b hl">Personalize</span>
+    </div>
+  </div>
+  <div class="exam"><b>Exam:</b> "<b>Recommendation</b>", "personalized", "customized user experience" druto → <b>Personalize</b> (U23-Q4). Kendra (search), Connect (contact center) na. Nije model banate chaile SageMaker, kintu "rapidly", "ML experience chara" → Personalize.</div>
+</section>
+
+<section class="card" id="l11">
+  <p class="num">Lecture 11 · Textract Overview · <a class="pg" href="23-slides-p563-577.pdf#page=14" target="_blank" rel="noopener">PDF p. 576</a> <span class="pg-part">(part p. 14)</span></p>
+  <h2>Amazon Textract: scan kora document theke data</h2>
+  <div class="idea"><p><b>Shohoj kore (driving license er scan):</b> Scan copy upload koro, Textract AI / ML diye pore result <b>data file</b> hisabe dey: Document ID, naam, sex, date of birth... Form ar table er bhitor theke o.</p></div>
+  <ul>
+    <li>Scanned document theke <b>text, handwriting ar data</b> automatically extract (AI ar ML).</li>
+    <li><b>Forms ar tables</b> theke data.</li>
+    <li>Je kono document: <b>PDF, image</b>...</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">Textract</span>
+    <div class="flow">
+      <span class="b">Scanned doc<small>ID card, invoice</small></span><span class="a">→ <small>analyze</small></span>
+      <span class="b hl">Textract</span><span class="a">→ <small>result</small></span>
+      <span class="b">Structured data<small>"DOB": "23.05.1997"</small></span>
+    </div>
+  </div>
+  <div class="scroll"><table>
+    <tr><th>Field</th><th>Use case</th></tr>
+    <tr><td>Financial Services</td><td>Invoice, financial report</td></tr>
+    <tr><td>Healthcare</td><td>Medical record, insurance claim</td></tr>
+    <tr><td>Public Sector</td><td>Tax form, ID document, passport</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "<b>Scanned document</b> / form / table / handwriting theke text ba data <b>extract</b>" → <b>Textract</b>. Image e object / face → Rekognition; already-text er mane bujha → Comprehend.</div>
+</section>
+
+<section class="card" id="l12">
+  <p class="num">Lecture 12 · Machine Learning Summary · <a class="pg" href="23-slides-p563-577.pdf#page=15" target="_blank" rel="noopener">PDF p. 577</a> <span class="pg-part">(part p. 15)</span></p>
+  <h2>ML summary: use case / keyword → service</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Stephane bole "ei list ta mone rakhle exam e kichu point free". Niche boro table ta exam er age ekbar porle-i hobe.</p></div>
+  <h3>Slide er summary (<a class="pg" href="23-slides-p563-577.pdf#page=15" target="_blank" rel="noopener">PDF p. 577</a> <span class="pg-part">(part p. 15)</span>)</h3>
+  <ul>
+    <li><b>Rekognition</b>: face detection, labeling, celebrity recognition</li>
+    <li><b>Transcribe</b>: audio → text (e.g. subtitles)</li>
+    <li><b>Polly</b>: text → audio</li>
+    <li><b>Translate</b>: translations</li>
+    <li><b>Lex</b>: conversational bot, chatbot</li>
+    <li><b>Connect</b>: cloud contact center</li>
+    <li><b>Comprehend</b>: natural language processing</li>
+    <li><b>SageMaker</b>: machine learning for every developer and data scientist</li>
+    <li><b>Kendra</b>: ML-powered search engine</li>
+    <li><b>Personalize</b>: real-time personalized recommendations</li>
+    <li><b>Textract</b>: document e text ar data detect</li>
+    <li>Lecture e (slide e na): <b>Forecast</b> = highly accurate forecast build</li>
+  </ul>
+  <h3>Boro table: keyword dekhle kon service</h3>
+  <div class="scroll"><table>
+    <tr><th>Question e ei keyword / use case</th><th>Answer</th><th>Trap (eta na)</th></tr>
+    <tr><td>Objects, people, text, scenes in <b>images / videos</b>; face detection, celebrity, labeling, people counting</td><td><b>Rekognition</b></td><td>Textract (document), Kendra</td></tr>
+    <tr><td>Inappropriate / offensive image-video, <b>minimum confidence threshold</b>, manual review</td><td><b>Rekognition content moderation</b> (+ A2I)</td><td>Manual employee review (expensive)</td></tr>
+    <tr><td><b>Speech → text</b>, subtitles, closed captions, call transcript, searchable media archive</td><td><b>Transcribe</b></td><td>Polly (ulta)</td></tr>
+    <tr><td>Call / audio theke <b>PII remove / redact</b></td><td><b>Transcribe</b> (PII Redaction)</td><td>Polly, Translate, Rekognition</td></tr>
+    <tr><td><b>Text → speech</b>, lifelike voice, app that talks</td><td><b>Polly</b></td><td>Transcribe</td></tr>
+    <tr><td>Word er pronunciation / acronym customize</td><td>Polly <b>Pronunciation Lexicons</b></td><td>SSML</td></tr>
+    <tr><td>Emphasis, whisper, breathing, break, newscaster style</td><td>Polly <b>SSML</b></td><td>SAML (federation)</td></tr>
+    <tr><td><b>Language translation</b>, localize website / app</td><td><b>Translate</b></td><td>Transcribe, Polly</td></tr>
+    <tr><td><b>Chatbot</b>, conversational bot, speech + <b>intent</b> (NLU), Alexa</td><td><b>Lex</b></td><td>Transcribe (intent bujhe na)</td></tr>
+    <tr><td>Cloud <b>contact center</b>, call receive, contact flow, CRM integrate</td><td><b>Connect</b></td><td>Lex (bot, center na)</td></tr>
+    <tr><td><b>NLP</b>, sentiment, key phrase, entity, <b>topic</b>, article group</td><td><b>Comprehend</b></td><td>Translate, Lex</td></tr>
+    <tr><td><b>Clinical / medical text</b>, <b>PHI</b>, DetectPHI</td><td><b>Comprehend Medical</b></td><td>Comprehend (general), Textract</td></tr>
+    <tr><td>Nijer ML model <b>build, train, tune, deploy</b>; data scientist</td><td><b>SageMaker (AI)</b></td><td>Personalize, Comprehend (ready-made)</td></tr>
+    <tr><td><b>Document search</b>, natural language question → answer, enterprise search</td><td><b>Kendra</b></td><td>Comprehend, OpenSearch</td></tr>
+    <tr><td><b>Recommendation</b>, personalized, re-ranking, "customers also bought"</td><td><b>Personalize</b></td><td>Kendra, SageMaker</td></tr>
+    <tr><td>Scanned document, form, table, handwriting, invoice, ID / passport <b>extract</b></td><td><b>Textract</b></td><td>Rekognition, Comprehend</td></tr>
+    <tr><td><b>Forecast</b> (time-series, demand)</td><td><b>Forecast</b></td><td>Personalize, SageMaker</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> Ei table-i ei section er pura exam. Pipeline o ashe: voice → <b>Transcribe</b> → text → <b>Comprehend</b> (sentiment) ba <b>Comprehend Medical</b> (PHI); phone → <b>Connect</b> → <b>Lex</b> → Lambda. "Highly accurate forecasts, fully managed" → <b>Forecast</b> (U23-Q13).</div>
+  <p class="src">Subtitle e "recognition" = Rekognition.</p>
+</section>
+
+<section class="card" id="pairs">
+  <h2>Confusing pairs</h2>
+  <div class="scroll"><table class="pairs">
+    <tr><th>A vs B</th><th>Parthokko</th><th>Kokhon konta</th></tr>
+    <tr><td>Transcribe vs Polly</td><td>Transcribe: <b>speech → text</b> (ASR). Polly: <b>text → speech</b></td><td>Audio theke lekha / subtitle → Transcribe. App ke kotha bolano → Polly</td></tr>
+    <tr><td>Lex vs Transcribe</td><td>Duto-i ASR (speech → text). Lex er sathe <b>NLU</b>: <b>intent</b> bujhe, conversation chalay. Transcribe shudhu transcript</td><td>"Chatbot", "intent", "conversation" → Lex. "Transcript, subtitle, PII redaction" → Transcribe</td></tr>
+    <tr><td>Lex vs Polly vs Transcribe</td><td>Lex = bujhe (intent). Polly = bole (text → voice). Transcribe = shune likhe (voice → text)</td><td>Bot je bujhe uttor dey → Lex; uttor ta gola diye shunate → Polly</td></tr>
+    <tr><td>Lex vs Connect</td><td>Lex = bot (ASR + NLU). Connect = cloud <b>contact center</b> (call receive, contact flow)</td><td>Call center banao → Connect; call er moddhe automatic bot → Lex (Connect → Lex → Lambda)</td></tr>
+    <tr><td>Comprehend vs Comprehend Medical</td><td>Comprehend: general text er NLP (sentiment, entity, topic). Medical: <b>clinical text</b>, medical entity, <b>PHI</b> (DetectPHI)</td><td>Email / review / article → Comprehend. Doctor's note, discharge summary, PHI → Comprehend Medical</td></tr>
+    <tr><td>Comprehend vs Textract</td><td>Textract: scan / image / PDF theke <b>text ber kore</b> (OCR + form + table). Comprehend: already-text er <b>mane bujhe</b></td><td>Scanned invoice / ID theke field → Textract. Sentiment / topic → Comprehend. Duto mile: Textract → Comprehend</td></tr>
+    <tr><td>Comprehend Medical vs Textract</td><td>Textract medical record er scan theke text tule ane, kintu PHI / medical entity bujhe na</td><td>Scan kora medical form → Textract; clinical text e PHI → Comprehend Medical</td></tr>
+    <tr><td>Rekognition vs Textract</td><td>Rekognition: image / video te object, face, scene, chobir moddhe text (e.g. bib number). Textract: <b>document</b> (form, table, handwriting)</td><td>Chobi / video analysis, moderation → Rekognition. Document data extract → Textract</td></tr>
+    <tr><td>Translate vs Transcribe</td><td>Translate bhasha bodlay (text → text). Transcribe audio ke text kore (bhasha same)</td><td>"Different languages" → Translate</td></tr>
+    <tr><td>Kendra vs OpenSearch</td><td>Kendra: ML-powered <b>document search</b>, natural language question er <b>direct answer</b>, ready connector (S3, SharePoint, Google Drive...). OpenSearch (Section 22): search / analytics engine, <b>je kono field, partial match</b>, log analytics, nije index banao</td><td>"Document search powered by ML", "employee ra prosno korbe" → Kendra. "App e partial-match search", "log search + dashboard" → OpenSearch</td></tr>
+    <tr><td>Kendra vs Comprehend</td><td>Kendra = search (khuje answer dey). Comprehend = analyze (sentiment, topic)</td><td>"Search" → Kendra; "insight / NLP" → Comprehend</td></tr>
+    <tr><td>Personalize vs SageMaker</td><td>Personalize: <b>ready-made recommendation</b>, days e implement, ML build / train lage na. SageMaker: <b>je kono custom model</b>, data scientist lage</td><td>"Recommendation", "rapidly", "no ML expertise" → Personalize. "Build, train, deploy own model" → SageMaker</td></tr>
+    <tr><td>Personalize vs Forecast</td><td>Personalize: user ke ki recommend korbo. Forecast: bhobishyote koto (demand, time-series)</td><td>"Recommendation" → Personalize; "forecast" → Forecast</td></tr>
+    <tr><td>SSML vs Pronunciation Lexicon vs SAML</td><td>Lexicon: word er uccharon. SSML: kivabe bolbe (whisper, breath, emphasis). SAML: identity federation, Polly na</td><td>"Amazon EC2 → Elastic Compute Cloud" → Lexicon; "whispering" → SSML</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="changes">
+  <h2>Course er por ki bodlalo</h2>
+  <ul>
+    <li><b>SageMaker → SageMaker AI (3 Dec 2024):</b> AWS blog: "The current Amazon SageMaker has been renamed to Amazon SageMaker AI." Ekhon "Amazon SageMaker" naam ta ekta boro platform (data, analytics, AI; Unified Studio), ar ML build / train / deploy er service = SageMaker AI. Slide (<a class="pg" href="23-slides-p563-577.pdf#page=11" target="_blank" rel="noopener">PDF p. 573</a> <span class="pg-part">(part p. 11)</span>) already "SageMaker AI". Exam answer ek-i: build / train / deploy → SageMaker. <a href="https://aws.amazon.com/blogs/aws/introducing-the-next-generation-of-amazon-sagemaker-the-center-for-all-your-data-analytics-and-ai/">Next generation of Amazon SageMaker</a></li>
+    <li><b>Amazon Forecast notun customer der jonno bondho</b> (maintenance, announce 29 July 2024); existing customer use korte pare; AWS bole SageMaker Canvas e jao. Course slide e Forecast nai, summary lecture e ache; quiz er answer ekhono <b>Forecast</b> (U23-Q13). <a href="https://docs.aws.amazon.com/forecast/latest/dg/what-is-forecast.html">What is Amazon Forecast?</a> · <a href="https://aws.amazon.com/blogs/machine-learning/transition-your-amazon-forecast-usage-to-amazon-sagemaker-canvas/">Forecast → SageMaker Canvas</a></li>
+    <li><b>Comprehend: topic modeling, event detection, prompt safety classification</b> notun customer der jonno bondho (AWS Service Availability Update, 30 April 2026 theke); baki Comprehend feature (sentiment, entity, key phrase, language) ager moto. AWS bole topic / event er jonno Amazon Bedrock LLM. Exam e "group articles by topic, NLP" → ekhono <b>Comprehend</b> (U23-Q5). <a href="https://docs.aws.amazon.com/comprehend/latest/dg/comprehend-availability-change.html">Comprehend feature availability change</a> · <a href="https://aws.amazon.com/about-aws/whats-new/2026/03/aws-service-availability/">AWS Service Availability Updates</a></li>
+    <li><b>Rekognition People Pathing bondho</b>: full shutdown, end of support <b>31 Oct 2025</b> (slide er "Pathing" use case ar nai). <a href="https://docs.aws.amazon.com/general/latest/gr/full_shutdown_services.html">Services in Full Shutdown</a></li>
+    <li><b>Rekognition Streaming Video ar Bulk Image Analysis (batch image content moderation)</b> 30 April 2026 theke notun customer der jonno bondho; AWS: "This change does not impact the availability of other Amazon Rekognition features" (normal image / video content moderation API thake). Exam answer: content moderation → <b>Rekognition</b> (U23-Q10). <a href="https://docs.aws.amazon.com/rekognition/latest/dg/rekognition-availability-changes.html">Rekognition feature availability changes</a></li>
+    <li><b>Amazon Augmented AI (A2I)</b>: "no longer open to new customers" (SageMaker AI A2I maintenance, announce 30 June 2026); existing customer use korte pare. Course / exam e moderation er manual review → A2I ekhono answer. <a href="https://docs.aws.amazon.com/sagemaker/latest/dg/a2i-use-augmented-ai-a2i-human-review-loops.html">Using Amazon A2I</a> · <a href="https://docs.aws.amazon.com/general/latest/gr/maintenance_services.html">Services in Maintenance</a></li>
+    <li><b>Amazon Kendra maintenance mode (30 June 2026)</b>, <b>30 July 2026</b> theke notun customer nay na; AWS bole notun search app Amazon Bedrock Managed Knowledge Base e. Exam answer: "ML-powered document search" → <b>Kendra</b> (U23-Q9). <a href="https://docs.aws.amazon.com/kendra/latest/dg/kendra-availability-change.html">Kendra availability change</a></li>
+    <li><b>Amazon Connect → "Amazon Connect Customer"</b>: AWS doc: "Amazon Connect Customer is the current name for the product previously called Amazon Connect. Amazon Connect is now a set of agentic AI solutions for different business functions." Contact center er answer ek-i: <b>Connect</b>. Tarikh doc e nai (nishchit na). <a href="https://docs.aws.amazon.com/connect/latest/adminguide/what-is-amazon-connect.html">What is Connect Customer?</a></li>
+    <li><b>Amazon Lex V1 end of support 15 Sept 2025</b>; ekhon Lex V2. Exam e "chatbot → Lex" ek-i. <a href="https://docs.aws.amazon.com/connect/latest/adminguide/amazon-lex.html">Add an Amazon Lex bot (end of support notice)</a></li>
+    <li>Transcribe, Polly, Translate, Comprehend Medical, Personalize, Textract er doc e kono availability change notice paini (27 Oct 2026 check).</li>
+  </ul>
+</section>
+
+<section class="card exam-box" id="exam">
+  <h2>Exam e ki mone rakhbo</h2>
+  <h3>Keyword → service</h3>
+  <ul>
+    <li>"Objects, people, text, scenes in <b>images and videos</b>", face, celebrity, labeling → <b>Rekognition</b> (U23-Q3). Polly / Kendra / Lex image dekhe na.</li>
+    <li>"Inappropriate / offensive image-video auto detect", "<b>minimum confidence threshold</b>", "manual review" → <b>Rekognition content moderation</b> + <b>A2I</b> human review (U23-Q10). Threshold kom = beshi flag.</li>
+    <li>"<b>Speech-to-text</b>", subtitle, captions → <b>Transcribe</b> (U23-Q8). "Call save korar age <b>PII remove</b>" → <b>Transcribe PII Redaction</b> (U23-Q11). Multi-language audio → Transcribe automatic language identification.</li>
+    <li>"<b>Text-to-speech</b>, lifelike" → <b>Polly</b>; "Transcribe diye text → speech" = <b>False</b> (U23-Q1).</li>
+    <li>Polly blank-fill: pronunciation customize (Amazon EC2 → Elastic Compute Cloud, AWS → Amazon Web Services) = <b>Pronunciation Lexicons</b>; emphasis / breathing / whispering = <b>SSML</b>. Order mone rakho: <b>Lexicon, tarpor SSML</b>; SAML distractor (U23-Q12).</li>
+    <li>"Documents different languages, natural and accurate" → <b>Translate</b>; "WordTranslator" nai (U23-Q6).</li>
+    <li>"Chatbot, speech-to-text <b>+ intention</b> recognize" → <b>Lex</b> (ASR + NLU); Transcribe intent bujhe na, Connect contact center (U23-Q2).</li>
+    <li>"Cloud contact center, call receive, contact flow, CRM" → <b>Connect</b>; no upfront, 80% sosta. Flow: Connect → Lex → Lambda → CRM.</li>
+    <li>"<b>NLP</b>", sentiment, "<b>group articles by topic</b>" → <b>Comprehend</b> (U23-Q5).</li>
+    <li>"Unstructured <b>medical text</b> (doctor's notes, clinical trial, radiology report)" + "<b>PHI</b>" + HIPAA → <b>Comprehend Medical</b> (DetectPHI) (U23-Q14). Input: S3, Kinesis Data Firehose (real time), Transcribe (voice → text).</li>
+    <li>"<b>Build, train, deploy</b> ML model" (developer / data scientist) → <b>SageMaker</b> (ekhon SageMaker AI) (U23-Q7).</li>
+    <li>"<b>Document search</b> powered by ML" → <b>Kendra</b> (U23-Q9); Comprehend / Translate / Polly na.</li>
+    <li>"Rapidly <b>customized user experience</b>", recommendation → <b>Personalize</b> (U23-Q4); Amazon.com er technology, days e implement.</li>
+    <li>"Scanned document, form, table, handwriting, invoice, passport theke extract" → <b>Textract</b>.</li>
+    <li>"Highly accurate <b>forecasts</b>, fully managed" → <b>Forecast</b> (U23-Q13). Personalize / SageMaker / Lex na. (Forecast ekhon notun customer nay na, kintu exam answer Forecast.)</li>
+  </ul>
+  <h3>Scenario / pipeline</h3>
+  <ul>
+    <li>Call center er call automatically analyze (sentiment, security): <b>Transcribe</b> diye audio → text, tarpor text analyze; given option er moddhe <b>Transcribe + Athena</b> key (S5-Q58). Alexa AWS service na; QuickSight dashboard e human analysis = automation na. Course onujayi sentiment ber kora Comprehend er kaaj (<a class="pg" href="23-slides-p563-577.pdf#page=9" target="_blank" rel="noopener">PDF p. 571</a> <span class="pg-part">(part p. 9)</span>); ei question er option e Comprehend nai, tai given option er moddhe C best.</li>
+    <li>Voice → Transcribe → Comprehend / Comprehend Medical. Phone → Connect → Lex → Lambda.</li>
+  </ul>
+  <h3>Trap ek line e</h3>
+  <ul>
+    <li>Transcribe (shune likhe) ≠ Polly (lekha pore) ≠ Lex (bujhe) ≠ Translate (bhasha bodlay).</li>
+    <li>Rekognition = image / video; Textract = document; Comprehend = text er mane; Kendra = search.</li>
+    <li>Personalize / Comprehend / Rekognition = ready-made; SageMaker = nijer model.</li>
+    <li>Banan: <b>Rekognition</b> (k); "Amazon Recognition" option bhul.</li>
+  </ul>
+</section>
+
+<section class="card qz-part" id="part-a"><div class="qz-part-head"><h2>Part A: Udemy course quiz (14)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">The instructor's own section quiz: warm-up, direct questions. Answer first, then press Check.</p><article class="qz" id="U23-Q1" data-qid="U23-Q1" data-n="1"><div class="qz-top"><span class="qz-num">A1</span><span class="qz-id">U23-Q1</span><span class="pill">Udemy quiz · sec 23 · Q1</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You should use Amazon Transcribe to turn text into lifelike speech using deep learning.</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q1" value="0"><span class="qz-l">A</span><span class="qz-o"><p>True</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U23-Q1" value="1"><span class="qz-l">B</span><span class="qz-o"><p>False</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>Statement ta <b>False</b>. Amazon <b>Transcribe</b> kore ulta kaaj: <b>speech → text</b> (ASR) (<a class="pg" href="23-slides-p563-577.pdf#page=4" target="_blank" rel="noopener">PDF p. 566</a> <span class="pg-part">(part p. 4)</span>).</p><p>Text ke lifelike speech e bodlay <b>Amazon Polly</b> (deep learning, "applications that talk") (<a class="pg" href="23-slides-p563-577.pdf#page=5" target="_blank" rel="noopener">PDF p. 567</a> <span class="pg-part">(part p. 5)</span>). Mone rakho: Transcribe shune likhe, Polly lekha pore shunay.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Transcribe text → speech kore na; eta speech → text. Text → lifelike speech holo Polly er kaaj.</li></ul><p><b>Keyword:</b> <b>text into lifelike speech</b> → Polly, Transcribe na → False</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Transcribe is an AWS service that makes it easy for customers to convert speech-to-text. Amazon Polly is a service that turns text into lifelike speech.</p><p><b>B:</b> Amazon Transcribe is an AWS service that makes it easy for customers to convert speech-to-text. Amazon Polly is a service that turns text into lifelike speech.</p></details></div></article><article class="qz" id="U23-Q2" data-qid="U23-Q2" data-n="1"><div class="qz-top"><span class="qz-num">A2</span><span class="qz-id">U23-Q2</span><span class="pill">Udemy quiz · sec 23 · Q2</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A company would like to implement a chatbot that will convert speech-to-text and recognize the customers' intentions. What service should it use? </p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q2" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Transcribe</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q2" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Rekognition</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q2" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Connect</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U23-Q2" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Lex</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><b>Amazon Lex</b> (Alexa er same technology) e duita jinish ek sathe: <b>ASR</b> (speech → text) ar <b>Natural Language Understanding</b> diye text / caller er <b>intent</b> chena (<a class="pg" href="23-slides-p563-577.pdf#page=8" target="_blank" rel="noopener">PDF p. 570</a> <span class="pg-part">(part p. 8)</span>).</p><p>Ei duita mile-i <b>chatbot / call center bot</b> banano jay, tai Lex.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Transcribe speech → text kore, kintu NLU nai, customer er intention bujhe na.</li><li><b>B.</b> Rekognition image ar video analyze kore; speech ba intent er sathe kaaj nai.</li><li><b>C.</b> Connect cloud contact center (call receive, contact flow); intent bujhar kaaj Lex ke diye korano hoy, Connect nije kore na.</li></ul><p><b>Keyword:</b> <b>chatbot</b> + speech-to-text + <b>recognize intentions</b> → Lex</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Transcribe is an AWS service that makes it easy for customers to convert speech-to-text. However, it does not have natural language understanding.</p><p><b>B:</b> Amazon Rekognition makes it easy to add image and video analysis to your applications using proven, highly scalable, deep learning technology that requires no machine learning expertise to use.</p><p><b>C:</b> Amazon Connect is a self-service, cloud-based contact center service that makes it easy for any business to deliver better customer service at lower cost. It does not provide speech-to-text conversion or natural language understanding.</p><p><b>D:</b> Amazon Lex is a service for building conversational interfaces into any application using voice and text. Lex provides the advanced deep learning functionalities of automatic speech recognition (ASR) for converting speech to text, and natural language understanding (NLU) to recognize the intent of the text, to enable you to build applications with highly engaging user experiences and lifelike conversational interactions.</p></details></div></article><article class="qz" id="U23-Q3" data-qid="U23-Q3" data-n="1"><div class="qz-top"><span class="qz-num">A3</span><span class="qz-id">U23-Q3</span><span class="pill">Udemy quiz · sec 23 · Q3</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You would like to find objects, people, text, or scenes in images and videos. What AWS&nbsp;service should you use?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U23-Q3" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Rekognition</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q3" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Polly</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q3" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Kendra</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q3" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Lex</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Amazon Rekognition</b> ML diye <b>image ar video</b> te <b>object, people, text, scene</b> khuje: labeling, face detection, celebrity recognition, text detection (<a class="pg" href="23-slides-p563-577.pdf#page=2" target="_blank" rel="noopener">PDF p. 564</a> <span class="pg-part">(part p. 2)</span>).</p><p>Question er wording slide er prothom line er sathe hubohu mile.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Polly text ke speech e bodlay; chobi ba video dekhe na.</li><li><b>C.</b> Kendra ML-powered document search; image / video te object khuje na.</li><li><b>D.</b> Lex chatbot (ASR + NLU) banay; image analysis kore na.</li></ul><p><b>Keyword:</b> <b>objects, people, text, scenes</b> in <b>images and videos</b> → Rekognition</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Rekognition makes it easy to add image and video analysis to your applications using proven, highly scalable, deep learning technology that requires no machine learning expertise to use.</p><p><b>B:</b> Amazon Polly is a service that turns text into lifelike speech. It is not used to find objects, people, text, or scenes in images and videos.</p><p><b>C:</b> Amazon Kendra is a highly accurate and easy to use enterprise search service that’s powered by machine learning. It is not used to find objects, people, text, or scenes in images and videos.</p><p><b>D:</b> Amazon Lex is a service for building conversational interfaces into any application using voice and text. Lex provides the advanced deep learning functionalities of automatic speech recognition (ASR) for converting speech to text, and natural language understanding (NLU) to recognize the intent of the text, to enable you to build applications with highly engaging user experiences and lifelike conversational interactions. It is not used to find objects, people, text, or scenes in images and videos.</p></details></div></article><article class="qz" id="U23-Q4" data-qid="U23-Q4" data-n="1"><div class="qz-top"><span class="qz-num">A4</span><span class="qz-id">U23-Q4</span><span class="pill">Udemy quiz · sec 23 · Q4</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A start-up would like to rapidly create customized user experiences. Which AWS service can help?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U23-Q4" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Personalize</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q4" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Kendra</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q4" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Connect</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Amazon Personalize</b> fully managed ML service ja app e <b>real-time personalized recommendation</b> dey: Amazon.com er same technology (<a class="pg" href="23-slides-p563-577.pdf#page=13" target="_blank" rel="noopener">PDF p. 575</a> <span class="pg-part">(part p. 13)</span>).</p><p>"<b>Rapidly</b>" mile jay: <b>days e implement, months na</b>; nije ML model build / train / deploy korte hoy na. Tai start-up druto customized user experience banate parbe.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Kendra document search service; user ke personalized recommendation / experience dey na.</li><li><b>C.</b> Connect cloud contact center; customized user experience ba recommendation er service na.</li></ul><p><b>Keyword:</b> <b>rapidly</b> + <b>customized user experiences</b> → Personalize</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Personalize is a machine learning service that makes it easy for developers to create individualized recommendations for customers using their applications.</p><p><b>B:</b> Amazon Kendra is a highly accurate and easy to use enterprise search service that’s powered by machine learning. It is not used to create fast personalized user experiences and recommendations.</p><p><b>C:</b> Amazon Connect is an easy-to-use omnichannel cloud contact center that helps companies provide superior customer service at a lower cost. It is not used to create fast personalized user experiences and recommendations.</p></details></div></article><article class="qz" id="U23-Q5" data-qid="U23-Q5" data-n="1"><div class="qz-top"><span class="qz-num">A5</span><span class="qz-id">U23-Q5</span><span class="pill">Udemy quiz · sec 23 · Q5</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A research team would like to group articles by topics using Natural Language Processing (NLP).&nbsp;Which service should they use?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q5" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Translate</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U23-Q5" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Comprehend</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q5" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Lex</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q5" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Rekognition</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>"<b>NLP</b>" dekhlei <b>Amazon Comprehend</b>. Comprehend text theke language, key phrase, entity, sentiment ber kore, ar <b>text file er collection automatically topic onujayi organize</b> kore; slide er use case: "Create and group articles by topics" (<a class="pg" href="23-slides-p563-577.pdf#page=9" target="_blank" rel="noopener">PDF p. 571</a> <span class="pg-part">(part p. 9)</span>).</p><p>Ajker note: topic modeling feature ta 30 April 2026 theke notun customer der jonno bondho (AWS Bedrock LLM suggest kore), kintu exam / quiz er answer ekhono <b>Comprehend</b>.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Translate shudhu ek bhasha theke onno bhashay anubad kore; article topic onujayi group kore na.</li><li><b>C.</b> Lex chatbot banay (ASR + intent); article er topic ber kore na.</li><li><b>D.</b> Rekognition image / video analysis; text er topic NLP kore na.</li></ul><p><b>Keyword:</b> <b>group articles by topics</b> + <b>NLP</b> → Comprehend</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Translate is a neural machine translation service that delivers fast, high-quality, and affordable language translation. It does not use natural language processing (NLP).</p><p><b>B:</b> Amazon Comprehend is a natural language processing (NLP) service that uses machine learning to find meaning and insights in text.</p><p><b>C:</b> Amazon Lex is a service for building conversational interfaces into any application using voice and text. Lex provides the advanced deep learning functionalities of automatic speech recognition (ASR) for converting speech to text, and natural language understanding (NLU) to recognize the intent of the text, to enable you to build applications with highly engaging user experiences and lifelike conversational interactions. It does not use natural language processing (NLP).</p><p><b>D:</b> Amazon Rekognition makes it easy to add image and video analysis to your applications using proven, highly scalable, deep learning technology that requires no machine learning expertise to use. It does not use natural language processing (NLP).</p></details></div></article><article class="qz" id="U23-Q6" data-qid="U23-Q6" data-n="1"><div class="qz-top"><span class="qz-num">A6</span><span class="qz-id">U23-Q6</span><span class="pill">Udemy quiz · sec 23 · Q6</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A company would like to convert its documents into different languages, with natural and accurate wording. What should they use?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q6" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Transcribe</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q6" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Polly</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U23-Q6" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Translate</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q6" value="3"><span class="qz-l">D</span><span class="qz-o"><p>WordTranslator</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>Amazon Translate</b> = <b>natural and accurate language translation</b>; website, app, document <b>localize</b> kore international user der jonno, boro volume er text o efficiently (<a class="pg" href="23-slides-p563-577.pdf#page=7" target="_blank" rel="noopener">PDF p. 569</a> <span class="pg-part">(part p. 7)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Transcribe speech → text kore; bhasha bodlay na.</li><li><b>B.</b> Polly text → speech kore; onno bhashay anubad kore na.</li><li><b>D.</b> WordTranslator bole kono AWS service nai; distractor.</li></ul><p><b>Keyword:</b> documents into <b>different languages</b>, <b>natural and accurate</b> → Translate</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Transcribe is an AWS service that makes it easy for customers to convert speech-to-text.</p><p><b>B:</b> Amazon Polly is a service that turns text into lifelike speech.</p><p><b>C:</b> Amazon Translate is a neural machine translation service that delivers fast, high-quality, and affordable language translation.</p><p><b>D:</b> This is a distractor. This service does not exist.</p></details></div></article><article class="qz" id="U23-Q7" data-qid="U23-Q7" data-n="1"><div class="qz-top"><span class="qz-num">A7</span><span class="qz-id">U23-Q7</span><span class="pill">Udemy quiz · sec 23 · Q7</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A developer would like to build, train, and deploy a machine learning model quickly. Which service can he use?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U23-Q7" value="0"><span class="qz-l">A</span><span class="qz-o"><p>SageMaker</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q7" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Polly</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q7" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Comprehend</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q7" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Personalize</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>Renamed:</b> Amazon SageMaker -&gt; Amazon SageMaker AI (the answer is the same).</div><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Amazon SageMaker</b> (ekhon naam <b>SageMaker AI</b>) holo developer / data scientist der jonno fully managed service, jekhane ML model er pura cycle: label, <b>build</b>, <b>train and tune</b>, <b>deploy</b> (apply) ek jaygay (<a class="pg" href="23-slides-p563-577.pdf#page=11" target="_blank" rel="noopener">PDF p. 573</a> <span class="pg-part">(part p. 11)</span>).</p><p>3 Dec 2024 e AWS ager SageMaker ke "SageMaker AI" rename koreche; service er kaaj ek-i.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Polly ready-made text → speech service; nijer ML model build / train kora jay na.</li><li><b>C.</b> Comprehend ready-made NLP service; custom model build-train-deploy platform na.</li><li><b>D.</b> Personalize ready-made recommendation service (build, train lage na); general ML model banano platform na.</li></ul><p><b>Keyword:</b> <b>build, train, and deploy</b> a <b>machine learning model</b> → SageMaker (AI)</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon SageMaker is a fully managed service that provides every developer and data scientist with the ability to build, train, and deploy machine learning (ML) models quickly. SageMaker removes the heavy lifting from each step of the machine learning process to make it easier to develop high quality models.</p><p><b>B:</b> Amazon Polly is a service that turns text into lifelike speech. It is not used to build, train, and deploy machine learning models quickly.</p><p><b>C:</b> Amazon Comprehend is a natural language processing (NLP) service that uses machine learning to find meaning and insights in text. It is not used to build, train, and deploy machine learning models quickly.</p><p><b>D:</b> Amazon Personalize is a machine learning service that makes it easy for developers to create individualized recommendations for customers using their applications. It is not used to build, train, and deploy machine learning models quickly.</p></details></div></article><article class="qz" id="U23-Q8" data-qid="U23-Q8" data-n="1"><div class="qz-top"><span class="qz-num">A8</span><span class="qz-id">U23-Q8</span><span class="pill">Udemy quiz · sec 23 · Q8</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Which AWS&nbsp;service makes it easy to convert speech-to-text?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q8" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Connect</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q8" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Translate</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U23-Q8" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Transcribe</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q8" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Polly</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p><b>Amazon Transcribe</b> deep learning <b>ASR</b> diye <b>speech → text</b> kore, druto ar accurate (<a class="pg" href="23-slides-p563-577.pdf#page=4" target="_blank" rel="noopener">PDF p. 566</a> <span class="pg-part">(part p. 4)</span>). Use case: call transcript, subtitle, closed caption.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Connect cloud contact center; speech-to-text service na.</li><li><b>B.</b> Translate bhasha bodlay (text → text), speech ke text kore na.</li><li><b>D.</b> Polly ulta kaaj kore: text → speech.</li></ul><p><b>Keyword:</b> <b>speech-to-text</b> → Transcribe</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Connect is a self-service, cloud-based contact center service that makes it easy for any business to deliver better customer service at lower cost. It is not used to convert speech-to-text.</p><p><b>B:</b> Amazon Translate is a neural machine translation service that delivers fast, high-quality, and affordable language translation.</p><p><b>C:</b> Amazon Transcribe is an AWS service that makes it easy for customers to convert speech-to-text.</p><p><b>D:</b> Amazon Polly is a service that turns text into lifelike speech.</p></details></div></article><article class="qz" id="U23-Q9" data-qid="U23-Q9" data-n="1"><div class="qz-top"><span class="qz-num">A9</span><span class="qz-id">U23-Q9</span><span class="pill">Udemy quiz · sec 23 · Q9</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Which of the following services is a document search service powered by machine learning?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q9" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Translate</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U23-Q9" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Kendra</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q9" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Comprehend</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q9" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Polly</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>Amazon Kendra</b> = <b>fully managed document search service powered by ML</b>: S3, SharePoint, Google Drive er document index kore, natural language prosno er answer document er bhitor theke dey ("IT support desk kothay?" → "1st floor") (<a class="pg" href="23-slides-p563-577.pdf#page=12" target="_blank" rel="noopener">PDF p. 574</a> <span class="pg-part">(part p. 12)</span>).</p><p>Ajker note: Kendra 30 June 2026 theke maintenance mode e, notun customer nay na (AWS Bedrock Knowledge Base suggest kore); exam answer ekhono Kendra.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Translate bhasha anubad kore; document search na.</li><li><b>C.</b> Comprehend text analyze kore (NLP: sentiment, entity, topic); search service na.</li><li><b>D.</b> Polly text → speech; document search kore na.</li></ul><p><b>Keyword:</b> <b>document search service</b> + <b>powered by machine learning</b> → Kendra</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Translate is a neural machine translation service that delivers fast, high-quality, and affordable language translation.</p><p><b>B:</b> Amazon Kendra is a highly accurate and easy to use enterprise search service that’s powered by machine learning.</p><p><b>C:</b> Amazon Comprehend is a natural language processing (NLP) service that uses machine learning to find meaning and insights in text.</p><p><b>D:</b> Amazon Polly is a service that turns text into lifelike speech. It is not a document search service.</p></details></div></article><article class="qz" id="U23-Q10" data-qid="U23-Q10" data-n="1"><div class="qz-top"><span class="qz-num">A10</span><span class="qz-id">U23-Q10</span><span class="pill">Udemy quiz · sec 23 · Q10</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A company is managing an image and video sharing platform which is used by customers around the globe. The platform is running on AWS using an S3 bucket to host both images and videos and using CloudFront as the CDN to deliver content to customers all over the world with low latency. In the last couple of months, a lot of customers have complained that they have started to see inappropriate content on the platform which started to increase in the last week. It will be very expensive and time-consuming to manually approve those images and videos by employees before its published on the platform. There is a requirement to find a solution that can automatically detect inappropriate and offensive images and videos and give you the ability to set a minimum confidence threshold for items that will be flagged and allows for manual review. Which AWS service can fit the requirement?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q10" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon Polly</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q10" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon Translate</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q10" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon Lex</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U23-Q10" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon Rekognition</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><b>Amazon Rekognition Content Moderation</b> image ar video te <b>inappropriate, unwanted, offensive</b> content automatically detect kore; social media / e-commerce e safer user experience (<a class="pg" href="23-slides-p563-577.pdf#page=3" target="_blank" rel="noopener">PDF p. 565</a> <span class="pg-part">(part p. 3)</span>).</p><ul><li><b>Minimum Confidence Threshold</b> set kora jay, tar upore hole item flagged.</li><li>Flagged item <b>Amazon Augmented AI (A2I)</b> e optional <b>manual review</b>.</li></ul><p>Tai employee diye shob manually approve korar expensive kaaj lagbe na. (A2I ekhon notun customer nay na, kintu exam answer Rekognition.)</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Polly text → speech; image / video moderation kore na.</li><li><b>B.</b> Translate bhasha anubad kore; offensive image detect kore na.</li><li><b>C.</b> Lex chatbot banay; image / video analysis kore na.</li></ul><p><b>Keyword:</b> <b>automatically detect inappropriate images and videos</b> + <b>minimum confidence threshold</b> + <b>manual review</b> → Rekognition</p></div></article><article class="qz" id="U23-Q11" data-qid="U23-Q11" data-n="1"><div class="qz-top"><span class="qz-num">A11</span><span class="qz-id">U23-Q11</span><span class="pill">Udemy quiz · sec 23 · Q11</span><span class="qz-badge"></span></div><div class="qz-stem"><p>An online medical company that allows you to book an appointment with doctors using through a phone call is using AWS to host their infrastructure. They are using Amazon Connect and Amazon Lex to receive calls and create a workflow, book an appointment, and pay. According to the company’s policy, all calls must be recorded for review. But, there is a requirement to remove any Personally Identifiable Information (PII) from the call before it's saved. What do you recommend to use which helps in removing PII from calls?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q11" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon Polly</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U23-Q11" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon Transcribe</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q11" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon Recognition</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q11" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon Translate</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>Amazon Transcribe</b> call er audio ke text kore, ar <b>Redaction</b> diye <b>PII</b> (naam, boyosh, phone number, SSN) automatically remove kore (<a class="pg" href="23-slides-p563-577.pdf#page=4" target="_blank" rel="noopener">PDF p. 566</a> <span class="pg-part">(part p. 4)</span>). Tai call save korar age PII sorano jay.</p><p>Connect + Lex call ar workflow dekhe; PII redaction er kaaj Transcribe er.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Polly text → speech; call theke PII remove kore na.</li><li><b>C.</b> "Amazon Recognition" bhul banan (asol naam Rekognition); ar Rekognition image / video analyze kore, audio call er PII na.</li><li><b>D.</b> Translate bhasha bodlay; PII redaction kore na.</li></ul><p><b>Keyword:</b> <b>remove PII</b> from <b>calls</b> → Transcribe (PII Redaction)</p></div></article><article class="qz" id="U23-Q12" data-qid="U23-Q12" data-n="1"><div class="qz-top"><span class="qz-num">A12</span><span class="qz-id">U23-Q12</span><span class="pill">Udemy quiz · sec 23 · Q12</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Amazon Polly allows you to turn text into speech. It has two important features. First is ……………….. which allows you to customize the pronunciation of words (e.g., “Amazon EC2” will be “Amazon Elastic Compute Cloud”). The second is ……………….. which allows you to emphasize words, including breathing sounds, whispering, and more.</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q12" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Speech Synthesis Markup Language (SSML), Pronunciation Lexicons</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q12" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Pronunciation Lexicons, Security Assertion Markup Language (SAML)</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U23-Q12" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Pronunciation Lexicons, Speech Synthesis Markup Language (SSML)</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q12" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Security Assertion Markup Language (SAML), Pronunciation Lexicons</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Polly er duita feature (<a class="pg" href="23-slides-p563-577.pdf#page=6" target="_blank" rel="noopener">PDF p. 568</a> <span class="pg-part">(part p. 6)</span>):</p><ul><li><b>Pronunciation Lexicons</b>: word er uccharon customize: acronym ("AWS" → "Amazon Web Services", ekhane "Amazon EC2" → "Amazon Elastic Compute Cloud") ba stylized word.</li><li><b>SSML</b> (Speech Synthesis Markup Language): emphasis, phonetic pronunciation, <b>breathing sound, whispering</b>, Newscaster style.</li></ul><p>Tai order: prothome Lexicons, tarpor SSML.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Order ulta: pronunciation customize kore Lexicons, ar breathing / whispering kore SSML.</li><li><b>B.</b> SAML (Security Assertion Markup Language) identity federation / SSO er jinish, Polly er feature na.</li><li><b>D.</b> SAML Polly er feature na, ar order o bhul.</li></ul><p><b>Keyword:</b> <b>customize pronunciation</b> → Lexicons; <b>emphasize, breathing, whispering</b> → SSML</p></div></article><article class="qz" id="U23-Q13" data-qid="U23-Q13" data-n="1"><div class="qz-top"><span class="qz-num">A13</span><span class="qz-id">U23-Q13</span><span class="pill">Udemy quiz · sec 23 · Q13</span><span class="pill warn">⚠ outdated</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Which fully managed service can deliver highly accurate forecasts?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U23-Q13" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Personalize</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q13" value="1"><span class="qz-l">B</span><span class="qz-o"><p>SageMaker</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q13" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Lex</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U23-Q13" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Forecast</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>⚠ Outdated:</b> Amazon Forecast 29 July 2024 theke new customer der jonno bondho (existing ra use korte pare); AWS ekhon forecasting er jonno SageMaker Canvas recommend kore. Course slide e Forecast nai, tobe ei quiz/exam er answer ekhono Forecast. <a href="https://docs.aws.amazon.com/forecast/latest/dg/what-is-forecast.html" target="_blank" rel="noopener">source</a></div><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><b>Amazon Forecast</b> fully managed ML service ja <b>highly accurate forecast</b> dey; Stephane er ML summary lecture e "Forecast allows you to build highly accurate forecast" (slide e nai).</p><p>Ajker obostha: Forecast 29 July 2024 theke notun customer der jonno bondho (existing ra use korte pare); AWS forecasting er jonno SageMaker Canvas recommend kore. Tobuo ei quiz / exam er answer <b>Forecast</b>.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Personalize recommendation dey (user ke ki suggest korbo), forecast na.</li><li><b>B.</b> SageMaker diye nije forecast model banano jay, kintu "forecast deliver kora fully managed service" hisabe answer Forecast.</li><li><b>C.</b> Lex chatbot banay; forecast er sathe shomporko nai.</li></ul><p><b>Keyword:</b> fully managed + <b>highly accurate forecasts</b> → Forecast</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon Personalize is a machine learning service that makes it easy for developers to create individualized recommendations for customers using their applications. It is not used to deliver highly accurate forecasts.</p><p><b>B:</b> Amazon SageMaker is a fully managed service that provides every developer and data scientist with the ability to build, train, and deploy machine learning (ML) models quickly. It is not used to deliver highly accurate forecasts.</p><p><b>C:</b> Amazon Lex is a service for building conversational interfaces into any application using voice and text. It is not used to deliver highly accurate forecasts.</p><p><b>D:</b> Amazon Forecast is a fully managed service that uses machine learning to deliver highly accurate forecasts.</p></details></div></article><article class="qz" id="U23-Q14" data-qid="U23-Q14" data-n="1"><div class="qz-top"><span class="qz-num">A14</span><span class="qz-id">U23-Q14</span><span class="pill">Udemy quiz · sec 23 · Q14</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A medical company is in the process of implementing a solution to detect, extract, and analyze information from unstructured medical text like doctors’ notes, clinical trial reports, and radiology reports. Those documents are uploaded and stored on S3 buckets. According to the company’s regulations, the solution must be designed and implemented to keep patients’ privacy by identifying Protected Health Information (PHI) so the solution will be eligible with HIPAA. Which AWS service should you use?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U23-Q14" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon Comprehend Medical</p></span></label></li><li data-i="1"><label><input type="radio" name="U23-Q14" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon Rekognition</p></span></label></li><li data-i="2"><label><input type="radio" name="U23-Q14" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon Polly</p></span></label></li><li data-i="3"><label><input type="radio" name="U23-Q14" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon Translate</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Amazon Comprehend Medical</b> <b>unstructured clinical text</b> (physician's notes, discharge summaries, test results, case notes) theke useful info detect kore, ar NLP diye <b>Protected Health Information (PHI)</b> khuje: <b>DetectPHI API</b> (<a class="pg" href="23-slides-p563-577.pdf#page=10" target="_blank" rel="noopener">PDF p. 572</a> <span class="pg-part">(part p. 10)</span>).</p><p>Document S3 e rakha thakle sorasori Comprehend Medical API call. AWS doc onujayi eta <b>HIPAA Eligible Service</b>.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Rekognition image / video analyze kore; medical text theke PHI ber kore na.</li><li><b>C.</b> Polly text → speech; text analyze kore na.</li><li><b>D.</b> Translate bhasha anubad kore; PHI detect kore na.</li></ul><p><b>Keyword:</b> <b>unstructured medical text</b> + <b>identify PHI</b> + HIPAA → Comprehend Medical</p></div></article></section>
+<section class="card qz-part" id="part-b"><div class="qz-part-head"><h2>Part B: Practice exam questions (1)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">Everything these questions need is covered up to this section (in your study order). Answer first, ~2 min per question. Then read every explanation, also for the ones you got right.</p><article class="qz" id="S5-Q58" data-qid="S5-Q58" data-n="1"><div class="qz-top"><span class="qz-num">B1</span><span class="qz-id">S5-Q58</span><span class="pill">Stephane set 5 · Q58</span><span class="pill">Design High-Performing Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A call center used to hire experienced specialists to analyze the customer service calls attended by their small group of call center representatives. Each call center representative handles about 40-50 calls in a day. Over the years, as the company grew to more than a hundred employees, hiring specialists to analyze calls has not only become cumbersome but also ineffective. The company wants to move to AWS Cloud and is looking at an automated solution that can help them analyze the calls for sentiment and security analysis.</p>
+
+<p>As a Solutions Architect, which of the following solutions would you recommend to meet the given requirements?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S5-Q58" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Use Kinesis Data Streams to read in audio files as they are generated. Use Amazon provided machine learning (ML) algorithms to initially convert the audio files into text. These text files can be analyzed using various ML algorithms to generate reports for customer sentiment analysis</p></span></label></li><li data-i="1"><label><input type="radio" name="S5-Q58" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Use Kinesis Data Streams to read in audio files into Amazon Alexa, which will convert the audio files into text. Kinesis Data Analytics can be used to analyze these files and Amazon Quicksight can be used to visualize and display the output</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="S5-Q58" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Use Amazon Transcribe to convert audio files to text. Run analysis on these text files using Amazon Athena to understand the underlying customer sentiments</p></span></label></li><li data-i="3"><label><input type="radio" name="S5-Q58" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Use Amazon Transcribe to convert audio files to text. Use Amazon Quicksight to run analysis on these text files to understand the underlying patterns. Visualize and display them onto user Dashboards for human analysis</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Prothom kaaj: call er <b>audio ke text</b> kora → <b>Amazon Transcribe</b> (speech → text, ASR) (<a class="pg" href="23-slides-p563-577.pdf#page=4" target="_blank" rel="noopener">PDF p. 566</a> <span class="pg-part">(part p. 4)</span>).</p><p>Tarpor text file S3 e rekhe <b>Amazon Athena</b> diye serverless SQL analysis (Section 22); option er reference AWS ML blog "Transcribe + Athena" pattern. Ei option e duita managed service, automated, specialist lage na.</p><p>Judgement call: course onujayi sentiment ber kora asole <b>Comprehend</b> er kaaj (<a class="pg" href="23-slides-p563-577.pdf#page=9" target="_blank" rel="noopener">PDF p. 571</a> <span class="pg-part">(part p. 9)</span>), kintu option e Comprehend nai; given option er moddhe C best.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> "Amazon provided ML algorithms" vague, kono managed service er naam nai; audio → text er jonno Transcribe lagbe. Kinesis Data Streams nije audio transcribe kore na.</li><li><b>B.</b> Alexa AWS er ASR service na (Alexa er technology Lex hisabe ashe); ar Kinesis Data Streams audio file transcribe korar jaygao na.</li><li><b>D.</b> QuickSight dashboard e "human analysis" = abar manush diye analysis, automated sentiment analysis na; QuickSight visualization tool, text analyze er engine na.</li></ul><p><b>Keyword:</b> <b>analyze calls</b> automated → audio → text <b>Transcribe</b> + text analysis (Athena)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:</p>
+
+<p><strong>Use Amazon Transcribe to convert audio files to text. Run analysis on these text files using Amazon Athena to understand the underlying customer sentiments</strong> - Amazon Transcribe is an automatic speech recognition (ASR) service that makes it easy to convert audio to text. One key feature of the service is called speaker identification, which you can use to label each individual speaker when transcribing multi-speaker audio files. You can specify Amazon Transcribe to identify 2–10 speakers in the audio clip.</p>
+
+<p>Amazon Athena is an interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL. Athena is serverless, so there is no infrastructure to manage, and you pay only for the queries that you run. To leverage Athena, you can simply point to your data in Amazon S3, define the schema, and start querying using standard SQL. Most results are delivered within seconds.</p>
+
+<p>Analyzing multi-speaker audio files using Amazon Transcribe and Amazon Athena:
+<img src="../assets/qimg/96ed878db12061e5.jpg" alt="" loading="lazy">
+via - <a href="https://aws.amazon.com/blogs/machine-learning/automating-the-analysis-of-multi-speaker-audio-files-using-amazon-transcribe-and-amazon-athena" target="_blank" rel="noopener">https://aws.amazon.com/blogs/machine-learning/automating-the-analysis-of-multi-speaker-audio-files-using-amazon-transcribe-and-amazon-athena</a></p>
+
+<p>Incorrect options:</p>
+
+<p><strong>Use Kinesis Data Streams to read in audio files as they are generated. Use Amazon provided machine learning (ML) algorithms to initially convert the audio files into text. These text files can be analyzed using various ML algorithms to generate reports for customer sentiment analysis</strong> - Amazon Kinesis can be used to stream real-time data for further analysis and storage. Kinesis Data Streams cannot read in audio files. You will still need to use AWS Transcribe for ASR services.</p>
+
+<p><strong>Use Kinesis Data Streams to read in audio files into Amazon Alexa, which will convert the audio files into text. Kinesis Data Analytics can be used to analyze these files and Amazon Quicksight can be used to visualize and display the output</strong> -  Kinesis Data Streams cannot read in audio files. Amazon Alexa cannot be used as an Automatic Speech Recognition (ASR) service, though Alexa internally uses ASR for its working.</p>
+
+<p><strong>Use Amazon Transcribe to convert audio files to text. Use Amazon Quicksight to run analysis on these text files to understand the underlying patterns. Visualize and display them onto user Dashboards for human analysis</strong> - Amazon Quicksight is for the visual representation of data through Dashboards, graphs and various other modes. It has a rich feature set that helps analyze data and the complex relationships that exist between different data features. It is, however, not a powerful analysis tool like Amazon Athena.</p>
+
+<p>References:</p>
+
+<p><a href="https://aws.amazon.com/blogs/machine-learning/automating-the-analysis-of-multi-speaker-audio-files-using-amazon-transcribe-and-amazon-athena" target="_blank" rel="noopener">https://aws.amazon.com/blogs/machine-learning/automating-the-analysis-of-multi-speaker-audio-files-using-amazon-transcribe-and-amazon-athena</a></p>
+
+<p><a href="https://aws.amazon.com/athena" target="_blank" rel="noopener">https://aws.amazon.com/athena</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/blogs/machine-learning/automating-the-analysis-of-multi-speaker-audio-files-using-amazon-transcribe-and-amazon-athena" target="_blank" rel="noopener">https://aws.amazon.com/blogs/machine-learning/automating-the-analysis-of-multi-speaker-audio-files-using-amazon-transcribe-and-amazon-athena</a> · <a href="https://aws.amazon.com/athena" target="_blank" rel="noopener">https://aws.amazon.com/athena</a></p></div></article></section>
+</main>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>03 Stephane Maarek practice tests</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+</head>
+<body>
+<main class="wrap" data-qnotes>
+  <div class="topbar">
+    <nav><a href="../index.html">← Index</a> <a href="summary.html">Summary</a> <a href="03-notes.html">Note</a> <a href="../mistakes.html">Mistakes</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+  <header>
+    <p class="eyebrow">Stephane Maarek practice tests · 1 question</p>
+    <h1>Section 03: Getting started with AWS</h1>
+    <p class="sub">Answer first, then press Check. Other sources for this section: <a href="course-quiz.html">Udemy course section quiz</a> · <a href="dojo.html">Jon Bonso practice tests</a> · <a href="dump.html">SAA-C03 question dump</a></p>
+  </header>
+<section class="card qz-part" id="sec-3"><div class="qz-part-head"><h2>Stephane Maarek practice tests (1)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap"></p><article class="qz" id="S3-Q22" data-qid="S3-Q22" data-n="1"><div class="qz-top"><span class="qz-num">3·1</span><span class="qz-id">S3-Q22</span><span class="pill">Stephane set 3 · Q22</span><span class="pill">Design High-Performing Architectures</span><span class="pill acc">not in course</span><span class="qz-badge"></span></div><div class="qz-stem"><p>An IT consultant is helping a small business revamp their technology infrastructure on the AWS Cloud. The business has two AWS accounts and all resources are provisioned in the us-west-2 region. The IT consultant is trying to launch an EC2 instance in each of the two AWS accounts such that the instances are in the same Availability Zone of the us-west-2 region. Even after selecting the same default subnet (us-west-2a) while launching the instances in each of the AWS accounts, the IT consultant notices that the Availability Zones are still different. As a solutions architect, which of the following would you suggest resolving this issue?</p></div><div class="qz-bnq" lang="bn" hidden><p>একজন IT consultant একটি ছোট business-কে AWS Cloud-এ তাদের technology infrastructure নতুন করে সাজাতে সাহায্য করছেন। business-টির দুটি AWS account আছে এবং সব resource us-west-2 region-এ provision করা। IT consultant দুটি AWS account-এর প্রতিটিতে একটি করে EC2 instance launch করার চেষ্টা করছেন, যাতে instance-গুলো us-west-2 region-এর একই Availability Zone-এ থাকে। প্রতিটি AWS account-এ instance launch করার সময় একই default subnet (us-west-2a) বেছে নেওয়ার পরেও IT consultant দেখলেন যে Availability Zone-গুলো এখনও আলাদা। একজন solutions architect হিসেবে, এই সমস্যা সমাধানের জন্য আপনি নিচের কোনটি পরামর্শ দেবেন?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S3-Q22" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Reach out to AWS Support for creating the EC2 instances in the same Availability Zone across the two AWS accounts</p><span class="qz-o-bn" lang="bn" hidden>দুটি AWS account জুড়ে একই Availability Zone-এ EC2 instance তৈরি করার জন্য AWS Support-এর সাথে যোগাযোগ করুন</span></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="S3-Q22" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Use AZ ID to uniquely identify the Availability Zones across the two AWS Accounts</p><span class="qz-o-bn" lang="bn" hidden>দুটি AWS Accounts জুড়ে Availability Zone-গুলোকে uniquely identify করতে AZ ID ব্যবহার করুন</span></span></label></li><li data-i="2"><label><input type="radio" name="S3-Q22" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Use the default subnet to uniquely identify the Availability Zones across the two AWS Accounts</p><span class="qz-o-bn" lang="bn" hidden>দুটি AWS Accounts জুড়ে Availability Zone-গুলোকে uniquely identify করতে default subnet ব্যবহার করুন</span></span></label></li><li data-i="3"><label><input type="radio" name="S3-Q22" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Use the default VPC to uniquely identify the Availability Zones across the two AWS Accounts</p><span class="qz-o-bn" lang="bn" hidden>দুটি AWS Accounts জুড়ে Availability Zone-গুলোকে uniquely identify করতে default VPC ব্যবহার করুন</span></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>Not in the course:</b> AZ ID (protita account e AZ name alada physical AZ e map hoy) course e porano hoy na.</div><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>AZ name (jemon <code>us-west-2a</code>) protita AWS account e alada physical AZ e map hote pare - AWS eta account onujayi mix kore jate load sob AZ e chhoray. Tai duita account e same name dile-o physical AZ alada hote pare.</p><p><b>AZ ID</b> (jemon <code>usw2-az2</code>) sob account e eki physical AZ bujhay. Tai cross-account e same AZ chaile AZ ID mile subnet bachhai koro. Course e AZ name (ap-southeast-2a) dekhay (PDF p. 21), kintu ei mapping ta porano hoy na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> AWS Support lagbe na; AZ ID dekhe nijei same physical AZ khuje paoa jay.</li><li><b>C.</b> Default subnet AZ name e bandha, ar AZ name account bhede alada physical AZ hote pare - tai eta diye unique identify hoy na.</li><li><b>D.</b> Default VPC puro region jure thake (sob AZ), tai eta diye kono specific AZ identify kora jay na.</li></ul><p><b>Keyword:</b> <b>Same name us-west-2a, tobu AZ alada</b>, <b>two AWS accounts</b> → <b>AZ ID</b> (usw2-az2)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:
+"Use AZ ID to uniquely identify the Availability Zones across the two AWS Accounts"</p>
+
+<p>An Availability Zone is represented by a region code followed by a letter identifier; for example, us-east-1a. To ensure that resources are distributed across the Availability Zones for a region, AWS maps Availability Zones to names for each AWS account. For example, the Availability Zone us-west-2a for one AWS account might not be the same location as us-west-2a for another AWS account.</p>
+
+<p>To coordinate Availability Zones across accounts, you must use the AZ ID, which is a unique and consistent identifier for an Availability Zone. For example, usw2-az2 is an AZ ID for the us-west-2 region and it has the same location in every AWS account.</p>
+
+<p>Viewing AZ IDs enables you to determine the location of resources in one account relative to the resources in another account. For example, if you share a subnet in the Availability Zone with the AZ ID usw2-az2 with another account, this subnet is available to that account in the Availability Zone whose AZ ID is also usw2-az2.</p>
+
+<p>You can view the AZ IDs by going to the service health section of the EC2 Dashboard via your AWS Management Console.</p>
+
+<p>AZ IDs for Availability Zones
+<img src="../assets/qimg/a08a8dc4aeb89775.jpg" alt="" loading="lazy"></p>
+
+<p>Incorrect options:
+"Use the default VPC to uniquely identify the Availability Zones across the two AWS Accounts" - A virtual private cloud (VPC) is a virtual network dedicated to your AWS account. It is logically isolated from other virtual networks in the AWS Cloud. Since a VPC spans an AWS region, it cannot be used to uniquely identify an Availability Zone. Therefore, this option is incorrect.</p>
+
+<p>"Use the default subnet to uniquely identify the Availability Zones across the two AWS Accounts" - A subnet is a range of IP addresses in your VPC. A subnet spans an Availability Zone of an AWS region. The default subnet representing the Availability Zone us-west-2a for one AWS account might not be the same location as us-west-2a for another AWS account. Therefore, this option is incorrect.</p>
+
+<p>"Reach out to AWS Support for creating the EC2 instances in the same Availability Zone across the two AWS accounts" - Since the AZ ID is a unique and consistent identifier for an Availability Zone, there is no need to contact AWS Support. Therefore, this option is incorrect.</p>
+
+<p>Reference:
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html</p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html</a></p></div></article></section>
+<section class="card noprint" id="page-notes" data-sec="3" data-scope="page">
+  <h2>My notes</h2>
+  <h3>Section 03 note</h3>
+  <div class="pn-section"></div>
+  <h3>Question notes on this page</h3>
+  <div class="pn-list"><p class="muted">Loading…</p></div>
+</section>
+</main>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 01 Hub</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/qindex.js"></script>
+</head>
+<body>
+<main class="wrap" data-sec="1">
+  <div class="topbar">
+    <nav><a href="../index.html">← All sections</a> <a href="../mistakes.html">Mistakes</a> <a href="../02.%20Code%20%26%20Slides%20Download/summary.html">02 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+
+  <header class="hub-head">
+    <span class="hub-no">01</span>
+    <div class="hub-title"><p class="eyebrow">Section · study order #1</p><h1>Introduction - AWS Certified Solutions Architect Associate</h1></div>
+  </header>
+  <div class="meter" id="m-all" title="questions done"><i style="width:0%"></i></div>
+  <p class="cap" id="m-text">Loading…</p>
+
+  <div class="chips"><a href="../01.%20Introduction%20-%20AWS%20Certified%20Solutions%20Architect%20Associate/01-slides-p001-013.pdf" target="_blank" rel="noopener">Slides PDF · p1-13</a><a href="../01.%20Introduction%20-%20AWS%20Certified%20Solutions%20Architect%20Associate/01-notes.html">Detailed note</a></div>
+
+  <section class="card" id="summary">
+    <h2>Summary</h2>
+    <p class="muted">Summary not written yet.</p>
+  </section>
+
+  <section class="card" id="practice">
+    <h2>Practice</h2>
+    <div class="tiles"><a class="tile" data-src="U" href="course-quiz.html"><b>Course quiz</b><small>Udemy section quiz</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="S" href="stephane.html"><b>Stephane</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="B" href="dojo.html"><b>Dojo (Bonso)</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="D" href="dump.html"><b>Dump</b><small>SAA-C03 dump, keys checked</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a></div>
+  </section>
+
+  <section class="card" id="mynote">
+    <h2>My notes</h2>
+    <p class="cap">What I got wrong, why, and what to remember. Saves as you type.</p>
+    <textarea class="mynote" id="note" data-size="secnote" spellcheck="false" placeholder="e.g. I mix up SQS and Kinesis: 'real-time + replay' means Kinesis…"></textarea>
+    <p class="cap" id="note-status"></p>
+  </section>
+
+  <section class="card" id="page-notes" data-sec="1" data-scope="section" data-pages='{"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump", "base": ""}'>
+    <h2>Question notes (this section)</h2>
+    <p class="cap">Notes you wrote on this section's questions (Course quiz, Stephane, Dojo, Dump). Edit or delete them here.</p>
+    <div class="pn-list"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section class="card" id="mistakes">
+    <h2>My mistakes (this section)</h2>
+    <p class="noprint"><button class="btn" type="button" id="miss-clear" hidden>Clear this section's mistakes</button></p>
+    <div id="miss-list"><p class="muted">Loading…</p></div>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  const SEC = 1;
+  const Q = window.SAA_Q || {};
+  const PAGE = {"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump"};
+  const NAME = { U: "Udemy quiz", S: "Stephane", B: "Bonso", D: "Dump" };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const ids = Object.keys(Q).filter(id => Q[id][0] === SEC);
+
+  function progress() {
+    let done = 0, firstOk = 0, bad = 0;
+    const per = {};
+    ids.forEach(id => {
+      const src = Q[id][5], s = SAAQuiz.status(id);
+      const p = per[src] = per[src] || { n: 0, done: 0, ok: 0 };
+      p.n++;
+      if (s.state === "new") return;
+      done++; p.done++;
+      if (s.first) { firstOk++; p.ok++; }
+      if (s.state === "mistake") bad++;
+    });
+    const pct = ids.length ? Math.round(done / ids.length * 100) : 0;
+    document.querySelector("#m-all i").style.width = pct + "%";
+    document.getElementById("m-text").textContent = done + "/" + ids.length + " questions done" +
+      (done ? " · right first time " + Math.round(firstOk / done * 100) + "%" : "") + " · in the mistake list " + bad;
+    Object.entries(per).forEach(([src, p]) => {
+      const el = document.querySelector('[data-src="' + src + '"]');
+      if (!el) return;
+      el.querySelector(".big").textContent = p.done + "/" + p.n;
+      el.querySelector(".meter i").style.width = (p.n ? Math.round(p.done / p.n * 100) : 0) + "%";
+      el.querySelector(".acc").textContent = p.done ? "right first time " + Math.round(p.ok / p.done * 100) + "%" : "not started";
+    });
+  }
+
+  function mistakes() {
+    const rows = [];
+    ids.forEach(id => {
+      const s = SAAQuiz.status(id);
+      const wrong = SAAQuiz.wrongAttempts(id);  // wrong answers before a "clear" no longer count
+      if (!wrong.length) return;
+      const last = wrong[wrong.length - 1];
+      const chose = last.c.map(i => "ABCDEFGH"[i]).join(",");
+      rows.push({ id, s, chose, when: last.t });
+    });
+    rows.sort((a, b) => (a.s.state === "mistake" ? 0 : 1) - (b.s.state === "mistake" ? 0 : 1) || (a.when < b.when ? 1 : -1));
+    const active = rows.filter(r => r.s.state === "mistake").map(r => r.id);
+    const btn = document.getElementById("miss-clear");
+    btn.hidden = !active.length;
+    btn.textContent = "Clear this section's mistakes (" + active.length + ")";
+    btn.onclick = () => {
+      if (!confirm("Take the " + active.length + " question(s) of Section " + String(SEC).padStart(2, "0") + " off the mistake list? Your answer history stays; a new wrong answer puts a question back.")) return;
+      SAAQuiz.clearMistakes(active).then(() => { progress(); mistakes(); }, () => alert("Could not clear (is the tracker running?)."));
+    };
+    const box = document.getElementById("miss-list");
+    if (!rows.length) { box.innerHTML = '<p class="muted">No mistakes yet.</p>'; return; }
+    box.innerHTML = rows.map(r => {
+      const m = Q[r.id];
+      const state = r.s.state === "mistake"
+        ? (r.s.isDue ? '<span class="pill bad">due</span>' : '<span class="pill">' + SAAQuiz.shortDate(r.s.due) + " again</span>")
+        : '<span class="pill ok">clear</span>';
+      return '<div class="miss"><div class="top"><b class="qz-id">' + esc(r.id) + "</b>" +
+        '<span class="pill">' + NAME[m[5]] + "</span>" + state +
+        '<span class="pill bad">you: ' + esc(r.chose) + '</span><span class="pill ok">right: ' + esc(m[4]) + "</span>" +
+        '<span class="muted">' + SAAQuiz.shortDate(r.when) + "</span></div>" +
+        '<div>' + esc(m[2]) + '… <a href="' + PAGE[m[5]] + ".html#" + encodeURIComponent(r.id) + '">open question</a></div></div>';
+    }).join("");
+  }
+
+  // own note: tracker API when served, browser storage as a fallback
+  const note = document.getElementById("note"), status = document.getElementById("note-status");
+  const KEY = "saa-note-" + SEC;
+  let timer = null;
+  function setStatus(t) { status.textContent = t; }
+  function save() {
+    const text = note.value;
+    SAA.writeLocal(KEY, text);
+    if (!SAA.served) { setStatus("Saved in this browser (opened without the tracker)."); return; }
+    fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: String(SEC), text }) })
+      .then(r => { if (!r.ok) throw new Error(); setStatus("Saved " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })); })
+      .catch(() => setStatus("Not saved on the server; kept in this browser."));
+  }
+  note.addEventListener("input", () => { setStatus("Typing…"); clearTimeout(timer); timer = setTimeout(save, 800); });
+  (SAA.served ? fetch("/api/notes", { cache: "no-store" }).then(r => r.json()).catch(() => ({})) : Promise.resolve({}))
+    .then(all => { note.value = all[String(SEC)] != null ? all[String(SEC)] : (SAA.readLocal(KEY) || ""); });
+
+  SAAQuiz.load().then(() => { progress(); mistakes(); });
+})();
+</script>
+</body>
+</html>

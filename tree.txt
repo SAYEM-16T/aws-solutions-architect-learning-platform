@@ -1,0 +1,461 @@
+.
+├── '01. Introduction - AWS Certified Solutions Architect Associate'
+│  ├── 01-course-files.zip
+│  ├── 01-notes.html
+│  ├── 01-section-all.zip
+│  ├── 01-slides-p001-013.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '02. Code & Slides Download'
+│  ├── 02-course-files.zip
+│  ├── 02-notes.html
+│  ├── 02-section-all.zip
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '03. Getting started with AWS'
+│  ├── 03-course-files.zip
+│  ├── 03-notes.html
+│  ├── 03-section-all.zip
+│  ├── 03-slides-p014-023.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '04. IAM & AWS CLI'
+│  ├── 04-course-files.zip
+│  ├── 04-notes.html
+│  ├── 04-section-all.zip
+│  ├── 04-slides-p024-040.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '05. EC2 Fundamentals'
+│  ├── 05-course-files.zip
+│  ├── 05-notes.html
+│  ├── 05-section-all.zip
+│  ├── 05-slides-p041-077.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '06. EC2 - Solutions Architect Associate Level'
+│  ├── 06-course-files.zip
+│  ├── 06-notes.html
+│  ├── 06-section-all.zip
+│  ├── 06-slides-p078-093.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '07. EC2 Instance Storage'
+│  ├── 07-course-files.zip
+│  ├── 07-notes.html
+│  ├── 07-section-all.zip
+│  ├── 07-slides-p094-118.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '08. High Availability and Scalability ELB & ASG'
+│  ├── 08-course-files.zip
+│  ├── 08-notes.html
+│  ├── 08-section-all.zip
+│  ├── 08-slides-p119-160.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '09. AWS Fundamentals RDS + Aurora + ElastiCache'
+│  ├── 09-course-files.zip
+│  ├── 09-notes.html
+│  ├── 09-section-all.zip
+│  ├── 09-slides-p161-193.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '10. Route 53'
+│  ├── 10-course-files.zip
+│  ├── 10-notes.html
+│  ├── 10-section-all.zip
+│  ├── 10-slides-p194-227.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '11. Classic Solutions Architecture Discussions'
+│  ├── 11-course-files.zip
+│  ├── 11-notes.html
+│  ├── 11-section-all.zip
+│  ├── 11-slides-p228-267.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '12. Amazon S3 Introduction'
+│  ├── 12-course-files.zip
+│  ├── 12-notes.html
+│  ├── 12-section-all.zip
+│  ├── 12-slides-p268-293.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '13. Advanced Amazon S3'
+│  ├── 13-course-files.zip
+│  ├── 13-notes.html
+│  ├── 13-section-all.zip
+│  ├── 13-slides-p294-313.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '14. Amazon S3 Security'
+│  ├── 14-course-files.zip
+│  ├── 14-notes.html
+│  ├── 14-section-all.zip
+│  ├── 14-slides-p314-336.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '15. CloudFront & AWS Global Accelerator'
+│  ├── 15-course-files.zip
+│  ├── 15-notes.html
+│  ├── 15-section-all.zip
+│  ├── 15-slides-p337-351.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '16. AWS Storage Extras'
+│  ├── 16-course-files.zip
+│  ├── 16-notes.html
+│  ├── 16-section-all.zip
+│  ├── 16-slides-p352-376.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '17. Decoupling applications SQS, SNS, Kinesis, Active MQ'
+│  ├── 17-course-files.zip
+│  ├── 17-notes.html
+│  ├── 17-section-all.zip
+│  ├── 17-slides-p377-415.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '18. Containers on AWS ECS, Fargate, ECR & EKS'
+│  ├── 18-course-files.zip
+│  ├── 18-notes.html
+│  ├── 18-section-all.zip
+│  ├── 18-slides-p416-440.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '19. Serverless Overviews from a Solution Architect Perspective'
+│  ├── 19-course-files.zip
+│  ├── 19-notes.html
+│  ├── 19-section-all.zip
+│  ├── 19-slides-p441-493.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '20. Serverless Solution Architecture Discussions'
+│  ├── 20-course-files.zip
+│  ├── 20-notes.html
+│  ├── 20-section-all.zip
+│  ├── 20-slides-p494-515.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '21. Databases in AWS'
+│  ├── 21-course-files.zip
+│  ├── 21-notes.html
+│  ├── 21-section-all.zip
+│  ├── 21-slides-p516-529.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '22. Data & Analytics'
+│  ├── 22-course-files.zip
+│  ├── 22-notes.html
+│  ├── 22-section-all.zip
+│  ├── 22-slides-p530-562.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '23. Machine Learning'
+│  ├── 23-course-files.zip
+│  ├── 23-notes.html
+│  ├── 23-section-all.zip
+│  ├── 23-slides-p563-577.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '24. AWS Monitoring & Audit CloudWatch, CloudTrail & Config'
+│  ├── 24-course-files.zip
+│  ├── 24-notes.html
+│  ├── 24-section-all.zip
+│  ├── 24-slides-p578-621.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '25. Identity and Access Management (IAM) - Advanced'
+│  ├── 25-course-files.zip
+│  ├── 25-notes.html
+│  ├── 25-section-all.zip
+│  ├── 25-slides-p622-650.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '26. AWS Security & Encryption KMS, SSM Parameter Store, Shield, WAF'
+│  ├── 26-course-files.zip
+│  ├── 26-notes.html
+│  ├── 26-section-all.zip
+│  ├── 26-slides-p651-699.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '27. Networking - VPC'
+│  ├── 27-course-files.zip
+│  ├── 27-notes.html
+│  ├── 27-section-all.zip
+│  ├── 27-slides-p700-777.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '28. Disaster Recovery & Migrations'
+│  ├── 28-course-files.zip
+│  ├── 28-notes.html
+│  ├── 28-section-all.zip
+│  ├── 28-slides-p778-804.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '29. More Solution Architectures'
+│  ├── 29-course-files.zip
+│  ├── 29-notes.html
+│  ├── 29-section-all.zip
+│  ├── 29-slides-p805-826.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '30. Other Services'
+│  ├── 30-course-files.zip
+│  ├── 30-notes.html
+│  ├── 30-section-all.zip
+│  ├── 30-slides-p827-854.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '31. WhitePapers and Architectures - AWS Certified Solutions Architect Associate'
+│  ├── 31-course-files.zip
+│  ├── 31-notes.html
+│  ├── 31-section-all.zip
+│  ├── 31-slides-p855-861.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '32. Preparing for the Exam + Practice Exam - AWS Certified Solutions Architect Assoc'
+│  ├── 32-course-files.zip
+│  ├── 32-notes.html
+│  ├── 32-section-all.zip
+│  ├── 32-slides-p862-877.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── '33. Congratulations - AWS Certified Solutions Architect Associate'
+│  ├── 33-course-files.zip
+│  ├── 33-notes.html
+│  ├── 33-section-all.zip
+│  ├── 33-slides-p878-879.pdf
+│  ├── course-quiz.html
+│  ├── dojo.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── summary.html
+├── assets
+│  ├── qimg
+│  │  ├── 0def6c384994c797.png
+│  │  ├── 0346aa3e5c14099f.png
+│  │  ├── 053a875456b1c82a.jpg
+│  │  ├── 066ee8111e11b46e.jpg
+│  │  ├── 080fb3eb6764eeb6.jpg
+│  │  ├── 095aa0dd7aaa66e3.jpg
+│  │  ├── 2b577457ef31e3c5.png
+│  │  ├── 2ce06656f3c8e688.jpg
+│  │  ├── 2e00ebc681ab3792.png
+│  │  ├── 2f9cb6239b7e5554.jpg
+│  │  ├── 3a3569f453989702.png
+│  │  ├── 3aa8a8b0172a9daa.jpg
+│  │  ├── 3d90e64bfe2c1e25.jpg
+│  │  ├── 4a9c29a52ff30003.png
+│  │  ├── 4b7f20164b6807ba.jpg
+│  │  ├── 5e26749272763009.png
+│  │  ├── 5faded2a5bb5962e.jpg
+│  │  ├── 6b83f8382722abc7.jpg
+│  │  ├── 6b1107e2fb58e447.jpg
+│  │  ├── 6d12f9d68370cccf.png
+│  │  ├── 7c00e077440e283f.jpg
+│  │  ├── 7cc4cb19df81f07f.jpg
+│  │  ├── 7f749fd47eecb24a.jpg
+│  │  ├── 8a0f3aa76f660bc6.jpg
+│  │  ├── 8bc9e5a867fbce55.jpg
+│  │  ├── 8c9839247193045b.jpg
+│  │  ├── 8df911cc2743c387.jpg
+│  │  ├── 8fa9943f50f32fe3.png
+│  │  ├── 9b1ab2cf82fffd9a.png
+│  │  ├── 9c0e6091b7bb53d2.png
+│  │  ├── 9e63af6270347ff7.jpg
+│  │  ├── 9e939d56676eb255.png
+│  │  ├── 10e06f4c4e3f3dc4.jpg
+│  │  ├── 14a0b7cd0453204e.jpg
+│  │  ├── 14b63159d3bc3811.png
+│  │  ├── 15e46b028162b251.jpg
+│  │  ├── 23a08bd6a368bd33.jpg
+│  │  ├── 27fcb8af225be85e.jpg
+│  │  ├── 29fbbf0f8001487e.jpg
+│  │  ├── 43e39ec4b55a9e05.jpg
+│  │  ├── 44c0d85f0fc41374.jpg
+│  │  ├── 47dc23c19bd6b00f.jpg
+│  │  ├── 51b8c8886ae7fe99.jpg
+│  │  ├── 53a06dc570f7fd44.png
+│  │  ├── 53b7dc27829a05bf.jpg
+│  │  ├── 53f0d1bb13450bf5.jpg
+│  │  ├── 55feb7159d66245b.png
+│  │  ├── 57bafc752c13aef7.png
+│  │  ├── 74d7d199a79f3d1f.jpg
+│  │  ├── 75ec64bb3f3da33c.png
+│  │  ├── 78cc34e97f3b54bc.jpg
+│  │  ├── 81eb85f70d94fd96.jpg
+│  │  ├── 88d6cf730a38d7c3.png
+│  │  ├── 90fd9c6a21ba76ad.png
+│  │  ├── 94d4dc4626e85bc1.jpg
+│  │  ├── 96ed878db12061e5.jpg
+│  │  ├── 125f2a136e629525.png
+│  │  ├── 258fe88b9d4e5649.png
+│  │  ├── 484f70628b85114f.jpg
+│  │  ├── 507bc153061145f6.jpg
+│  │  ├── 587e8cc77716f0ee.jpg
+│  │  ├── 704e8e769fa6ab07.jpg
+│  │  ├── 783bf022a42aef09.jpg
+│  │  ├── 874e6da260984d86.png
+│  │  ├── 4980aa8ae10d156a.jpg
+│  │  ├── 6122b9f4b951609b.png
+│  │  ├── 13906da003ec747d.png
+│  │  ├── 22709f5f15b3a8ce.jpg
+│  │  ├── 57889c2f5f8300af.jpg
+│  │  ├── 922018d06b1fcc62.jpg
+│  │  ├── 935214e5589caaf0.png
+│  │  ├── 4947122af628a400.jpg
+│  │  ├── 400173842dace3b8.png
+│  │  ├── 3440522517f1a0a9.png
+│  │  ├── 58189670744fdf1b.jpg
+│  │  ├── a08a8dc4aeb89775.jpg
+│  │  ├── a1e5c0ea151b56d5.png
+│  │  ├── a5e20d031e251018.jpg
+│  │  ├── a64b2d5201034450.jpg
+│  │  ├── a48472730a59b6ea.jpg
+│  │  ├── ab2a882f890c7b9f.png
+│  │  ├── ac342efe5b08bae1.png
+│  │  ├── aeb2916857d04685.png
+│  │  ├── aedfc2bbe3a54934.jpg
+│  │  ├── b0bb9e19b04869ab.jpg
+│  │  ├── b1f9f27e1607f741.jpg
+│  │  ├── b4a4a80df818db6f.png
+│  │  ├── b71d8ba4e46a4bd3.png
+│  │  ├── bc4105474617ba15.jpg
+│  │  ├── bd1e18d9dbb3825d.jpg
+│  │  ├── c7f7fb638bd36777.jpg
+│  │  ├── c3902b23cae5e60d.jpg
+│  │  ├── c830592a7c18c17a.png
+│  │  ├── ca4b7341921e5e11.jpg
+│  │  ├── cd660bc89f20f197.png
+│  │  ├── cea6012311bef3e0.png
+│  │  ├── cfed1b2e4e154412.jpg
+│  │  ├── d38f0c0fc4a2211f.png
+│  │  ├── d2766da22b139467.jpg
+│  │  ├── d220438c9d8edb9e.jpg
+│  │  ├── dadb367b8ece41af.jpg
+│  │  ├── ddbf7703e8f4916d.jpg
+│  │  ├── de0c9dc98647b6bc.png
+│  │  ├── de83ffbf4dc0babf.jpg
+│  │  ├── e6bc1f3be2dbc8d5.png
+│  │  ├── e13795e96e098d80.png
+│  │  ├── e97424d637c176ca.png
+│  │  ├── e98405238ac6654f.jpg
+│  │  ├── ed87b3533a6e56a0.jpg
+│  │  ├── edbb3f8fc8606c43.png
+│  │  ├── f81bfbbebf66e1da.png
+│  │  ├── f3329c2f470960ad.jpg
+│  │  ├── fb77fa41c308170c.png
+│  │  ├── fc68ac588cbc41fe.jpg
+│  │  └── fdae76c5a65f71c8.jpg
+│  ├── qindex.js
+│  ├── quiz.js
+│  ├── saa.css
+│  └── saa.js
+├── by-source
+│  ├── bonso.html
+│  ├── dump.html
+│  ├── stephane.html
+│  └── udemy.html
+├── index.html
+├── mistakes.html
+├── MY-FILES
+│  └── SAA-C03-MASTER-PROMPT.md
+└── tree.txt

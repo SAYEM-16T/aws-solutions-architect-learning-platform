@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Mistake Log</title>
+<link rel="stylesheet" href="assets/saa.css">
+<script src="assets/saa.js"></script>
+<script src="assets/quiz.js"></script>
+<script src="assets/qindex.js"></script>
+<style>
+.mk-row { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0 0 10px; background: var(--surface); min-width: 0; overflow-wrap: anywhere; }
+.mk-row.due { border-color: var(--bad); }
+.mk-top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; margin-bottom: 6px; }
+.mk-stem { font-size: 14px; margin: 0 0 8px; }
+.mk-act { display: flex; flex-wrap: wrap; gap: 8px; }
+.mk-slot .qz { margin-top: 10px; }
+.bar { height: 8px; background: var(--box); border-radius: 4px; overflow: hidden; min-width: 80px; }
+.bar i { display: block; height: 100%; background: var(--bad); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <nav><a href="index.html">← Index</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+  <header>
+    <p class="eyebrow">Mistake log</p>
+    <h1>Mistakes</h1>
+    <p class="sub">A wrong question comes back after 2-3 days. 2 right answers in a row take it off the list.</p>
+  </header>
+
+  <section class="card">
+    <div class="stats">
+      <div class="stat"><b id="st-due">—</b><small>Due now</small></div>
+      <div class="stat"><b id="st-wait">—</b><small>In the list, due later</small></div>
+      <div class="stat"><b id="st-clear">—</b><small>Cleared</small></div>
+      <div class="stat"><b id="st-acc">—</b><small>Right first time (all)</small></div>
+    </div>
+    <div class="mk-act noprint"><button class="btn" type="button" id="clear-all" hidden>Clear all mistakes</button>
+      <span class="cap">Clearing takes questions off the list; your answer history stays. A new wrong answer puts a question back.</span></div>
+  </section>
+
+  <section class="card">
+    <h2>Due now</h2>
+    <p class="cap" id="mode-note"></p>
+    <div id="due-list"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section class="card">
+    <h2>In the list, due later</h2>
+    <div id="wait-list"></div>
+  </section>
+
+  <section class="card">
+    <h2>Weak topics</h2>
+    <p class="cap">Wrong answers since the last clear, by section and topic. Most wrong first.</p>
+    <div class="scroll"><table><thead><tr><th>Section</th><th>Wrong answers</th><th>In the list now</th><th></th><th></th></tr></thead><tbody id="weak-sec"></tbody></table></div>
+    <h3>Topics</h3>
+    <div class="scroll"><table><thead><tr><th>Topic</th><th>Wrong answers</th><th>Questions</th></tr></thead><tbody id="weak-topic"></tbody></table></div>
+  </section>
+
+  <section class="card noprint">
+    <h2>Backup / other browser</h2>
+    <p class="cap">Export saves all results to one JSON file. Import adds the results from such a file (nothing is deleted).</p>
+    <div class="mk-act">
+      <button class="btn" type="button" id="export">Export JSON</button>
+      <label class="btn">Import JSON <input type="file" id="import" accept="application/json,.json" hidden></label>
+      <span id="import-msg" class="cap"></span>
+    </div>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  const Q = window.SAA_Q || {}, SEC = window.SAA_SEC || {};
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const noteCache = {};
+
+  function noteUrl(id) {
+    const sec = (Q[id] || [])[0];
+    return sec && SEC[sec] ? SEC[sec][0] + "#" + encodeURIComponent(id) : null;
+  }
+
+  // Load the question card from its section note (works only when served by the tracker).
+  function loadCard(id, slot, btn) {
+    const sec = Q[id][0];
+    const url = SEC[sec][0];
+    btn.disabled = true;
+    (noteCache[url] = noteCache[url] || fetch(url).then(r => r.text()))
+      .then(text => {
+        const doc = new DOMParser().parseFromString(text, "text/html");
+        const card = doc.getElementById(id);
+        if (!card) throw new Error("not in note yet");
+        const base = url.slice(0, url.lastIndexOf("/") + 1);
+        card.querySelectorAll("img[src]").forEach(img => { if (!/^https?:/.test(img.getAttribute("src"))) img.src = base + img.getAttribute("src"); });
+        const node = document.importNode(card, true);
+        slot.replaceChildren(node);
+        SAAQuiz.enhance(node);
+        node.querySelector(".qz-check").addEventListener("click", () => setTimeout(render, 300));
+        btn.remove();
+      })
+      .catch(() => { btn.disabled = false; btn.textContent = "Could not load: open the note"; });
+  }
+
+  function row(id, s) {
+    const meta = Q[id] || [null, "?", "(question ta index e nai)"];
+    const sec = meta[0], url = noteUrl(id);
+    const when = s.isDue ? '<span class="pill bad">due</span>'
+      : '<span class="pill">' + SAAQuiz.shortDate(s.due) + " again</span>";
+    const el = document.createElement("div");
+    el.className = "mk-row" + (s.isDue ? " due" : "");
+    el.innerHTML =
+      '<div class="mk-top"><b class="qz-id">' + esc(id) + "</b>" +
+      (sec ? '<span class="pill">Section ' + String(sec).padStart(2, "0") + " " + esc((SEC[sec] || [])[1] || "") + "</span>" : "") +
+      '<span class="pill">Part ' + esc(meta[1]) + "</span>" + when +
+      '<span class="pill bad">wrong ' + SAAQuiz.shortDate(s.lastWrong) + "</span>" +
+      '<span class="pill">' + s.rightAfter + "/" + SAAQuiz.CLEAR_AFTER + " right</span></div>" +
+      '<p class="mk-stem">' + esc(meta[2]) + "…</p>" +
+      '<div class="mk-act">' + (url ? '<a class="btn" href="' + url + '">Open note</a>' : "") + "</div>" +
+      '<div class="mk-slot"></div>';
+    if (url && SAA.served) {
+      const btn = document.createElement("button");
+      btn.className = "btn"; btn.type = "button"; btn.textContent = "Answer here";
+      btn.addEventListener("click", () => loadCard(id, el.querySelector(".mk-slot"), btn));
+      el.querySelector(".mk-act").prepend(btn);
+    }
+    return el;
+  }
+
+  // Clear = off the mistake list, attempts kept (quiz.js clearMistakes -> POST /api/quiz/clear).
+  let secIds = {};
+  function clear(ids, what) {
+    if (!ids.length || !confirm("Take " + what + " off the mistake list? Your answer history stays; a new wrong answer puts a question back.")) return;
+    SAAQuiz.clearMistakes(ids).then(render, () => alert("Could not clear (is the tracker running?)."));
+  }
+  document.getElementById("weak-sec").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-clear]");
+    if (b) clear(secIds[b.dataset.clear] || [], "the " + (secIds[b.dataset.clear] || []).length + " question(s) of Section " + String(b.dataset.clear).padStart(2, "0"));
+  });
+
+  function render() {
+    const data = SAAQuiz.data().questions;
+    const now = new Date();
+    const due = [], wait = [];
+    let cleared = 0, tried = 0, firstOk = 0;
+    const bySec = {}, byTopic = {}, active = [];
+    Object.keys(data).forEach(id => {
+      const s = SAAQuiz.status(id, now);
+      if (s.state === "new") return;
+      tried++; if (s.first) firstOk++;
+      if (s.state === "cleared") cleared++;
+      if (s.state === "mistake") { (s.isDue ? due : wait).push([id, s]); active.push(id); }
+      const wrong = SAAQuiz.wrongAttempts(id).length;  // wrong answers before a "clear" no longer count
+      if (!wrong) return;
+      const meta = Q[id] || [];
+      const sec = meta[0] || "?";
+      const b = bySec[sec] = bySec[sec] || { wrong: 0, active: 0, ids: [] };
+      b.wrong += wrong; if (s.state === "mistake") { b.active++; b.ids.push(id); }
+      (meta[3] || []).forEach(t => { const x = byTopic[t] = byTopic[t] || { wrong: 0, ids: [] }; x.wrong += wrong; x.ids.push(id); });
+    });
+    due.sort((a, b) => a[1].due - b[1].due);
+    wait.sort((a, b) => a[1].due - b[1].due);
+    const fill = (el, list, empty) => {
+      el.replaceChildren(...(list.length ? list.map(([id, s]) => row(id, s)) : [Object.assign(document.createElement("p"), { className: "muted", textContent: empty })]));
+    };
+    fill(document.getElementById("due-list"), due, "Nothing due now.");
+    fill(document.getElementById("wait-list"), wait, "Nothing.");
+    document.getElementById("st-due").textContent = due.length;
+    document.getElementById("st-wait").textContent = wait.length;
+    document.getElementById("st-clear").textContent = cleared;
+    document.getElementById("st-acc").textContent = tried ? Math.round(firstOk / tried * 100) + "% (" + firstOk + "/" + tried + ")" : "—";
+
+    const secRows = Object.entries(bySec).sort((a, b) => b[1].wrong - a[1].wrong);
+    const maxW = Math.max(1, ...secRows.map(r => r[1].wrong));
+    document.getElementById("weak-sec").innerHTML = secRows.length ? secRows.map(([sec, v]) =>
+      "<tr><td>" + (SEC[sec] ? '<a href="' + SEC[sec][0] + '">Section ' + String(sec).padStart(2, "0") + " " + esc(SEC[sec][1]) + "</a>" : "?") +
+      "</td><td>" + v.wrong + "</td><td>" + v.active + '</td><td><div class="bar"><i style="width:' + Math.round(v.wrong / maxW * 100) + '%"></i></div></td><td>' +
+      (v.active ? '<button class="btn" type="button" data-clear="' + esc(sec) + '">Clear (' + v.active + ")</button>" : "") + "</td></tr>").join("")
+      : '<tr><td colspan="5" class="muted">No mistakes yet.</td></tr>';
+    secIds = Object.fromEntries(Object.entries(bySec).map(([sec, v]) => [sec, v.ids]));
+    const all = document.getElementById("clear-all");
+    all.hidden = !active.length;
+    all.textContent = "Clear all mistakes (" + active.length + ")";
+    all.onclick = () => clear(active, "all " + active.length + " question(s)");
+    const topicRows = Object.entries(byTopic).sort((a, b) => b[1].wrong - a[1].wrong).slice(0, 40);
+    document.getElementById("weak-topic").innerHTML = topicRows.length ? topicRows.map(([t, v]) =>
+      "<tr><td>" + esc(t) + "</td><td>" + v.wrong + "</td><td>" + v.ids.map(id => { const u = noteUrl(id); return u ? '<a href="' + u + '">' + esc(id) + "</a>" : esc(id); }).join(", ") + "</td></tr>").join("")
+      : '<tr><td colspan="3" class="muted">No topic tags or no mistakes yet.</td></tr>';
+  }
+
+  document.getElementById("mode-note").textContent = SAA.served
+    ? "Results come from the tracker (tracker-data/quiz.json)."
+    : "Opened as a plain file: results live only in this browser. Open it through the tracker to share them across pages.";
+  document.getElementById("export").addEventListener("click", () => SAAQuiz.exportFile());
+  document.getElementById("import").addEventListener("change", ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    const msg = document.getElementById("import-msg");
+    SAAQuiz.importFile(f).then(() => { msg.textContent = "Imported."; render(); }, e => { msg.textContent = "Import failed: " + e.message; });
+  });
+  SAAQuiz.load().then(render);
+})();
+</script>
+</body>
+</html>

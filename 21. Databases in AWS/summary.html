@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 21 Hub</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/qindex.js"></script>
+</head>
+<body>
+<main class="wrap" data-sec="21">
+  <div class="topbar">
+    <nav><a href="../index.html">← All sections</a> <a href="../mistakes.html">Mistakes</a> <a href="../20.%20Serverless%20Solution%20Architecture%20Discussions/summary.html">‹ 20</a> <a href="../22.%20Data%20%26%20Analytics/summary.html">22 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+
+  <header class="hub-head">
+    <span class="hub-no">21</span>
+    <div class="hub-title"><p class="eyebrow">Section · study order #22</p><h1>Databases in AWS</h1></div>
+  </header>
+  <div class="meter" id="m-all" title="questions done"><i style="width:0%"></i></div>
+  <p class="cap" id="m-text">Loading…</p>
+
+  <div class="chips"><a href="../21.%20Databases%20in%20AWS/21-slides-p516-529.pdf" target="_blank" rel="noopener">Slides PDF · p516-529</a><a href="../21.%20Databases%20in%20AWS/21-notes.html">Detailed note</a></div>
+
+  <section class="card" id="summary">
+    <h2>Summary</h2>
+    <section class="sum-block" id="map"><h3>Big picture</h3>
+<p>Exam e prai protita database proshno ekta scenario: "ei data, ei requirement → kon database?" Ei section ta tai <b>right database bachai</b>: age pora RDS, Aurora, ElastiCache, DynamoDB, S3 er ek page summary, ar notun 5 ta: <b>DocumentDB, Neptune, Keyspaces, QLDB, Timestream</b>. Asol kaaj <b>keyword → service</b> chena. Redshift, Athena, EMR, OpenSearch er detail porer section (Data &amp; Analytics) e.</p>
+<div class="fig">
+  <span class="lbl">RDBMS (= SQL / OLTP, join e bhalo)</span>
+  <div class="flow">
+    <span class="b hl">RDS</span><span class="b hl">Aurora<small>+ Serverless, Global</small></span>
+  </div>
+  <span class="lbl">NoSQL (join nai, SQL nai, flexible)</span>
+  <div class="flow">
+    <span class="b hl">DynamoDB<small>~JSON, serverless</small></span><span class="b hl">ElastiCache<small>key / value, in-memory</small></span>
+    <span class="b">DocumentDB<small>MongoDB</small></span><span class="b">Keyspaces<small>Cassandra</small></span><span class="b">Neptune<small>graph</small></span>
+  </div>
+  <span class="lbl">Bishesh shape</span>
+  <div class="flow">
+    <span class="b">Neptune<small>graph = relationship</small></span><span class="b">QLDB<small>ledger</small></span><span class="b">Timestream<small>time series</small></span>
+  </div>
+  <span class="lbl">Object store</span>
+  <div class="flow">
+    <span class="b">S3<small>boro object</small></span><span class="b">Glacier<small>backup / archive</small></span>
+  </div>
+  <span class="lbl">Analytics / search (Section 22)</span>
+  <div class="flow">
+    <span class="b muted">Redshift (OLAP), Athena, EMR<small>SQL analytics / BI</small></span><span class="b muted">OpenSearch<small>JSON, free text search</small></span>
+  </div>
+</div>
+<p class="cap">Data er shape (table, JSON, graph, time point, file) ar query style (join, key, relation, time) dekhe database bachai.</p>
+</section>
+
+<section class="sum-block" id="t1"><h3>Kibhabe database bachai</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Kapor almari te, boi bookshelf e, taka locker e. Shob ek almari te rakha jay, kintu kaaj kothin. Prothome dekho data er shape ar kivabe query hobe, tarpor constraint ("serverless", "no capacity planning", "no code change", "least overhead").</p></div>
+<div class="fig">
+  <span class="lbl">Decision path</span>
+  <div class="flow">
+    <span class="b">Join / SQL / transaction (OLTP)?</span><span class="a">→</span><span class="b hl">RDS / Aurora</span><span class="a">→</span><span class="b">Spike unpredictable?<small>Aurora Serverless</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">Shudhu cache / session?</span><span class="a">→</span><span class="b hl">ElastiCache<small>code change lage</small></span><span class="b">DynamoDB + DAX<small>DynamoDB er cache</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">Serverless NoSQL, key diye read, schema bodlay?</span><span class="a">→</span><span class="b hl">DynamoDB</span>
+  </div>
+  <div class="flow">
+    <span class="b">Engine / shape er naam?</span><span class="a">→</span>
+    <span class="b">MongoDB → DocumentDB</span><span class="b">Cassandra → Keyspaces</span><span class="b">Graph → Neptune</span><span class="b">Ledger → QLDB</span><span class="b">Time series → Timestream</span>
+  </div>
+  <div class="flow">
+    <span class="b">Boro file (MB-TB)?</span><span class="a">→</span><span class="b hl">S3</span>
+  </div>
+</div>
+<p class="cap">Question e engine er naam (MongoDB, Cassandra) thakle sheta-i answer thik kore dey.</p>
+<div class="scroll"><table>
+<thead><tr><th>Dimension</th><th>Ki jiggesh korbo (lecture er list)</th></tr></thead>
+<tbody>
+<tr><td>Workload</td><td>Read-heavy, write-heavy, na balanced? Throughput? Din e fluctuate kore, scale lagbe?</td></tr>
+<tr><td>Data</td><td>Koto data, koto din? Barbe? Average object size? Kivabe access hoy?</td></tr>
+<tr><td>Durability</td><td>Data durability? Source of truth kon ta?</td></tr>
+<tr><td>Latency / user</td><td>Latency requirement? Koto concurrent user?</td></tr>
+<tr><td>Data model</td><td>Kivabe query? Join? Structured na semi-structured? Strong schema na flexibility?</td></tr>
+<tr><td>Extra</td><td>Reporting? Search? RDBMS na NoSQL? License cost? Cloud-native (Aurora) e switch?</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> <b>OLTP = relational</b> (RDS / Aurora); DynamoDB OLTP-relational proshne bhul. <b>Redshift = OLAP</b> (analytics), OLTP na. OpenSearch = free text search, graph traversal na. NoSQL e general-e join ar SQL nai (exception thakte pare).</div>
+</section>
+
+<section class="sum-block" id="t2"><h3>Amazon RDS</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Chena PostgreSQL / MySQL, kintu patch, backup, failover AWS kore. Instance size ar EBS volume type + size tumi age thik koro, tai <b>provisioned</b>, serverless na.</p></div>
+<div class="fig">
+  <span class="lbl">HA vs read scaling</span>
+  <div class="flow">
+    <span class="b">App</span><span class="a">→</span>
+    <span class="b hl">Primary</span><span class="a">→ sync →</span>
+    <span class="b">Multi-AZ standby<small>shudhu disaster e, query na</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">Analytics / reporting</span><span class="a">→</span>
+    <span class="b hl">Read Replica<small>read scale</small></span>
+  </div>
+  <span class="lbl">Backup</span>
+  <div class="flow">
+    <span class="b">Automated backup<small>35 din</small></span><span class="a">→ PITR →</span><span class="b">Notun DB</span>
+    <span class="b">Manual snapshot<small>long-term</small></span>
+  </div>
+</div>
+<p class="cap">Production DB te analytics chalale Read Replica; Multi-AZ standby te query kora jay na.</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Engine</td><td>PostgreSQL, MySQL, Oracle, SQL Server, DB2, MariaDB, Custom</td></tr>
+<tr><td>Capacity</td><td>Instance size + EBS provision; <b>storage auto-scaling</b> ache</td></tr>
+<tr><td>Security</td><td>IAM, Security Group (network), KMS (at rest), SSL / TLS (in transit); username / password ba <b>IAM authentication</b> (<b>RDS Proxy</b> diye enforce), <b>Secrets Manager</b> e credential</td></tr>
+<tr><td>Maintenance</td><td>Managed + scheduled, <b>downtime</b> hoy (engine / EC2 patch)</td></tr>
+<tr><td>RDS Custom</td><td>Underlying instance e access + customize (<b>Oracle, SQL Server</b>)</td></tr>
+<tr><td>Use case</td><td>Relational dataset (RDBMS / OLTP), SQL query, transaction</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Relational, SQL, transactions (insert / update / delete)" → <b>RDS</b>. Trap: DocumentDB / DynamoDB NoSQL, ElastiCache cache (SQL nai). RDS e built-in replica auto-scaling nai, Read Replica / Multi-AZ nije banate hoy.</div>
+</section>
+
+<section class="sum-block" id="t3"><h3>Amazon Aurora</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Aurora te <b>storage ar compute alada</b>. Disk ta ekta shared layer: data <b>6 copy, 3 AZ</b> (bodlano jay na), nije sare (self-healing), nije bare. Upore writer ar reader instance shei ek storage pore, tai replica, failover, clone shob druto.</p></div>
+<div class="fig">
+  <span class="lbl">Aurora cluster</span>
+  <div class="flow">
+    <span class="b">App</span><span class="a">→</span>
+    <span class="b hl">Writer endpoint</span>
+    <span class="b">Reader endpoint<small>read replica auto-scaling</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">DB instances<small>cluster, multi-AZ</small></span><span class="a">↓</span>
+    <span class="b hl">Shared storage<small>6 copy × 3 AZ, self-healing, auto-grow</small></span>
+  </div>
+  <span class="lbl">Aurora Global</span>
+  <div class="flow">
+    <span class="b hl">Primary region<small>read + write</small></span><span class="a">→ &lt; 1 s storage replication →</span>
+    <span class="b">Secondary region<small>16 read instance; problem hole promote</small></span>
+  </div>
+</div>
+<p class="cap">Cluster bole kothay likhbe / porbe janate writer ar reader endpoint lage.</p>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>Kokhon</th></tr></thead>
+<tbody>
+<tr><td>PostgreSQL / MySQL compatible API</td><td>RDS er use case, kintu kom maintenance, beshi flexibility, performance, feature</td></tr>
+<tr><td>Security / monitoring / maintenance</td><td>RDS er moto; backup + restore option jante hobe (Section 09)</td></tr>
+<tr><td><b>Aurora Serverless</b></td><td>Unpredictable / intermittent workload, <b>capacity planning nai</b></td></tr>
+<tr><td><b>Aurora Global</b></td><td>Cross-region: region proti 16 DB read instance, storage replication <b>&lt; 1 second</b>; secondary ke primary promote</td></tr>
+<tr><td><b>Aurora Machine Learning</b></td><td>Aurora data e <b>SageMaker, Comprehend</b> diye ML</td></tr>
+<tr><td><b>Database Cloning</b></td><td>Production theke test / staging cluster; <b>snapshot restore er cheye fast</b></td></tr>
+</tbody>
+</table></div>
+<p><b>Course e nai (question theke):</b> Aurora PostgreSQL e AI feature er jonno vector storage lagle <b>pgvector extension</b> install koro: same DB te vector table, notun service er khoroch nai.</p>
+<div class="exam"><b>Exam:</b> "OLTP + built-in auto-scaling + maximum storage replica" → <b>Aurora</b> (RDS na). "OLTP + unpredictable spike, age jana nai" → <b>Aurora Serverless</b>; DynamoDB on-demand spike nibe kintu NoSQL, OLTP relational proshne bhul. Vector store + Aurora PostgreSQL already ache + cheapest → <b>pgvector</b>, notun OpenSearch / DocumentDB / Neptune ML cluster na.</div>
+</section>
+
+<section class="sum-block" id="t4"><h3>Amazon ElastiCache</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Bar bar library (DB) te na giye dorkari kotha pocket notebook (RAM) e likhe rakho: <b>sub-millisecond</b> read. Kintu notebook dekhar obbhash (app code) tomakei likhte hobe. RDS er moto offering, tobe cache er jonno.</p></div>
+<div class="fig">
+  <span class="lbl">Cache on top of RDS</span>
+  <div class="flow">
+    <span class="b">App<small>code change kore cache logic</small></span><span class="a">→</span>
+    <span class="b hl">ElastiCache<small>hit: sub-ms</small></span><span class="a">→ miss →</span>
+    <span class="b">RDS / Aurora</span>
+  </div>
+  <div class="flow">
+    <span class="b">Web app</span><span class="a">→</span><span class="b hl">ElastiCache<small>user session data</small></span>
+  </div>
+</div>
+<p class="cap">"Code change chara cache" chaile ElastiCache bhul answer.</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Ki</td><td>Managed <b>Redis / Memcached</b>, in-memory data store</td></tr>
+<tr><td>Capacity</td><td>Instance type select (jemon <code>cache.m6g.large</code>), provisioned</td></tr>
+<tr><td>HA / scale</td><td>Redis: clustering, Multi-AZ, Read Replica (sharding)</td></tr>
+<tr><td>Security</td><td>IAM, Security Group, KMS (at rest), <b>Redis Auth</b></td></tr>
+<tr><td>Backup</td><td>Backup / snapshot / point-in-time restore; managed + scheduled maintenance</td></tr>
+<tr><td>Use case</td><td>Key/value store, frequent read kom write, DB query result cache, <b>website session data</b>; <b>SQL use kora jay na</b></td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Redis / Memcached API", "in-memory", "session store", "sub-ms" → <b>ElastiCache</b>. RDS (JDBC), DynamoDB (nijer API), OpenSearch (HTTP) Redis-compatible na. Trap: "caching <b>without code change</b>" → ElastiCache na; DynamoDB hole <b>DAX</b>. Boro file durable rakhte ElastiCache na (durable na).</div>
+</section>
+
+<section class="sum-block" id="t5"><h3>Amazon DynamoDB</h3>
+<div class="idea"><p><b>Shohoj kore:</b> AWS er nijer (proprietary) serverless NoSQL, <b>millisecond</b> latency. Server nai, table banao, use koro. Schema flexible, tai schema druto bodlale (rapidly evolve) DynamoDB. Exam e onek ashe.</p></div>
+<div class="fig">
+  <span class="lbl">Capacity mode bachai</span>
+  <div class="flow">
+    <span class="b">Smooth load, dhire dhire bare / kome</span><span class="a">→</span><span class="b hl">Provisioned<small>+ optional auto scaling</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">Unpredictable, hothat steep spike</span><span class="a">→</span><span class="b hl">On-demand<small>provision nai, nije scale</small></span>
+  </div>
+  <span class="lbl">Ashe pashe</span>
+  <div class="flow">
+    <span class="b">App</span><span class="a">→</span>
+    <span class="b">DAX<small>read cache, microsecond</small></span><span class="a">→</span>
+    <span class="b hl">DynamoDB table<small>ms, multi-AZ</small></span><span class="a">→</span>
+    <span class="b">DynamoDB Streams → Lambda<small>protita change e</small></span>
+  </div>
+  <div class="flow">
+    <span class="b hl">DynamoDB table</span><span class="a">→</span><span class="b">Kinesis Data Streams<small>retention 1 bochor</small></span><span class="a">→</span><span class="b">Firehose / onno KDS integration</span>
+  </div>
+  <div class="flow">
+    <span class="b hl">Table region A</span><span class="a">↔</span><span class="b hl">Table region B<small>Global Tables, active-active</small></span>
+  </div>
+</div>
+<p class="cap">Global Tables e je kono region e read + write (active-active).</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>HA</td><td>Multi-AZ by default; read ar write <b>decoupled</b>; <b>transaction</b> capability</td></tr>
+<tr><td>Cache replace</td><td>ElastiCache er bodle key/value store: <b>session data + TTL</b> (nirdishto shomoy por row expire)</td></tr>
+<tr><td>Security</td><td>Authentication + authorization shob <b>IAM</b> diye</td></tr>
+<tr><td>Event</td><td><b>DynamoDB Streams</b> → Lambda; ba <b>Kinesis Data Streams</b> e pathao (Firehose, longer retention 1 year)</td></tr>
+<tr><td>Backup</td><td>Automated: <b>PITR</b> enable, 35 din porjonto je kono point, <b>notun table</b> e restore; long-term → <b>on-demand backup</b> (eo notun table e)</td></tr>
+<tr><td>S3</td><td><b>Export to S3</b> (PITR window er moddhe) RCU khoroch chara; <b>import from S3</b> WCU chara, notun table e</td></tr>
+<tr><td>Use case</td><td>Serverless app development, choto document (100s KB, max item 400 KB), distributed serverless cache</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Serverless NoSQL", "rapidly evolving / flexible schema" → <b>DynamoDB</b>. "Fully managed NoSQL + in-memory caching + million concurrent user, elastic" → <b>DynamoDB (+ DAX)</b>; DocumentDB e in-memory cache nai, ElastiCache primary DB na. "MongoDB chhere managed NoSQL <b>serverless + global</b>" → course answer <b>DynamoDB</b> (Global Tables). Trap: 100 MB file DynamoDB te na (400 KB).</div>
+</section>
+
+<section class="sum-block" id="t6"><h3>S3: database hisabe</h3>
+<div class="idea"><p><b>Shohoj kore:</b> S3 o ekta <b>key / value store</b>: key = object er puro path, value = file. <b>Boro object</b> e darun; lakh lakh choto object rakhar jonno bhalo na (sheta DynamoDB er kaaj).</p></div>
+<div class="fig">
+  <span class="lbl">S3 feature map</span>
+  <div class="flow">
+    <span class="b">Upload<small>multi-part (parallel), Transfer Acceleration</small></span><span class="a">→</span>
+    <span class="b hl">S3 bucket<small>tier + lifecycle</small></span><span class="a">→</span>
+    <span class="b">Event Notification<small>SNS, SQS, Lambda, EventBridge</small></span>
+  </div>
+  <div class="flow">
+    <span class="b">S3 Inventory<small>file list</small></span><span class="a">→</span><span class="b hl">S3 Batch Operations<small>unencrypted encrypt, replication er age copy</small></span>
+  </div>
+</div>
+<p class="cap">Notun object create hole event diye react; shob object e ek shathe kaaj = Batch.</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Scale</td><td>Serverless, infinite scale, versioning; max object slide e <b>50 TB</b> (video 5 TB bole, purono)</td></tr>
+<tr><td>Tiers</td><td>Standard, Infrequent Access, Intelligent-Tiering, Glacier; transition = <b>lifecycle policy</b></td></tr>
+<tr><td>Features</td><td>Versioning, Encryption, Replication, <b>MFA-Delete</b>, Access Logs</td></tr>
+<tr><td>Security</td><td>IAM, Bucket Policy, ACL, Access Points, <b>Object Lambda</b> (app e pathanor age object modify), CORS, Object Lock / Vault Lock (Glacier)</td></tr>
+<tr><td>Encryption</td><td>SSE-S3, SSE-KMS (nijer KMS key), SSE-C, client-side, TLS in transit, default encryption</td></tr>
+<tr><td>Performance</td><td>Multi-part upload, Transfer Acceleration (edge diye fast upload), <b>S3 Select</b> (shudhu dorkari data)</td></tr>
+<tr><td>Use case</td><td>Static files, <b>boro file er key-value store</b>, website hosting</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "100 MB file, reliable + durable key-value store" → <b>S3</b>. Trap: DynamoDB (item 400 KB), ElastiCache (durable na), Aurora (relational). Purono unencrypted object encrypt → <b>S3 Batch Operations</b> (+ Inventory).</div>
+</section>
+
+<section class="sum-block" id="t7"><h3>Amazon DocumentDB</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Aurora jemon PostgreSQL / MySQL er AWS-implementation, DocumentDB temni <b>MongoDB</b> er. MongoDB = NoSQL, <b>JSON</b> data store, query, index kore. Driver / code same rekhe DB ta AWS ke manage korte dao.</p></div>
+<div class="fig">
+  <span class="lbl">Analogy</span>
+  <div class="flow">
+    <span class="b">PostgreSQL / MySQL</span><span class="a">→ AWS version →</span><span class="b hl">Aurora</span>
+  </div>
+  <div class="flow">
+    <span class="b">MongoDB (JSON)</span><span class="a">→ AWS version →</span><span class="b hl">DocumentDB</span>
+  </div>
+  <span class="lbl">On-prem Kubernetes + MongoDB → AWS, kono change chara</span>
+  <div class="flow">
+    <span class="b">Kubernetes</span><span class="a">→</span><span class="b hl">EKS + Fargate<small>node manage nai</small></span>
+    <span class="b">MongoDB</span><span class="a">→</span><span class="b hl">DocumentDB</span>
+  </div>
+</div>
+<p class="cap">Aurora er moto "deployment concept": cluster, 3 AZ replication, storage auto-grow.</p>
+<ul>
+  <li>Fully managed, highly available, <b>3 AZ</b> e replication.</li>
+  <li>Storage nije bare <b>10 GB increment</b> e; <b>millions of requests per second</b> workload porjonto scale.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "MongoDB", "JSON documents", "migrate without code change" → <b>DocumentDB</b>. "NoSQL" dekhle DocumentDB ar DynamoDB dutoi bhabo. Trap: "RDS for MongoDB" bole kichu nai; DynamoDB / ECS e code ba deployment change lage, MongoDB on EC2 te overhead.</div>
+</section>
+
+<section class="sum-block" id="t8"><h3>Amazon Neptune + Neptune Streams</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Social network: user er friend, post e comment, comment e user er like, user post share kore. Shob ek arekta r sathe jora (vertex + edge) = <b>graph</b>. "Mike er friend der post e mot koto like?" table-join e kothin ar slow, graph DB te shohoj.</p></div>
+<div class="fig">
+  <span class="lbl">Graph</span>
+  <div class="flow">
+    <span class="b">User Mike</span><span class="a">→ friend →</span>
+    <span class="b">User Ana</span><span class="a">→ posted →</span>
+    <span class="b hl">Post</span><span class="a">← likes ←</span>
+    <span class="b">Users</span>
+  </div>
+  <span class="lbl">Neptune Streams</span>
+  <div class="flow">
+    <span class="b">App writes</span><span class="a">→</span>
+    <span class="b hl">Neptune cluster</span><span class="a">→</span>
+    <span class="b hl">Neptune Streams<small>ordered, no duplicate</small></span><span class="a">→ HTTP GET (Streams API) →</span>
+    <span class="b">Streams reader app</span><span class="a">→</span>
+    <span class="b">S3 / OpenSearch / ElastiCache / onno region er Neptune</span>
+  </div>
+</div>
+<p class="cap">Relationship-i data; onek hop (5 level mutual connection) e Neptune fast, SQL join slow.</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Ki</td><td>Fully managed <b>graph database</b>, highly connected dataset er complex query er jonno optimized</td></tr>
+<tr><td>HA</td><td><b>3 AZ</b>, <b>15 read replica</b> porjonto</td></tr>
+<tr><td>Scale</td><td><b>Billions of relations</b>, query <b>milliseconds</b> e</td></tr>
+<tr><td>Use case</td><td>Knowledge graph (Wikipedia), <b>fraud detection</b>, <b>recommendation engine</b>, social networking</td></tr>
+<tr><td>Streams</td><td>Graph er protita change er real-time ordered sequence; write er porei available; no duplicate, strict order; <b>HTTP REST API</b> diye pora</td></tr>
+<tr><td>Streams use</td><td>Change hole notification; onno data store (S3, OpenSearch, ElastiCache) sync; region er moddhe Neptune replicate</td></tr>
+</tbody>
+</table></div>
+<p><b>Question theke:</b> Neptune data rakhe vertex + edge hisabe; query language er ekta <b>SPARQL</b> (DynamoDB er <b>PartiQL</b>).</p>
+<div class="exam"><b>Exam:</b> "Friends, likes, highly connected, mutual connections up to 5 levels, many-to-many", "IT infrastructure map + security risk query" → <b>Neptune</b>. Change monitor + relationship analyze + recommendation → <b>Neptune + Neptune Streams</b> (least overhead; Kinesis Neptune er change shorashori pore na). Trap: RDS / Aurora / Athena multi-level JOIN "kaaj korbe" kintu slow; OpenSearch search, Redshift OLAP, QLDB ledger, QuickSight shudhu visualize.</div>
+</section>
+
+<section class="sum-block" id="t9"><h3>Amazon Keyspaces (for Apache Cassandra)</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Apache Cassandra open-source distributed NoSQL; nije chalano kothin. Keyspaces e ek-i <b>CQL</b> (Cassandra Query Language), kintu serverless: traffic onujayi table nije bare kome.</p></div>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Ki</td><td>Managed Cassandra-compatible; serverless, scalable, HA, fully managed</td></tr>
+<tr><td>Replication</td><td>Table <b>3 bar</b> multi-AZ e replicate</td></tr>
+<tr><td>Performance</td><td><b>Single-digit ms</b> latency at any scale, 1000s req/s</td></tr>
+<tr><td>Capacity</td><td>On-demand ba provisioned + auto scaling (DynamoDB er moto)</td></tr>
+<tr><td>Backup</td><td>Encryption, backup, <b>PITR 35 din</b></td></tr>
+<tr><td>Use case</td><td>IoT device info, time-series data</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Apache Cassandra" ba "CQL" → <b>Keyspaces</b>, ar kichu na. Trap: DynamoDB NoSQL kintu Cassandra-compatible na; DocumentDB MongoDB; Timestream Cassandra na.</div>
+</section>
+
+<section class="sum-block" id="t10"><h3>Amazon QLDB (Quantum Ledger Database)</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Ledger = financial transaction er khata (bank passbook). Entry ekbar likhle muche fela ba bodlano jay na (<b>immutable</b>). Bhitore ekta <b>journal</b>: protita modification e <b>cryptographic hash</b> hishab hoy, tai je keu verify korte pare kichu delete / modify hoy ni.</p></div>
+<div class="fig">
+  <span class="lbl">Append-only journal</span>
+  <div class="flow">
+    <span class="b">Change 1<small>hash</small></span><span class="a">→</span>
+    <span class="b">Change 2<small>hash</small></span><span class="a">→</span>
+    <span class="b">Change 3<small>hash</small></span><span class="a">→</span>
+    <span class="b hl">Verify<small>kichu muche jay ni</small></span>
+  </div>
+  <span class="lbl">Central vs decentralized</span>
+  <div class="flow">
+    <span class="b hl">QLDB<small>central authority (Amazon), financial regulation er sathe mile</small></span>
+    <span class="b">Managed Blockchain<small>decentralized, onek party</small></span>
+  </div>
+</div>
+<p class="cap">Application data er puro change history review kora jay.</p>
+<ul>
+  <li>Fully managed, <b>serverless</b>, HA, <b>3 AZ</b> replication.</li>
+  <li>Common ledger blockchain framework er cheye <b>2-3x</b> better performance; data <b>SQL</b> diye manipulate.</li>
+</ul>
+<div class="exam"><b>Exam:</b> "Financial / accounting records, credit-debit, immutable, <b>cryptographically verifiable</b> log of changes" → <b>QLDB</b>. Trap: Aurora, Neptune, Redshift, Timestream, DocumentDB verifiable history dey na. Decentralized → Managed Blockchain. (Ajke QLDB end of support, kintu exam answer QLDB.)</div>
+</section>
+
+<section class="sum-block" id="t11"><h3>Amazon Timestream</h3>
+<div class="idea"><p><b>Shohoj kore:</b> Time series = time shoho point er series ("10:00 e 31°C, 10:01 e 31.5°C"). Relational DB te eta slow + dami; Timestream eta-r jonno banano: <b>recent data memory te</b>, purono data <b>cost-optimized storage</b> e.</p></div>
+<div class="fig">
+  <span class="lbl">Timestream architecture</span>
+  <div class="flow">
+    <span class="b">AWS IoT</span><span class="b">KDS → Lambda</span><span class="b">Prometheus, Telegraf</span><span class="b">KDS / MSK → Flink</span><span class="a">→</span>
+    <span class="b hl">Timestream</span><span class="a">→</span>
+    <span class="b">QuickSight<small>dashboard</small></span><span class="b">SageMaker<small>ML</small></span><span class="b">Grafana</span><span class="b">Any JDBC / SQL app</span>
+  </div>
+</div>
+<p class="cap">Flink = slide e "Kinesis Data Analytics for Apache Flink" (ajke Managed Service for Apache Flink).</p>
+<div class="scroll"><table>
+<thead><tr><th>Point</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Ki</td><td>Fully managed, fast, scalable, <b>serverless</b> time series DB; nije capacity up / down</td></tr>
+<tr><td>Scale</td><td>Din e <b>trillions of events</b> store + analyze</td></tr>
+<tr><td>Keno</td><td>Relational er cheye <b>1000s times faster, 1/10th cost</b></td></tr>
+<tr><td>Feature</td><td>Scheduled queries, multi-measure records, <b>full SQL compatibility</b>, built-in time series analytics function (near real-time pattern)</td></tr>
+<tr><td>Security</td><td>Encryption in transit + at rest</td></tr>
+<tr><td>Use case</td><td>IoT app, operational app, real-time analytics</td></tr>
+</tbody>
+</table></div>
+<div class="exam"><b>Exam:</b> "Thousands of sensors, reading every second, store + fast analytics", "time series" → <b>Timestream</b>. Trap: S3 (fast time-series analytics na), ElastiCache (durable na), Neptune (graph).</div>
+</section>
+
+<section class="sum-block" id="when"><h3>Kokhon konta</h3>
+<div class="scroll"><table>
+<thead><tr><th>Question e dekhle</th><th>Answer</th><th>Bhul option (keno na)</th></tr></thead>
+<tbody>
+<tr><td>Relational, SQL, insert / update / delete, OLTP</td><td><b>RDS</b> / Aurora</td><td>DynamoDB, DocumentDB (NoSQL), ElastiCache (cache)</td></tr>
+<tr><td>OLTP + built-in auto-scaling + max storage replica</td><td><b>Aurora</b> (6 copy, 3 AZ)</td><td>RDS (replica / Multi-AZ nije banao), Neptune (graph)</td></tr>
+<tr><td>OLTP + unpredictable spike, capacity planning nai</td><td><b>Aurora Serverless</b></td><td>DynamoDB on-demand / provisioned (spike ok, kintu NoSQL)</td></tr>
+<tr><td>Production theke test DB druto</td><td><b>Aurora Cloning</b></td><td>Snapshot + restore (slow)</td></tr>
+<tr><td>Aurora PostgreSQL ache, vector storage, cheap</td><td><b>pgvector</b> extension</td><td>OpenSearch / DocumentDB / Neptune ML (notun paid cluster)</td></tr>
+<tr><td>Redis / Memcached, in-memory cache, session store</td><td><b>ElastiCache</b></td><td>RDS, DynamoDB, OpenSearch (Redis-compatible na)</td></tr>
+<tr><td>Managed NoSQL + in-memory cache + million user</td><td><b>DynamoDB + DAX</b></td><td>ElastiCache (primary DB na), DocumentDB (cache nai), RDS</td></tr>
+<tr><td>Serverless NoSQL + global (MongoDB chhere)</td><td><b>DynamoDB</b> Global Tables</td><td>DocumentDB (course: serverless / global nai), RDS, Aurora</td></tr>
+<tr><td>100 MB file, durable key-value store</td><td><b>S3</b></td><td>DynamoDB (400 KB), ElastiCache (durable na)</td></tr>
+<tr><td>MongoDB migrate, code change chara</td><td><b>DocumentDB</b> (+ EKS Fargate jodi Kubernetes)</td><td>"RDS for MongoDB" (nai), DynamoDB / ECS (change lage)</td></tr>
+<tr><td>Friends of friends, mutual connection, fraud, recommendation, infra map</td><td><b>Neptune</b></td><td>RDS / Aurora / Athena (multi-level join slow), OpenSearch, Redshift</td></tr>
+<tr><td>Graph er protita change monitor / sync</td><td><b>Neptune Streams</b></td><td>Kinesis Data Streams (extra component)</td></tr>
+<tr><td>Apache Cassandra, CQL</td><td><b>Keyspaces</b></td><td>DynamoDB, DocumentDB, Timestream</td></tr>
+<tr><td>Financial, immutable, cryptographically verifiable</td><td><b>QLDB</b></td><td>Aurora, Neptune, Redshift, Timestream</td></tr>
+<tr><td>Thousands of sensors, time series, fast analytics</td><td><b>Timestream</b></td><td>S3, Neptune, ElastiCache</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section class="sum-block" id="traps"><h3>Exam traps</h3>
+<ul>
+  <li>"Caching <b>without code change</b>" dekhle DynamoDB hole <b>DAX</b>, ElastiCache na (ElastiCache e app code bodlate hoy).</li>
+  <li>"NoSQL" dekhle DynamoDB ar DocumentDB dutoi bhabo; engine er naam (MongoDB / Cassandra) thakle sheta-i decide kore.</li>
+  <li>"Serverless NoSQL + global" dekhle course answer <b>DynamoDB</b>, DocumentDB na.</li>
+  <li>Analytics production DB slow korche dekhle <b>Read Replica</b>, Multi-AZ na (standby te query hoy na).</li>
+  <li>"OLTP" dekhle relational (RDS / Aurora); Redshift (OLAP) ba DynamoDB na.</li>
+  <li>Onek level er relationship dekhle <b>Neptune</b>; SQL JOIN "kaaj korbe" kintu best na.</li>
+  <li>Decentralized dekhle <b>Managed Blockchain</b>, QLDB na (QLDB central).</li>
+  <li>Smooth gradual load → DynamoDB <b>provisioned + auto scaling</b>; hothat steep spike → <b>on-demand</b>.</li>
+  <li>Serverless: DynamoDB, S3, Keyspaces, QLDB, Timestream, Aurora Serverless. Provisioned: RDS, ElastiCache (instance type), Aurora cluster.</li>
+  <li>DynamoDB PITR restore, on-demand backup restore, S3 import: shob <b>notun table</b> e.</li>
+</ul>
+</section>
+
+<section class="sum-block" id="numbers"><h3>Number mone rakho</h3>
+<ul>
+  <li>Backup / PITR <b>35 din</b>: RDS, DynamoDB, Keyspaces.</li>
+  <li>Aurora storage <b>6 copy, 3 AZ</b>; Aurora Global replication <b>&lt; 1 s</b>, region proti <b>16</b> read instance.</li>
+  <li>Latency: ElastiCache <b>sub-ms</b>, DynamoDB <b>ms</b>, DAX <b>microsecond</b>, Keyspaces <b>single-digit ms</b>, Neptune query ms.</li>
+  <li>DynamoDB item max <b>400 KB</b> (choto document 100s KB); Kinesis Data Streams retention <b>1 bochor</b> porjonto.</li>
+  <li>S3 max object: slide <b>50 TB</b> (video 5 TB bole; purono question e 5 TB).</li>
+  <li>Neptune <b>3 AZ, 15 read replica</b>, billions relation; DocumentDB storage <b>10 GB</b> kore bare, 3 AZ; Keyspaces <b>3</b> copy; QLDB 3 AZ.</li>
+  <li>Timestream relational er cheye 1000s times fast, <b>1/10th</b> cost, trillions event / din; QLDB blockchain framework er cheye <b>2-3x</b> fast.</li>
+  <li>QLDB exam answer (ajke: end of support 31 July 2025). Timestream (ajke: LiveAnalytics notun customer nay, Timestream for InfluxDB ache). DocumentDB (ajke: Serverless ar Global Clusters ache, kintu course key DynamoDB).</li>
+</ul>
+</section>
+
+  </section>
+
+  <section class="card" id="practice">
+    <h2>Practice</h2>
+    <div class="tiles"><a class="tile" data-src="U" href="course-quiz.html"><b>Course quiz</b><small>Udemy section quiz</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="S" href="stephane.html"><b>Stephane</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="B" href="dojo.html"><b>Dojo (Bonso)</b><small>Practice test</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a><a class="tile" data-src="D" href="dump.html"><b>Dump</b><small>SAA-C03 dump, keys checked</small><span class="big">0/0</span><div class="meter"><i style="width:0%"></i></div><small class="acc"></small></a></div>
+  </section>
+
+  <section class="card" id="mynote">
+    <h2>My notes</h2>
+    <p class="cap">What I got wrong, why, and what to remember. Saves as you type.</p>
+    <textarea class="mynote" id="note" data-size="secnote" spellcheck="false" placeholder="e.g. I mix up SQS and Kinesis: 'real-time + replay' means Kinesis…"></textarea>
+    <p class="cap" id="note-status"></p>
+  </section>
+
+  <section class="card" id="page-notes" data-sec="21" data-scope="section" data-pages='{"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump", "base": ""}'>
+    <h2>Question notes (this section)</h2>
+    <p class="cap">Notes you wrote on this section's questions (Course quiz, Stephane, Dojo, Dump). Edit or delete them here.</p>
+    <div class="pn-list"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section class="card" id="mistakes">
+    <h2>My mistakes (this section)</h2>
+    <p class="noprint"><button class="btn" type="button" id="miss-clear" hidden>Clear this section's mistakes</button></p>
+    <div id="miss-list"><p class="muted">Loading…</p></div>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  const SEC = 21;
+  const Q = window.SAA_Q || {};
+  const PAGE = {"U": "course-quiz", "S": "stephane", "B": "dojo", "D": "dump"};
+  const NAME = { U: "Udemy quiz", S: "Stephane", B: "Bonso", D: "Dump" };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const ids = Object.keys(Q).filter(id => Q[id][0] === SEC);
+
+  function progress() {
+    let done = 0, firstOk = 0, bad = 0;
+    const per = {};
+    ids.forEach(id => {
+      const src = Q[id][5], s = SAAQuiz.status(id);
+      const p = per[src] = per[src] || { n: 0, done: 0, ok: 0 };
+      p.n++;
+      if (s.state === "new") return;
+      done++; p.done++;
+      if (s.first) { firstOk++; p.ok++; }
+      if (s.state === "mistake") bad++;
+    });
+    const pct = ids.length ? Math.round(done / ids.length * 100) : 0;
+    document.querySelector("#m-all i").style.width = pct + "%";
+    document.getElementById("m-text").textContent = done + "/" + ids.length + " questions done" +
+      (done ? " · right first time " + Math.round(firstOk / done * 100) + "%" : "") + " · in the mistake list " + bad;
+    Object.entries(per).forEach(([src, p]) => {
+      const el = document.querySelector('[data-src="' + src + '"]');
+      if (!el) return;
+      el.querySelector(".big").textContent = p.done + "/" + p.n;
+      el.querySelector(".meter i").style.width = (p.n ? Math.round(p.done / p.n * 100) : 0) + "%";
+      el.querySelector(".acc").textContent = p.done ? "right first time " + Math.round(p.ok / p.done * 100) + "%" : "not started";
+    });
+  }
+
+  function mistakes() {
+    const rows = [];
+    ids.forEach(id => {
+      const s = SAAQuiz.status(id);
+      const wrong = SAAQuiz.wrongAttempts(id);  // wrong answers before a "clear" no longer count
+      if (!wrong.length) return;
+      const last = wrong[wrong.length - 1];
+      const chose = last.c.map(i => "ABCDEFGH"[i]).join(",");
+      rows.push({ id, s, chose, when: last.t });
+    });
+    rows.sort((a, b) => (a.s.state === "mistake" ? 0 : 1) - (b.s.state === "mistake" ? 0 : 1) || (a.when < b.when ? 1 : -1));
+    const active = rows.filter(r => r.s.state === "mistake").map(r => r.id);
+    const btn = document.getElementById("miss-clear");
+    btn.hidden = !active.length;
+    btn.textContent = "Clear this section's mistakes (" + active.length + ")";
+    btn.onclick = () => {
+      if (!confirm("Take the " + active.length + " question(s) of Section " + String(SEC).padStart(2, "0") + " off the mistake list? Your answer history stays; a new wrong answer puts a question back.")) return;
+      SAAQuiz.clearMistakes(active).then(() => { progress(); mistakes(); }, () => alert("Could not clear (is the tracker running?)."));
+    };
+    const box = document.getElementById("miss-list");
+    if (!rows.length) { box.innerHTML = '<p class="muted">No mistakes yet.</p>'; return; }
+    box.innerHTML = rows.map(r => {
+      const m = Q[r.id];
+      const state = r.s.state === "mistake"
+        ? (r.s.isDue ? '<span class="pill bad">due</span>' : '<span class="pill">' + SAAQuiz.shortDate(r.s.due) + " again</span>")
+        : '<span class="pill ok">clear</span>';
+      return '<div class="miss"><div class="top"><b class="qz-id">' + esc(r.id) + "</b>" +
+        '<span class="pill">' + NAME[m[5]] + "</span>" + state +
+        '<span class="pill bad">you: ' + esc(r.chose) + '</span><span class="pill ok">right: ' + esc(m[4]) + "</span>" +
+        '<span class="muted">' + SAAQuiz.shortDate(r.when) + "</span></div>" +
+        '<div>' + esc(m[2]) + '… <a href="' + PAGE[m[5]] + ".html#" + encodeURIComponent(r.id) + '">open question</a></div></div>';
+    }).join("");
+  }
+
+  // own note: tracker API when served, browser storage as a fallback
+  const note = document.getElementById("note"), status = document.getElementById("note-status");
+  const KEY = "saa-note-" + SEC;
+  let timer = null;
+  function setStatus(t) { status.textContent = t; }
+  function save() {
+    const text = note.value;
+    SAA.writeLocal(KEY, text);
+    if (!SAA.served) { setStatus("Saved in this browser (opened without the tracker)."); return; }
+    fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: String(SEC), text }) })
+      .then(r => { if (!r.ok) throw new Error(); setStatus("Saved " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })); })
+      .catch(() => setStatus("Not saved on the server; kept in this browser."));
+  }
+  note.addEventListener("input", () => { setStatus("Typing…"); clearTimeout(timer); timer = setTimeout(save, 800); });
+  (SAA.served ? fetch("/api/notes", { cache: "no-store" }).then(r => r.json()).catch(() => ({})) : Promise.resolve({}))
+    .then(all => { note.value = all[String(SEC)] != null ? all[String(SEC)] : (SAA.readLocal(KEY) || ""); });
+
+  SAAQuiz.load().then(() => { progress(); mistakes(); });
+})();
+</script>
+</body>
+</html>

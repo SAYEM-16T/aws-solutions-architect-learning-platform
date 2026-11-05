@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 11 Classic Solutions Architecture</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <nav><a href="../index.html">← Index</a> <a href="../mistakes.html">Mistakes</a> <a href="../10.%20Route%2053/10-notes.html">‹ Sec 10</a> <a href="../12.%20Amazon%20S3%20Introduction/12-notes.html">Sec 12 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+  <header>
+    <p class="eyebrow">Section 11 · study order #12</p>
+    <h1>Classic Solutions Architecture</h1>
+    <p class="sub">Slides: <a href="11-slides-p228-267.pdf" target="_blank" rel="noopener">11-slides-p228-267.pdf</a> (full PDF p228-267). Page reference <code>PDF p. 359 (part p. 8)</code> = page 359 of the full slide PDF = page 8 of this section's PDF part; click to open the PDF at that page.</p>
+    <p class="sub">Loop: note → PDF part → exam points → Part A → Part B → mistakes again after 2 days.</p>
+  </header>
+  <nav class="card toc noprint" aria-label="On this page">
+    <h2>On this page</h2>
+    <ol><li><a href="#overview">Classic Solutions Architecture: service gulo ekshathe kivabe bose</a></li><li><a href="#l1">Ei section kivabe porbo</a></li><li><a href="#l2">Stateless web app: WhatIsTheTime.com er journey</a></li><li><a href="#l3">Stateful web app: MyClothes.com (shopping cart, session, database)</a></li><li><a href="#l4">Stateful web app: MyWordPress.com (Aurora ar EBS vs EFS)</a></li><li><a href="#l5">Application druto chalu kora: Golden AMI, User Data, snapshot</a></li><li><a href="#l6">Elastic Beanstalk: shudhu code dao, baki AWS banabe</a></li><li><a href="#l7">Beanstalk hands-on: ki banay, kothay dekha jay</a></li><li><a href="#pairs">Confusing pairs</a></li><li><a href="#changes">Course er por ki bodlalo</a></li><li><a href="#exam">Exam e ki mone rakhbo</a></li><li><a href="#part-a">Part A: Udemy quiz (6)</a></li><li><a href="#part-b">Part B: Practice (9)</a></li></ol>
+  </nav>
+<section class="card" id="overview">
+  <p class="num">Age ek nojore</p>
+  <h2>Classic Solutions Architecture: service gulo ekshathe kivabe bose</h2>
+  <p>Ei porjonto protita service alada shikhecho: EC2 (Section 05-07), ELB/ASG (Section 08), RDS/Aurora/ElastiCache (Section 09), Route 53 (Section 10). Ei section e <b>notun service prai nai</b> (shudhu Elastic Beanstalk). Ekhane dekhbo ekta choto app <b>dhape dhape</b> kivabe boro hoy: protita dhape ki <b>problem</b> holo, ar ki <b>add</b> kore seta mitlo. Instructor bolen ei section e <b>100% comfortable</b> hote hobe, karon exam er onek question ei "requirement → architecture" logic e.</p>
+  <div class="scroll"><table>
+    <tr><th>Topic</th><th>Ek line e</th></tr>
+    <tr><td>WhatIsTheTime.com</td><td><b>Stateless</b> app (DB nai): EC2 + Elastic IP → vertical → horizontal → Route 53 A record → <b>ELB + health check + Alias</b> → <b>ASG</b> → <b>Multi-AZ</b> → min capacity <b>Reserved</b></td></tr>
+    <tr><td>MyClothes.com</td><td><b>Stateful</b> app (shopping cart): <b>ELB stickiness</b> → <b>web cookie</b> → <b>session_id + ElastiCache</b> (ba DynamoDB) → <b>RDS</b> user data → <b>read replica</b> ba <b>lazy loading cache</b> → sob jaygay Multi-AZ → <b>SG chain</b></td></tr>
+    <tr><td>MyWordPress.com</td><td>RDS → <b>Aurora MySQL</b> (Multi-AZ, read replica, kom operation); picture upload er jonno <b>EBS na, EFS</b> (sob instance, sob AZ share kore)</td></tr>
+    <tr><td>Instantiating apps quickly</td><td>EC2: <b>Golden AMI</b> (install age theke) + <b>User Data</b> (dynamic config); RDS ar EBS: <b>snapshot theke restore</b></td></tr>
+    <tr><td>3-tier web app</td><td>Public subnet (ELB) → private subnet (ASG e EC2) → data subnet (ElastiCache + RDS)</td></tr>
+    <tr><td>Elastic Beanstalk</td><td><b>Developer-centric</b> managed service: shudhu code dao, EC2/ASG/ELB/RDS nije banay; Beanstalk <b>free</b>, resource er dam dite hoy</td></tr>
+    <tr><td>Beanstalk components</td><td><b>Application</b> → <b>Application version</b> (code er iteration) → <b>Environment</b> (ek somoy ek version; dev/test/prod)</td></tr>
+    <tr><td>Beanstalk tiers</td><td><b>Web server tier</b> (ELB + ASG) vs <b>Worker tier</b> (SQS queue theke message pull, message sonkhya onujayi scale)</td></tr>
+    <tr><td>Beanstalk deployment modes</td><td><b>Single instance</b> (1 EC2 + Elastic IP, dev, sosta) vs <b>High availability</b> (ALB + ASG multi-AZ, prod)</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="l1">
+  <p class="num">Lecture 1 · Solutions Architecture Discussions Overview · <a class="pg" href="11-slides-p228-267.pdf#page=1" target="_blank" rel="noopener">PDF p. 228-229</a> <span class="pg-part">(part p. 1-2)</span></p>
+  <h2>Ei section kivabe porbo</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Ekta choto dokan prothome ekjon manush chalay. Customer barle boro counter, tarpor onek counter, tarpor ekta reception (load balancer), tarpor shakha (Multi-AZ). Protita dhap ager dhaper <b>ekta problem</b> mitay. Exam o thik eivabe prosno kore: "ei requirement, ei problem, ekhon ki add korbe?"</p></div>
+  <ul>
+    <li>Slide: ei solution architecture gulo course er "<b>best part</b>"; sob technology ekshathe kivabe kaj kore.</li>
+    <li>Case study gulo (<a class="pg" href="11-slides-p228-267.pdf#page=2" target="_blank" rel="noopener">PDF p. 229</a> <span class="pg-part">(part p. 2)</span>): <b>WhatIsTheTime.com</b>, <b>MyClothes.com</b>, <b>MyWordPress.com</b>, <b>Instantiating applications quickly</b>, <b>Beanstalk</b>.</li>
+    <li>Progression: dhire dhire <b>complex</b> hobe. Dekhbo EC2 vs ELB vs ASG vs EBS vs EFS vs RDS vs ElastiCache vs Route 53 kothay boshe.</li>
+    <li>Porar niyom: protita dhape nijeke 3 ta prosno koro: <b>ki add holo</b>, <b>keno</b>, <b>ki problem baki thaklo</b>. Nicher card gulo ei format e.</li>
+  </ul>
+  <p class="src">Subtitle e ekta jayga bujha jay ni ("Elastic, H--, Enroute (mumbles)"), ami seta ElastiCache ar Route 53 dhorechi.</p>
+</section>
+
+<section class="card" id="l2">
+  <p class="num">Lecture 2 · WhatsTheTime.com · <a class="pg" href="11-slides-p228-267.pdf#page=3" target="_blank" rel="noopener">PDF p. 230-240</a> <span class="pg-part">(part p. 3-13)</span></p>
+  <h2>Stateless web app: WhatIsTheTime.com er journey</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> App ta shudhu bole "ekhon koyta baje". Kono <b>database nai</b>, protita server nijei time jane. Tai eta <b>stateless</b>: je kono server je kono user ke uttor dite pare. Shuru choto (downtime cholbe), pore <b>vertical ar horizontal</b> scale, <b>downtime chara</b>.</p></div>
+  <h3>Requirement (<a class="pg" href="11-slides-p228-267.pdf#page=3" target="_blank" rel="noopener">PDF p. 230</a> <span class="pg-part">(part p. 3)</span>)</h3>
+  <ul>
+    <li>Manush ke time jananor app; <b>database lage na</b>.</li>
+    <li>Shuru <b>choto</b>, <b>downtime accept</b> kora jay.</li>
+    <li>Pore puro <b>vertical ar horizontal</b> scale, <b>no downtime</b>.</li>
+  </ul>
+
+  <h3>Dhap 1: Starting simple (<a class="pg" href="11-slides-p228-267.pdf#page=4" target="_blank" rel="noopener">PDF p. 231</a> <span class="pg-part">(part p. 4)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 1</span>
+    <div class="flow">
+      <span class="b">User<small>"What time is it?"</small></span><span class="a">→</span>
+      <span class="b hl">Elastic IP</span><span class="a">→</span>
+      <span class="b">Public EC2<small>t2.micro</small></span>
+    </div>
+  </div>
+  <p class="cap">Ekta public t2.micro, sathe Elastic IP. Eta prothom PoC.</p>
+  <ul>
+    <li><b>Keno Elastic IP:</b> instance restart/kichu holeo <b>static IP</b> thakuk (EIP Section 06 e).</li>
+    <li><b>Problem:</b> user barche, t2.micro e ar kulay na.</li>
+  </ul>
+
+  <h3>Dhap 2: Scaling vertically (<a class="pg" href="11-slides-p228-267.pdf#page=5" target="_blank" rel="noopener">PDF p. 232</a> <span class="pg-part">(part p. 5)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 2</span>
+    <div class="flow">
+      <span class="b">Users ×3</span><span class="a">→</span>
+      <span class="b hl">Elastic IP<small>same IP</small></span><span class="a">→</span>
+      <span class="b">Public EC2<small>t2.micro → m5.large</small></span>
+    </div>
+  </div>
+  <p class="cap">Instance stop → instance type bodlao → start. IP same thake karon Elastic IP.</p>
+  <ul>
+    <li><b>Ki add:</b> boro instance (<b>M5</b>) = <b>vertical scaling</b>.</li>
+    <li><b>Bhalo:</b> Elastic IP thakay user same IP tei pay.</li>
+    <li><b>Problem:</b> M5 e upgrade korar somoy <b>downtime</b>; user app access korte pareni.</li>
+  </ul>
+
+  <h3>Dhap 3: Scaling horizontally, protita EC2 te Elastic IP (<a class="pg" href="11-slides-p228-267.pdf#page=6" target="_blank" rel="noopener">PDF p. 233</a> <span class="pg-part">(part p. 6)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 3</span>
+    <div class="flow">
+      <span class="b">Users<small>3 ta IP mone rakhte hoy</small></span><span class="a">→</span>
+      <span class="b">EIP 1 → M5</span>
+      <span class="b">EIP 2 → M5</span>
+      <span class="b">EIP 3 → M5</span>
+    </div>
+  </div>
+  <p class="cap">3 ta m5.large, protita te alada Elastic IP = horizontal scaling.</p>
+  <ul>
+    <li><b>Problem 1:</b> user ke protita Elastic IP er <b>exact value</b> jante hoy; IP barle aro jhamela.</li>
+    <li><b>Problem 2:</b> beshi infrastructure manage.</li>
+    <li><b>Problem 3:</b> default e <b>proti region proti account e 5 ta Elastic IP</b>; beshi na.</li>
+  </ul>
+
+  <h3>Dhap 4: Route 53 A record, Elastic IP bad (<a class="pg" href="11-slides-p228-267.pdf#page=7" target="_blank" rel="noopener">PDF p. 234</a> <span class="pg-part">(part p. 7)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 4</span>
+    <div class="flow">
+      <span class="b">User</span><span class="a">→ <small>DNS query</small></span>
+      <span class="b hl">Route 53<small>api.whatisthetime.com<br>A record, TTL 1 hour</small></span><span class="a">→ <small>IP list</small></span>
+      <span class="b">Public EC2 ×3<small>No Elastic IP</small></span>
+    </div>
+  </div>
+  <p class="cap">A record = hostname → IP. User Route 53 theke IP gulo pay, tarpor sorasori EC2 te jay.</p>
+  <ul>
+    <li><b>Ki add:</b> Route 53, <b>A record</b> (TTL 1 hour). Mone rakho: <b>A record = IP</b> (Section 10 e).</li>
+    <li><b>Bhalo:</b> Elastic IP manage korte hoy na. Instance er IP bodlale Route 53 record update kore sync rakho.</li>
+  </ul>
+
+  <h3>Dhap 5: Instance add/remove korle TTL er problem (<a class="pg" href="11-slides-p228-267.pdf#page=8" target="_blank" rel="noopener">PDF p. 235</a> <span class="pg-part">(part p. 8)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 5</span>
+    <div class="flow">
+      <span class="b">User<small>IP cache kora, TTL 1 hour</small></span><span class="a">→</span>
+      <span class="b">Public EC2<small>INSTANCE IS GONE!</small></span>
+    </div>
+  </div>
+  <p class="cap">Ekta instance remove korlam, kintu user er kache purono DNS answer 1 ghonta valid.</p>
+  <ul>
+    <li><b>Problem:</b> TTL <b>1 hour</b>, tai user <b>1 ghonta</b> dhore muchhe jawa instance er IP te connect korar cheshta kore. User bhabe app <b>down</b>.</li>
+    <li>Shiksha: <b>DNS A record diye instance add/remove (scaling) bhalo chole na</b>.</li>
+  </ul>
+
+  <h3>Dhap 6: Load balancer + health check, private EC2 (<a class="pg" href="11-slides-p228-267.pdf#page=9" target="_blank" rel="noopener">PDF p. 236</a> <span class="pg-part">(part p. 9)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 6</span>
+    <div class="flow">
+      <span class="b">User</span><span class="a">→</span>
+      <span class="b">Route 53<small>Alias record</small></span><span class="a">→</span>
+      <span class="b hl">ELB + Health Checks<small>public, AZ 1</small></span><span class="a">→ <small>SG restricted</small></span>
+      <span class="b">Private EC2 ×3<small>m5.large, AZ 1</small></span>
+    </div>
+  </div>
+  <p class="cap">EC2 ar public na. Shob traffic ELB diye. EC2 er security group shudhu ELB er SG theke traffic ney.</p>
+  <ul>
+    <li><b>Ki add:</b> <b>ELB</b> (public facing) + <b>health checks</b>; EC2 gulo <b>private</b>, manually launch, <b>ek-i AZ</b> e ("because we don't know any better").</li>
+    <li><b>Health check:</b> instance down/kaj na korle oikhane user traffic jay na.</li>
+    <li><b>Security group:</b> ELB ar EC2 er moddhe traffic restrict, <b>SG reference</b> diye (Section 08 e).</li>
+    <li><b>DNS:</b> ekhon <b>A record cholbe na</b>, karon load balancer er <b>IP sob somoy bodlay</b>. Tai <b>Alias record</b> → ELB.</li>
+    <li><b>Bhalo:</b> instance add/remove kore LB te register korle user er <b>downtime nai</b> (health check er jonno).</li>
+    <li><b>Problem:</b> instance <b>manually</b> add/remove kora kothin.</li>
+  </ul>
+
+  <h3>Dhap 7: Auto Scaling Group (<a class="pg" href="11-slides-p228-267.pdf#page=10" target="_blank" rel="noopener">PDF p. 237</a> <span class="pg-part">(part p. 10)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 7</span>
+    <div class="flow">
+      <span class="b">Route 53<small>Alias</small></span><span class="a">→</span>
+      <span class="b">ELB + Health Checks</span><span class="a">→</span>
+      <span class="b hl">Auto Scaling Group<small>AZ 1, private EC2</small></span>
+    </div>
+  </div>
+  <p class="cap">Ekhon ASG nije demand onujayi instance barabe-komabe.</p>
+  <ul>
+    <li><b>Ki add:</b> ASG: <b>scale out / scale in on demand</b> (sokale keu time jante chay na, shondhay office chharar somoy sobai chay).</li>
+    <li><b>Bhalo:</b> no downtime, auto scaling, load balanced. Cost o bhalo: shob somoy "perfect" sonkhok instance.</li>
+    <li><b>Problem:</b> shob kichu <b>AZ 1</b> e. Earthquake e AZ 1 gele <b>puro app down</b>.</li>
+  </ul>
+
+  <h3>Dhap 8: Multi-AZ (<a class="pg" href="11-slides-p228-267.pdf#page=11" target="_blank" rel="noopener">PDF p. 238</a> <span class="pg-part">(part p. 11)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 8</span>
+    <div class="flow">
+      <span class="b">Route 53<small>Alias</small></span><span class="a">→</span>
+      <span class="b hl">ELB + Health Checks + Multi AZ<small>AZ 1 to 3</small></span><span class="a">→</span>
+      <span class="b">ASG: AZ 1<small>2 instance</small></span>
+      <span class="b">ASG: AZ 2<small>2 instance</small></span>
+      <span class="b">ASG: AZ 3<small>1 instance</small></span>
+    </div>
+  </div>
+  <p class="cap">ELB ar ASG duitai onek AZ jure. Ek AZ gele baki AZ traffic serve kore.</p>
+  <ul>
+    <li><b>Ki add:</b> ELB <b>multi-AZ</b> (AZ 1-3), ASG <b>onek AZ span</b> kore.</li>
+    <li><b>Bhalo:</b> app <b>highly available</b> ar <b>resilient to failure</b>.</li>
+  </ul>
+
+  <h3>Dhap 9: Minimum 2 AZ, capacity reserve (<a class="pg" href="11-slides-p228-267.pdf#page=12" target="_blank" rel="noopener">PDF p. 239</a> <span class="pg-part">(part p. 12)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 9</span>
+    <div class="flow">
+      <span class="b">ASG minimum capacity</span><span class="a">=</span>
+      <span class="b hl">Reserved Instances</span><span class="a">=</span>
+      <span class="b">Cost savings</span>
+    </div>
+  </div>
+  <p class="cap">Je instance gulo sara bochor cholbei (ASG er minimum), segulo reserve koro.</p>
+  <ul>
+    <li>Jani kompokkhe <b>2 ta instance</b> (protita AZ e ekta) <b>sob somoy</b> cholbe → oigulo <b>Reserved Instance</b> = future e onek <b>cost saving</b>.</li>
+    <li>Scale out e notun instance gulo temporary → <b>On-Demand</b> thik ache.</li>
+    <li>Aro sosta chaile <b>Spot</b>, kintu Spot instance <b>terminate</b> hote pare (purchasing option Section 05 e).</li>
+  </ul>
+
+  <h3>Puro journey ek table e</h3>
+  <div class="scroll"><table>
+    <tr><th>Dhap</th><th>Ki add</th><th>Ki mitlo</th><th>Ki problem baki</th></tr>
+    <tr><td>1</td><td>Public EC2 + Elastic IP</td><td>Static IP</td><td>Load barle choto instance</td></tr>
+    <tr><td>2</td><td>Vertical: t2.micro → m5.large</td><td>Beshi load</td><td><b>Downtime</b> upgrade er somoy</td></tr>
+    <tr><td>3</td><td>Horizontal: 3 EC2, 3 EIP</td><td>Aro beshi load</td><td>User ke sob IP jante hoy; EIP limit 5/region</td></tr>
+    <tr><td>4</td><td>Route 53 <b>A record</b>, TTL 1 h</td><td>EIP manage lage na</td><td>Instance remove korle TTL porjonto dead IP</td></tr>
+    <tr><td>5-6</td><td><b>ELB + health check</b>, private EC2, SG, <b>Alias</b></td><td>No downtime add/remove</td><td>Manual instance management</td></tr>
+    <tr><td>7</td><td><b>ASG</b></td><td>Auto scale in/out</td><td>Ek AZ = single point of failure</td></tr>
+    <tr><td>8</td><td><b>Multi-AZ</b> ELB + ASG</td><td>AZ failure survive</td><td>Cost</td></tr>
+    <tr><td>9</td><td><b>Reserved</b> for min capacity</td><td>Cost saving</td><td>-</td></tr>
+  </table></div>
+
+  <h3>Ei lecture e ki ki dekhlam (<a class="pg" href="11-slides-p228-267.pdf#page=13" target="_blank" rel="noopener">PDF p. 240</a> <span class="pg-part">(part p. 13)</span>)</h3>
+  <ul>
+    <li><b>Public vs private IP</b> ar EC2 (architecture e kothay).</li>
+    <li><b>Elastic IP vs Route 53 vs Load Balancer</b>.</li>
+    <li><b>Route 53 TTL, A record ar Alias record</b>: TTL er jonno A record dia scaling hoy na → <b>LB + Alias</b>.</li>
+    <li>EC2 <b>manually</b> maintain vs <b>Auto Scaling Group</b> (on-demand scale, better costing).</li>
+    <li><b>Multi AZ</b> to survive disasters.</li>
+    <li><b>ELB health checks</b>: shudhu thik moto response deya instance traffic pay.</li>
+    <li><b>Security group rules</b>: EC2 shudhu ELB theke traffic ney.</li>
+    <li><b>Capacity reservation</b> e cost saving.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> ASG min = 2 (HA er jonno), aro cost komao → <b>oi 2 ta instance Reserve koro</b>; min 1 ba 0 korle HA bhange, ALB soriye EIP dile scaling/HA jay (U11-Q1). "Instance IP bodlay / onek instance, ek nam chai" → <b>ELB + Route 53 Alias</b>, A record na (LB er IP bodlay). DNS TTL beshi + instance remove = user purono IP te atke thake. "AZ failure survive" → <b>ELB + ASG multi-AZ</b>. EC2 shudhu LB theke → EC2 SG source = <b>LB er SG</b>.</div>
+  <p class="src">Subtitle e "three and five large instances" = 3 ta M5 large dhorechi (slide er M5 onujayi).</p>
+</section>
+
+<section class="card" id="l3">
+  <p class="num">Lecture 3 · MyClothes.com · <a class="pg" href="11-slides-p228-267.pdf#page=14" target="_blank" rel="noopener">PDF p. 241-251</a> <span class="pg-part">(part p. 14-24)</span></p>
+  <h2>Stateful web app: MyClothes.com (shopping cart, session, database)</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Supermarket e tumi trolley te jinish rakho. Protibar onno counter er lok tomake serve korle, trolley jodi ager counter e pore thake, tumi jinish haraba. Tai trolley ta hoy <b>tomar haate</b> (cookie), ba ekta <b>common locker</b> e (ElastiCache/DynamoDB), jekhane je kono counter tomar <b>token number</b> (session_id) diye khule dekhte pare. Tahole counter (EC2) gulo "kichu mone rakhe na" = <b>stateless web tier</b>.</p></div>
+  <h3>Requirement (<a class="pg" href="11-slides-p228-267.pdf#page=14" target="_blank" rel="noopener">PDF p. 241</a> <span class="pg-part">(part p. 14)</span>)</h3>
+  <ul>
+    <li>Online e kapor kena; ekta <b>shopping cart</b> ache.</li>
+    <li>Ek shathe <b>hundreds of users</b>.</li>
+    <li>Scale korte hobe, <b>horizontal scalability</b> rakhte hobe, web application <b>joto somvob stateless</b>.</li>
+    <li>User er <b>shopping cart harano cholbe na</b>.</li>
+    <li>User er details (address etc.) <b>database</b> e thakbe, jekono jayga theke access.</li>
+  </ul>
+
+  <h3>Dhap 0: Ager architecture e cart hariye jay (<a class="pg" href="11-slides-p228-267.pdf#page=15" target="_blank" rel="noopener">PDF p. 242</a> <span class="pg-part">(part p. 15)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Problem</span>
+    <div class="flow">
+      <span class="b">User<small>req 1: cart banalo</small></span><span class="a">→</span>
+      <span class="b">Multi-AZ ELB</span><span class="a">→</span>
+      <span class="b">EC2 #1<small>cart ache</small></span>
+      <span class="b">EC2 #2<small>req 2: cart nai!</small></span>
+      <span class="b">EC2 #3<small>req 3: cart nai!</small></span>
+    </div>
+  </div>
+  <p class="cap">Route 53 + Multi-AZ ELB + 3 AZ ASG (WhatIsTheTime er shesh architecture). Protita request alada instance e gele cart harabe.</p>
+  <ul>
+    <li>User bhabe bug; abar try kore; abar onno instance; "MyClothes.com is a bad website" → <b>tk haralam</b>.</li>
+  </ul>
+
+  <h3>Dhap 1: ELB Stickiness / Session Affinity (<a class="pg" href="11-slides-p228-267.pdf#page=16" target="_blank" rel="noopener">PDF p. 243</a> <span class="pg-part">(part p. 16)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 1</span>
+    <div class="flow">
+      <span class="b">User<small>req 1, 2, 3</small></span><span class="a">→</span>
+      <span class="b hl">ELB Stickiness</span><span class="a">→ <small>sob somoy</small></span>
+      <span class="b">Ek-i EC2<small>cart ekhane</small></span>
+    </div>
+  </div>
+  <p class="cap">ELB feature: ek user er sob request ek-i instance e (sticky session, Section 08 e).</p>
+  <ul>
+    <li><b>Bhalo:</b> kaj kore, improvement.</li>
+    <li><b>Problem:</b> oi EC2 kono karone <b>terminate</b> holeo cart <b>harabe</b>.</li>
+  </ul>
+
+  <h3>Dhap 2: User cookies (<a class="pg" href="11-slides-p228-267.pdf#page=17" target="_blank" rel="noopener">PDF p. 244</a> <span class="pg-part">(part p. 17)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 2</span>
+    <div class="flow">
+      <span class="b hl">User<small>cart content web cookie te</small></span><span class="a">→ <small>protita request e puro cart</small></span>
+      <span class="b">ELB</span><span class="a">→</span>
+      <span class="b">Je kono EC2<small>stateless</small></span>
+    </div>
+  </div>
+  <p class="cap">Cart EC2 te na, user nijei rakhe ar protibar pathay.</p>
+  <ul>
+    <li><b>Bhalo:</b> <b>stateless</b>: kono EC2 ke ager kotha mone rakhte hoy na. Onek web framework ei pattern use kore.</li>
+    <li><b>Problem 1:</b> <b>HTTP request bhari</b> hoy (cart barle cookie barbe).</li>
+    <li><b>Problem 2:</b> <b>security risk</b>: attacker cookie <b>bodlate (alter)</b> pare → EC2 ke cookie content <b>validate</b> korte hobe.</li>
+    <li><b>Problem 3:</b> cookie mot <b>4 KB er kom</b> hote hobe → boro data rakha jay na.</li>
+  </ul>
+
+  <h3>Dhap 3: Server session: session_id + ElastiCache (<a class="pg" href="11-slides-p228-267.pdf#page=18" target="_blank" rel="noopener">PDF p. 245</a> <span class="pg-part">(part p. 18)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 3</span>
+    <div class="flow">
+      <span class="b">User<small>cookie te shudhu session_id</small></span><span class="a">→</span>
+      <span class="b">ELB</span><span class="a">→</span>
+      <span class="b">Je kono EC2</span><span class="a">→ <small>store / retrieve session data</small></span>
+      <span class="b hl">ElastiCache<small>alternative: DynamoDB</small></span>
+    </div>
+  </div>
+  <p class="cap">EC2 #1 cart ElastiCache e likhe (key = session_id). EC2 #2 same session_id diye pore niye ase.</p>
+  <ul>
+    <li><b>Ki add:</b> cookie te shudhu choto <b>session_id</b>; cart data thake <b>ElastiCache</b> e.</li>
+    <li>ElastiCache <b>sub-millisecond</b> performance → sob khub druto.</li>
+    <li><b>Alternative:</b> session data <b>DynamoDB</b> te (DynamoDB Section 19 e detail).</li>
+    <li><b>Beshi secure:</b> ElastiCache = <b>source of truth</b>; attacker ElastiCache er data bodlate pare na. Khub common pattern.</li>
+  </ul>
+
+  <h3>Dhap 4: User data RDS e (<a class="pg" href="11-slides-p228-267.pdf#page=19" target="_blank" rel="noopener">PDF p. 246</a> <span class="pg-part">(part p. 19)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 4</span>
+    <div class="flow">
+      <span class="b">EC2 (ASG)</span><span class="a">→ <small>session</small></span>
+      <span class="b">ElastiCache</span>
+      <span class="b">EC2 (ASG)</span><span class="a">→ <small>store / retrieve user data (address, name)</small></span>
+      <span class="b hl">Amazon RDS</span>
+    </div>
+  </div>
+  <p class="cap">RDS = long-term storage. Protita EC2 RDS e kotha bolte pare, tai web tier stateless thake.</p>
+
+  <h3>Dhap 5: Reads scale: RDS Read Replicas (<a class="pg" href="11-slides-p228-267.pdf#page=20" target="_blank" rel="noopener">PDF p. 247</a> <span class="pg-part">(part p. 20)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 5</span>
+    <div class="flow">
+      <span class="b">EC2</span><span class="a">→ <small>writes</small></span>
+      <span class="b hl">RDS Master</span><span class="a">→ <small>replication</small></span>
+      <span class="b">RDS Read Replicas<small>max 15</small></span>
+      <span class="b">EC2</span><span class="a">→ <small>reads</small></span>
+      <span class="b">Read Replica</span>
+    </div>
+  </div>
+  <p class="cap">User beshi <b>read</b> kore (product info dekhe). Write master e, read replica theke.</p>
+  <ul>
+    <li>RDS e <b>15 ta porjonto Read Replica</b> (Section 09 e).</li>
+  </ul>
+
+  <h3>Dhap 5 er alternative: Lazy Loading cache (<a class="pg" href="11-slides-p228-267.pdf#page=21" target="_blank" rel="noopener">PDF p. 248</a> <span class="pg-part">(part p. 21)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Lazy loading</span>
+    <div class="flow">
+      <span class="b">EC2</span><span class="a">→ <small>1. cache e ache?</small></span>
+      <span class="b hl">ElastiCache<small>hit hole sathe sathe uttor</small></span>
+      <span class="b">Miss hole</span><span class="a">→ <small>2. RDS theke read</small></span>
+      <span class="b">RDS</span><span class="a">→ <small>3. cache e likho</small></span>
+      <span class="b">ElastiCache</span>
+    </div>
+  </div>
+  <p class="cap">Ek EC2 cache miss kore RDS theke ene cache e rakhe; onno EC2 pore <b>cache hit</b> pay.</p>
+  <ul>
+    <li><b>Bhalo:</b> RDS e traffic kome, <b>RDS CPU kome</b>, performance bare.</li>
+    <li><b>Kharap:</b> <b>cache maintenance</b> lage, kothin; ar eta <b>application side</b> e code korte hoy.</li>
+  </ul>
+
+  <h3>Dhap 6: Multi-AZ, disaster survive (<a class="pg" href="11-slides-p228-267.pdf#page=22" target="_blank" rel="noopener">PDF p. 249</a> <span class="pg-part">(part p. 22)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Layer</th><th>Multi-AZ kivabe</th></tr>
+    <tr><td>Route 53</td><td><b>Already highly available</b>, kichu korte hoy na</td></tr>
+    <tr><td>ELB</td><td>Multi-AZ</td></tr>
+    <tr><td>ASG</td><td>Multi-AZ</td></tr>
+    <tr><td>RDS</td><td><b>Multi-AZ feature</b>: <b>standby replica</b> disaster e take over kore</td></tr>
+    <tr><td>ElastiCache</td><td>Multi-AZ feature, <b>Redis</b> use korle</td></tr>
+  </table></div>
+  <p>Fol: puro app Multi-AZ; ekta AZ gele-o survive.</p>
+
+  <h3>Dhap 7: Security groups (<a class="pg" href="11-slides-p228-267.pdf#page=23" target="_blank" rel="noopener">PDF p. 250</a> <span class="pg-part">(part p. 23)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">SG chain</span>
+    <div class="flow">
+      <span class="b">Internet</span><span class="a">→ <small>HTTP/HTTPS from 0.0.0.0/0</small></span>
+      <span class="b hl">ALB SG</span><span class="a">→ <small>source = LB SG</small></span>
+      <span class="b">EC2 SG</span><span class="a">→ <small>source = EC2 SG</small></span>
+      <span class="b">ElastiCache SG</span>
+      <span class="b">RDS SG<small>source = EC2 SG</small></span>
+    </div>
+  </div>
+  <p class="cap">Protita layer shudhu tar thik ager layer er security group theke traffic ney = tight security, SG referencing each other.</p>
+
+  <h3>Ei lecture e ki ki dekhlam (<a class="pg" href="11-slides-p228-267.pdf#page=24" target="_blank" rel="noopener">PDF p. 251</a> <span class="pg-part">(part p. 24)</span>)</h3>
+  <p><b>Web app er 3-tier architecture</b>: client tier, web tier, database tier.</p>
+  <ul>
+    <li><b>ELB sticky sessions</b>.</li>
+    <li><b>Web client</b> e cookie rekhe web app stateless.</li>
+    <li><b>ElastiCache</b>: session store (alternative <b>DynamoDB</b>); RDS er data <b>cache</b>; <b>Multi AZ</b>.</li>
+    <li><b>RDS</b>: user data; <b>read replica</b> e read scale; <b>Multi AZ</b> e disaster recovery.</li>
+    <li>Security group gulo ek-ekjon ke reference kore → <b>tight security</b>.</li>
+    <li><b>Trade-off:</b> cost bare (Multi-AZ chaile, read scale chaile beshi dam), kintu jene-shune decision.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>Session rakhar jayga</th><th>Stateless?</th><th>Bhalo</th><th>Kharap</th></tr>
+    <tr><td>EC2 memory + ELB stickiness</td><td>Na</td><td>Easy, ELB feature</td><td>Instance terminate = cart shesh</td></tr>
+    <tr><td>Client cookie (puro cart)</td><td>Ha</td><td>Server e kichu rakhte hoy na</td><td>Bhari request, alter kora jay, validate, &lt; 4 KB</td></tr>
+    <tr><td>session_id + ElastiCache</td><td>Ha</td><td>Sub-ms, secure, source of truth</td><td>Ekta extra service</td></tr>
+    <tr><td>session_id + DynamoDB</td><td>Ha</td><td>ElastiCache er alternative</td><td>-</td></tr>
+    <tr><td>EBS volume</td><td>Na</td><td>-</td><td>Ek instance/AZ e bandha, share hoy na</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "Stateless web tier, session state kothay?" → <b>ElastiCache</b> ba <b>DynamoDB</b> (B1-Q50; key e EC2+S3 deya, kintu thik uttor B+D). Stateless e help <b>kore na</b> → session <b>EBS</b> e (U11-Q2); RDS, ElastiCache, cookie sob help kore. "Read heavy, RDS CPU beshi" → <b>Read Replica</b> ba <b>ElastiCache</b>. Cookie: <b>4 KB</b>, alter hote pare, validate koro. Stickiness = ELB feature, kintu instance gele data jay.</div>
+  <p class="src">Subtitle e "elastic cage cluster" = ElastiCache cluster, "HTP" = HTTP dhorechi.</p>
+</section>
+
+<section class="card" id="l4">
+  <p class="num">Lecture 4 · MyWordPress.com · <a class="pg" href="11-slides-p228-267.pdf#page=25" target="_blank" rel="noopener">PDF p. 252-258</a> <span class="pg-part">(part p. 25-31)</span></p>
+  <h2>Stateful web app: MyWordPress.com (Aurora ar EBS vs EFS)</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Office e protita employee er nijer drawer (EBS) ache. Ekjon file rakhle onno jon tar drawer e khuje pabe na. Tai sobai ekta <b>shared almari</b> (EFS) use kore: je kono floor (AZ) theke, je keu file rakhe ar pore.</p></div>
+  <h3>Requirement (<a class="pg" href="11-slides-p228-267.pdf#page=25" target="_blank" rel="noopener">PDF p. 252</a> <span class="pg-part">(part p. 25)</span>)</h3>
+  <ul>
+    <li>Puro <b>scalable WordPress</b> website (WordPress khub popular; hosted WordPress ache, tobu onek manush AWS e deploy kore).</li>
+    <li>Website ke <b>picture upload</b> access kore thik moto dekhate hobe: WordPress picture kono drive e rakhe, ar <b>sob instance</b> ke oi data access korte hobe.</li>
+    <li>User data ar blog content <b>MySQL database</b> e.</li>
+  </ul>
+
+  <h3>Dhap 1: RDS layer (<a class="pg" href="11-slides-p228-267.pdf#page=26" target="_blank" rel="noopener">PDF p. 253</a> <span class="pg-part">(part p. 26)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 1</span>
+    <div class="flow">
+      <span class="b">Multi-AZ ELB</span><span class="a">→</span>
+      <span class="b">ASG<small>AZ 1, 2, 3</small></span><span class="a">→</span>
+      <span class="b hl">RDS<small>Multi AZ</small></span>
+    </div>
+  </div>
+  <p class="cap">Chena architecture: back end e Multi-AZ RDS (MySQL).</p>
+
+  <h3>Dhap 2: Aurora MySQL diye scale (<a class="pg" href="11-slides-p228-267.pdf#page=27" target="_blank" rel="noopener">PDF p. 254</a> <span class="pg-part">(part p. 27)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 2</span>
+    <div class="flow">
+      <span class="b">ASG<small>AZ 1, 2, 3</small></span><span class="a">→</span>
+      <span class="b hl">Aurora MySQL<small>Multi AZ + Read Replicas</small></span>
+    </div>
+  </div>
+  <p class="cap">RDS layer ke Aurora MySQL diye replace.</p>
+  <ul>
+    <li>Aurora te <b>Multi-AZ</b>, <b>read replicas</b>, chaile <b>global database</b> o (Section 09 e).</li>
+    <li>Instructor er choice: Aurora te <b>kom operations</b>, <b>bhalo scale</b>. Bole "eta must na, ami Aurora pochondo kori".</li>
+  </ul>
+
+  <h3>Dhap 3: Image EBS e, ek instance (<a class="pg" href="11-slides-p228-267.pdf#page=28" target="_blank" rel="noopener">PDF p. 255</a> <span class="pg-part">(part p. 28)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 3: kaj kore</span>
+    <div class="flow">
+      <span class="b">User<small>send image</small></span><span class="a">→</span>
+      <span class="b">Load balancer</span><span class="a">→</span>
+      <span class="b">EC2<small>AZ 1</small></span><span class="a">→</span>
+      <span class="b hl">EBS volume</span>
+    </div>
+  </div>
+  <p class="cap">Ek EC2, ek EBS: image likha ar pora duitai same volume e. Thik ache.</p>
+
+  <h3>Dhap 4: Image EBS e, duita AZ (<a class="pg" href="11-slides-p228-267.pdf#page=29" target="_blank" rel="noopener">PDF p. 256</a> <span class="pg-part">(part p. 29)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 4: problem</span>
+    <div class="flow">
+      <span class="b">Upload</span><span class="a">→</span>
+      <span class="b">EC2 AZ 1<small>EBS 1: image ache</small></span>
+      <span class="b">Read</span><span class="a">→</span>
+      <span class="b">EC2 AZ 2<small>EBS 2: image nai!</small></span>
+    </div>
+  </div>
+  <p class="cap">Protita EC2 er nijer EBS. Upload ek volume e, read onno volume e gele image pawa jay na.</p>
+  <ul>
+    <li>EBS <b>ek instance</b> e bhalo; <b>onek instance / onek AZ</b> e scale korlei problem (EBS ek AZ e bandha, Section 07 e).</li>
+  </ul>
+
+  <h3>Dhap 5: Image EFS e (<a class="pg" href="11-slides-p228-267.pdf#page=30" target="_blank" rel="noopener">PDF p. 257</a> <span class="pg-part">(part p. 30)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dhap 5: solution</span>
+    <div class="flow">
+      <span class="b">EC2 AZ 1</span><span class="a">→</span>
+      <span class="b">ENI (AZ 1)</span><span class="a">→</span>
+      <span class="b hl">EFS<small>shared NFS</small></span>
+      <span class="b">EC2 AZ 2</span><span class="a">→</span>
+      <span class="b">ENI (AZ 2)</span><span class="a">→</span>
+      <span class="b hl">EFS<small>same file system</small></span>
+    </div>
+  </div>
+  <p class="cap">EFS protita AZ e ekta ENI banay. Sob EC2 oi ENI diye same EFS e jay, tai je kono instance image pay.</p>
+  <ul>
+    <li><b>EFS = NFS</b> (Network File System) drive. <b>Storage sob instance er moddhe shared</b>.</li>
+    <li>Website storage onek EC2 te scale korar <b>khub common</b> upay: AZ ar instance sonkhya jai hok, sobai same file pay.</li>
+  </ul>
+
+  <h3>Ei lecture e ki ki dekhlam (<a class="pg" href="11-slides-p228-267.pdf#page=31" target="_blank" rel="noopener">PDF p. 258</a> <span class="pg-part">(part p. 31)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th></th><th>EBS</th><th>EFS</th></tr>
+    <tr><td>Kar jonno</td><td><b>Single instance</b> application</td><td><b>Distributed</b> application (onek instance, multi-AZ)</td></tr>
+    <tr><td>Share</td><td>Na, ek instance er nijer</td><td>Ha, sob instance, sob AZ</td></tr>
+    <tr><td>Cost</td><td><b>Sosta</b></td><td>Beshi dami, kintu ei use case e onek subidha</td></tr>
+  </table></div>
+  <ul>
+    <li><b>Aurora</b>: easy Multi-AZ ar Read Replica.</li>
+    <li>Solution architect er kaj: trade-off, keno korchi, ar cost implication bujha.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "Onek EC2 (100s of Linux) ek shared storage, startup e mount, heavy operation chara" → <b>EFS</b> network drive (U11-Q3); EBS + sync software, EBS snapshot, RDS na. "WordPress, image sob instance dekhbe, multi-AZ" → <b>EFS</b>. "Kom ops, read replica, MySQL" → <b>Aurora MySQL</b>. Fixed monthly dam, preconfigured WordPress, code nai → <b>Lightsail</b> (S3-Q49) <span class="pill">amar jana, course e nai</span>.</div>
+  <p class="src">Subtitle e "loaded answer" = load balancer dhorechi.</p>
+</section>
+
+<section class="card" id="l5">
+  <p class="num">Lecture 5 · Instantiating applications quickly · <a class="pg" href="11-slides-p228-267.pdf#page=32" target="_blank" rel="noopener">PDF p. 259-260</a> <span class="pg-part">(part p. 32-33)</span></p>
+  <h2>Application druto chalu kora: Golden AMI, User Data, snapshot</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Notun laptop protibar shunno theke setup na kore, ekta <b>ready image</b> (Golden AMI) theke clone koro: shob software age theke ache. Shudhu je jinish protibar alada (Wi-Fi password, DB URL), seta boot er somoy script (User Data) diye dao.</p></div>
+  <h3>Problem (<a class="pg" href="11-slides-p228-267.pdf#page=32" target="_blank" rel="noopener">PDF p. 259</a> <span class="pg-part">(part p. 32)</span>)</h3>
+  <ul>
+    <li>Full stack (EC2, EBS, RDS) launch korle shomoy lage: <b>application install</b>, <b>initial (ba recovery) data insert</b>, <b>sob configure</b>, <b>app launch</b>.</li>
+    <li>Cloud er subidha niye eta <b>druto</b> kora jay.</li>
+  </ul>
+  <h3>Solution (<a class="pg" href="11-slides-p228-267.pdf#page=33" target="_blank" rel="noopener">PDF p. 260</a> <span class="pg-part">(part p. 33)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Resource</th><th>Upay</th><th>Ki hoy</th></tr>
+    <tr><td rowspan="3">EC2</td><td><b>Golden AMI</b></td><td>App, OS dependency etc. <b>age theke install</b> kore AMI banao; notun EC2 oi AMI theke. <b>Sobcheye druto</b> start, reinstall lage na</td></tr>
+    <tr><td><b>User Data</b> (bootstrap)</td><td>Prothom start e configure. Install o kora jay, kintu <b>slow</b>, ar protita instance ek-i kaj bar bar kore. Tai shudhu <b>dynamic configuration</b> (DB URL, password etc.)</td></tr>
+    <tr><td><b>Hybrid</b></td><td>Golden AMI + User Data mix; <b>Elastic Beanstalk</b> ei principle use kore (preconfigured AMI + user data)</td></tr>
+    <tr><td>RDS database</td><td><b>Snapshot theke restore</b></td><td>DB te <b>schema ar data ready</b>; boro INSERT statement chalanor cheye onek druto</td></tr>
+    <tr><td>EBS volume</td><td><b>Snapshot theke restore</b></td><td>Disk age theke <b>formatted</b> ar <b>data</b> soho, khali unformatted disk na</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Hybrid boot</span>
+    <div class="flow">
+      <span class="b hl">Golden AMI<small>static: app + dependencies</small></span><span class="a">→ <small>launch</small></span>
+      <span class="b">EC2</span><span class="a">→ <small>boot e</small></span>
+      <span class="b">User Data<small>dynamic: DB URL, password</small></span><span class="a">→</span>
+      <span class="b">Ready</span>
+    </div>
+  </div>
+  <p class="cap">Slow, ek-i rokom install AMI te; protibar alada config User Data te.</p>
+  <div class="exam"><b>Exam:</b> Install e ek ghontar beshi, scale-out e druto chai → <b>Golden AMI</b>; User Data te install korle tao 1 ghonta (U11-Q4). Beanstalk deploy slow, protibar dependency resolve → dependency soho <b>Golden AMI</b> (U11-Q6). 45 min install, static + dynamic file, 2 min e chai → <b>Golden AMI (static) + User Data (dynamic)</b> (S4-Q1); "User Data diye puro install" ba "Beanstalk deployment caching" bhul. "Golden image" = <b>customized AMI</b> (B5-Q39). DB druto data soho → <b>RDS snapshot restore</b>; disk formatted + data → <b>EBS snapshot restore</b>.</div>
+  <p class="src">Subtitle e "EPS databases" = RDS databases (slide onujayi), "easy to user data" = EC2 user data dhorechi.</p>
+</section>
+
+<section class="card" id="l6">
+  <p class="num">Lecture 6 · Beanstalk Overview · <a class="pg" href="11-slides-p228-267.pdf#page=34" target="_blank" rel="noopener">PDF p. 261-267</a> <span class="pg-part">(part p. 34-40)</span></p>
+  <h2>Elastic Beanstalk: shudhu code dao, baki AWS banabe</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Restaurant khulte chao. Nije building, kitchen, gas line, staff setup na kore, ekta <b>food court e stall</b> nao: jayga, light, pani, cleaning ready; tumi shudhu <b>ranna (code)</b> koro. Tobe chaile stall er sob setting nije bodlate paro. Beanstalk oi food court: ELB + ASG + EC2 + RDS er chena architecture <b>tomar hoye</b> banay.</p></div>
+
+  <h3>Typical 3-tier web app (<a class="pg" href="11-slides-p228-267.pdf#page=34" target="_blank" rel="noopener">PDF p. 261</a> <span class="pg-part">(part p. 34)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Web App 3-tier</span>
+    <div class="flow">
+      <span class="b">Route 53</span><span class="a">→</span>
+      <span class="b hl">ELB<small>PUBLIC SUBNET</small></span><span class="a">→</span>
+      <span class="b hl">ASG, EC2 AZ 1-3<small>PRIVATE SUBNET</small></span><span class="a">→</span>
+      <span class="b hl">ElastiCache + RDS<small>DATA SUBNET</small></span>
+    </div>
+  </div>
+  <p class="cap">ElastiCache: session data store/retrieve + cached data. RDS: data read/write. Ei architecture e ei porjonto sob app deploy korechi.</p>
+
+  <h3>Developer er problem (<a class="pg" href="11-slides-p228-267.pdf#page=35" target="_blank" rel="noopener">PDF p. 262</a> <span class="pg-part">(part p. 35)</span>)</h3>
+  <ul>
+    <li>Infrastructure manage, code deploy, sob database / load balancer configure, scaling er chinta.</li>
+    <li>Beshir bhag web app er <b>ek-i architecture</b> (ALB + ASG); protibar notun kore banano kosto.</li>
+    <li>Developer shudhu chay <b>tar code cholbe</b>; somvob hole <b>sob app ar environment e ek-i upaye</b> (bivinno language holeo).</li>
+  </ul>
+
+  <h3>Overview (<a class="pg" href="11-slides-p228-267.pdf#page=36" target="_blank" rel="noopener">PDF p. 263</a> <span class="pg-part">(part p. 36)</span>)</h3>
+  <ul>
+    <li>Beanstalk = AWS e app deploy er <b>developer centric view</b>.</li>
+    <li>Ager sob component <b>reuse</b> kore: <b>EC2, ASG, ELB, RDS</b>, ...</li>
+    <li><b>Managed service</b>: <b>capacity provisioning, load balancing, scaling, application health monitoring, instance configuration</b> nije handle kore.</li>
+    <li>Developer er daitto <b>shudhu application code</b>.</li>
+    <li>Tobu <b>configuration er upor full control</b> thake (sob component ek interface e bundled).</li>
+    <li>App <b>update</b> korar sundor upay ache.</li>
+    <li><b>Beanstalk nije free</b>; underlying instance, ASG, ELB etc. er <b>dam dite hoy</b>.</li>
+  </ul>
+
+  <h3>Components (<a class="pg" href="11-slides-p228-267.pdf#page=37" target="_blank" rel="noopener">PDF p. 264</a> <span class="pg-part">(part p. 37)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Component</th><th>Ki</th></tr>
+    <tr><td><b>Application</b></td><td>Beanstalk component gulor <b>collection</b>: environments, versions, configurations, ...</td></tr>
+    <tr><td><b>Application Version</b></td><td>App code er ekta <b>iteration</b>: version 1, 2, 3 ...</td></tr>
+    <tr><td><b>Environment</b></td><td>Ekta application version chalano <b>AWS resource er collection</b>. Ek environment e <b>ek somoy shudhu ek version</b> (v1 theke v2 te update kora jay)</td></tr>
+    <tr><td><b>Tiers</b></td><td><b>Web Server Environment Tier</b> ar <b>Worker Environment Tier</b></td></tr>
+    <tr><td>Multiple environments</td><td><b>dev, test, prod</b>, ja khushi</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Beanstalk process</span>
+    <div class="flow">
+      <span class="b">Create Application</span><span class="a">→</span>
+      <span class="b">Upload Version</span><span class="a">→</span>
+      <span class="b">Launch Environment</span><span class="a">→</span>
+      <span class="b hl">Manage Environment</span><span class="a">→ <small>update version: notun version upload, deploy</small></span>
+      <span class="b">Upload Version</span>
+    </div>
+  </div>
+  <p class="cap">Iterate korte: notun version upload → oi environment e deploy → app stack update.</p>
+
+  <h3>Supported platforms (<a class="pg" href="11-slides-p228-267.pdf#page=38" target="_blank" rel="noopener">PDF p. 265</a> <span class="pg-part">(part p. 38)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Language / runtime</th><th>Docker / other</th></tr>
+    <tr><td>Go, Java SE, Java with Tomcat, .NET Core on Linux, .NET on Windows Server, Node.js, PHP, Python, Ruby</td><td>Packer Builder, Single Container Docker, Multi-container Docker, Preconfigured Docker</td></tr>
+  </table></div>
+  <p>Idea: Beanstalk e "pretty much anything" deploy kora jay. (Kichu platform ekhon retired: "Course er por ki bodlalo" dekho.)</p>
+
+  <h3>Web Server Tier vs Worker Tier (<a class="pg" href="11-slides-p228-267.pdf#page=39" target="_blank" rel="noopener">PDF p. 266</a> <span class="pg-part">(part p. 39)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Web Environment (myapp.us-east-1.elasticbeanstalk.com)</span>
+    <div class="flow">
+      <span class="b">Clients</span><span class="a">→</span>
+      <span class="b hl">ELB</span><span class="a">→</span>
+      <span class="b">ASG: EC2 (Web Server)<small>AZ 1, AZ 2, SG</small></span>
+    </div>
+  </div>
+  <div class="fig">
+    <span class="lbl">Worker Environment</span>
+    <div class="flow">
+      <span class="b">Web tier / producer</span><span class="a">→ <small>SQS message</small></span>
+      <span class="b hl">SQS Queue</span><span class="a">← <small>pull messages</small></span>
+      <span class="b">ASG: EC2 (Worker)<small>AZ 1, AZ 2</small></span>
+    </div>
+  </div>
+  <p class="cap">Worker e client sorasori EC2 te ashe na; worker SQS theke message tene process kore.</p>
+  <div class="scroll"><table>
+    <tr><th></th><th>Web Server Tier</th><th>Worker Tier</th></tr>
+    <tr><td>Front e</td><td><b>ELB</b></td><td><b>SQS queue</b> (message queue, Section 17 e)</td></tr>
+    <tr><td>EC2 ki kore</td><td>Web server, client request serve</td><td>Worker: queue theke <b>message pull</b> kore process</td></tr>
+    <tr><td>Scale</td><td>ASG (traffic)</td><td><b>SQS message er sonkhya</b> onujayi (beshi message = beshi EC2)</td></tr>
+    <tr><td>Use</td><td>Website, API</td><td>Background task / queue processing</td></tr>
+  </table></div>
+  <p>Duita ekshathe: <b>web environment</b> worker environment er SQS queue te <b>message push</b> korte pare.</p>
+
+  <h3>Deployment modes (<a class="pg" href="11-slides-p228-267.pdf#page=40" target="_blank" rel="noopener">PDF p. 267</a> <span class="pg-part">(part p. 40)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Single Instance: great for dev</span>
+    <div class="flow">
+      <span class="b hl">Elastic IP</span><span class="a">→</span>
+      <span class="b">EC2 Instance<small>AZ 1</small></span><span class="a">→</span>
+      <span class="b">RDS Master</span>
+    </div>
+  </div>
+  <div class="fig">
+    <span class="lbl">High Availability with Load Balancer: great for prod</span>
+    <div class="flow">
+      <span class="b hl">ALB</span><span class="a">→</span>
+      <span class="b">ASG: EC2 AZ 1 + EC2 AZ 2</span><span class="a">→</span>
+      <span class="b">RDS Master (AZ 1) + RDS Standby (AZ 2)</span>
+    </div>
+  </div>
+  <div class="scroll"><table>
+    <tr><th></th><th>Single Instance</th><th>High Availability with Load Balancer</th></tr>
+    <tr><td>Kar jonno</td><td><b>Development</b></td><td><b>Production</b></td></tr>
+    <tr><td>Front</td><td>1 EC2 + <b>Elastic IP</b> (LB nai)</td><td><b>ALB</b></td></tr>
+    <tr><td>EC2</td><td>Ekta</td><td>Onek, <b>ASG</b> manage kore, <b>multi-AZ</b></td></tr>
+    <tr><td>RDS (optional)</td><td>RDS Master</td><td><b>Multi-AZ</b>: master + standby</td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b> "Developer shudhu code upload kore, capacity/LB/scaling/health AWS dekhbe" → <b>Elastic Beanstalk</b> (B3-Q23 Node.js, B5-Q16), CloudFormation (IaC, nijer template) na. Docker e MEAN stack web app easily port → <b>Beanstalk</b> (B6-Q48); ELB/SNS/SQS app host kore na. Underlying EC2 te access + nije package maintenance → <b>EC2</b> ar <b>Beanstalk</b> (B1-Q55); RDS, DynamoDB na. Minimal cost dev → <b>Single Instance mode</b> (U11-Q5). Beanstalk free, resource er dam. Queue theke background job → <b>Worker tier</b> (SQS, message count e scale). Ek environment = ek version.</div>
+</section>
+
+<section class="card" id="l7">
+  <p class="num">Lecture 7 (hands-on) · Beanstalk Hands On · <a class="pg" href="11-slides-p228-267.pdf#page=36" target="_blank" rel="noopener">PDF p. 263-267</a> <span class="pg-part">(part p. 36-40)</span></p>
+  <h2>Beanstalk hands-on: ki banay, kothay dekha jay</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Console e kichu form fill korlei Beanstalk pichone <b>CloudFormation stack</b> banay, ar sei stack EC2, ASG, Elastic IP, Security Group sob toiri kore. Shesh e ekta <b>domain name</b> pao.</p></div>
+  <h3>Create korar dhap (exam-relevant setting)</h3>
+  <ol>
+    <li>Environment tier: <b>Web server environment</b> (website). Queue theke task process korle <b>Worker environment</b>.</li>
+    <li>Application name: <code>MyApplication</code>. Environment name: <code>MyApplication-dev</code> (development environment).</li>
+    <li><b>Domain name</b> auto-generate hoy; eta diye web server e jabe.</li>
+    <li>Platform: <b>managed</b>, <b>Node.js</b>, default options.</li>
+    <li>Application code: <b>Sample application</b> (nijer code upload o kora jay).</li>
+    <li><b>Presets</b>: <b>Single instance</b> (free tier eligible), <b>High availability</b> (load balancer soho), ba <b>Custom configuration</b>. Demo: Single instance.</li>
+    <li><b>Service access (IAM)</b>: notun <b>service role</b> → <code>elasticbeanstalk-service-role</code>. <b>EC2 instance profile</b> pre-fill na hole IAM e role banao: service = EC2, policy filter "beanstalk" → <b>WebTier</b>, <b>WorkerTier</b>, <b>MulticontainerDocker</b>; nam <code>aws-elasticbeanstalk-ec2-role</code>.</li>
+    <li>Networking, database, instance traffic, scaling optional → <b>Skip to review</b> → <b>Submit</b>.</li>
+  </ol>
+
+  <h3>Pichone ki holo</h3>
+  <div class="fig">
+    <span class="lbl">Beanstalk → CloudFormation</span>
+    <div class="flow">
+      <span class="b">Beanstalk environment</span><span class="a">→</span>
+      <span class="b hl">CloudFormation stack<small>CREATE_IN_PROGRESS → CREATE_COMPLETE</small></span><span class="a">→</span>
+      <span class="b">ASG, LaunchConfiguration, SecurityGroup, Elastic IP, WaitCondition</span><span class="a">→</span>
+      <span class="b">EC2 t3.micro<small>public IP = EIP</small></span>
+    </div>
+  </div>
+  <p class="cap">Beanstalk er Events tab er event gulo ashe CloudFormation theke.</p>
+  <ul>
+    <li>CloudFormation console e Beanstalk er stack; <b>Resources</b> e ASG, LaunchConfiguration, Elastic IP etc.; Template ke <b>Application Composer</b> e visual dekha jay (CloudFormation Section 30 e detail).</li>
+    <li>EC2 console: ekta <b>t3.micro</b> running, public IP ache; <b>Elastic IPs</b> e EIP allocated oi instance e.</li>
+    <li><b>Auto Scaling groups</b>: ekta ASG banano, sei <b>ekta EC2</b> manage kore = "single instance" mode.</li>
+    <li>Health <b>Ok</b>; domain name open korle "Congratulations, you are now running Elastic Beanstalk".</li>
+  </ul>
+
+  <h3>Console option</h3>
+  <div class="scroll"><table>
+    <tr><th>Option</th><th>Ki</th></tr>
+    <tr><td>Upload and deploy</td><td>Notun version upload → automatically EC2 te deploy</td></tr>
+    <tr><td>Health</td><td>Sob instance er health check info</td></tr>
+    <tr><td>Logs</td><td>App er log</td></tr>
+    <tr><td>Monitoring / Alarms</td><td>App er metrics, alarm</td></tr>
+    <tr><td>Managed updates</td><td>Beanstalk environment update</td></tr>
+    <tr><td>Configuration</td><td>Puro environment er config dekha, bodlano, apply</td></tr>
+    <tr><td>Application → environments</td><td><code>MyApplication-dev</code> er pashe <code>MyApplication-prod</code> o banano jay</td></tr>
+  </table></div>
+
+  <h3>Beanstalk vs CloudFormation</h3>
+  <ul>
+    <li><b>Beanstalk</b>: <b>code ar code er environment</b> ghire.</li>
+    <li><b>CloudFormation</b>: <b>jekono infrastructure</b> er stack arbitrarily deploy (IaC). Beanstalk nijei pichone CloudFormation use kore.</li>
+    <li>Cleanup: application → <b>Actions → Delete application</b>.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Beanstalk application version ar server log kothay rakhe → <b>S3</b> (Beanstalk nijer bucket <code>elasticbeanstalk-region-account-id</code> banay) (B6-Q62) <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/AWSHowTo.S3.html">Using Elastic Beanstalk with Amazon S3</a>. Beanstalk banano EC2 normal EC2: console e dekha jay, access kora jay (B1-Q55). Single instance mode = ASG + 1 EC2 + Elastic IP, LB nai.</div>
+  <p class="src">Subtitle e "Elastic Bean Stack" = Beanstalk er CloudFormation stack, "AutoScanning group" = Auto Scaling group dhorechi.</p>
+</section>
+
+<section class="card" id="pairs">
+  <h2>Confusing pairs</h2>
+  <div class="scroll"><table class="pairs">
+    <tr><th>Pair</th><th>Parthokko</th><th>Kokhon konta</th></tr>
+    <tr><td>Elastic IP vs Route 53 A record vs ELB + Alias</td><td>EIP: ek instance er static IP, limit 5/region. A record: hostname → IP list, TTL porjonto cache. ELB + Alias: ek nam, LB er IP bodlaleo kaj kore, health check</td><td>Ek instance PoC → EIP. Instance add/remove, no downtime → ELB + Alias</td></tr>
+    <tr><td>A record vs Alias (LB er jonno)</td><td>A record e fixed IP lage; LB er IP sob somoy bodlay</td><td>Route 53 → ELB = <b>Alias</b></td></tr>
+    <tr><td>Vertical vs horizontal (WhatIsTheTime)</td><td>Vertical: t2.micro → m5.large, stop/start e downtime. Horizontal: instance sonkhya barano</td><td>No downtime scaling → horizontal + ELB + ASG</td></tr>
+    <tr><td>Reserved vs On-Demand vs Spot (ASG e)</td><td>Reserved: sob somoy chola min capacity. On-Demand: temporary scale-out. Spot: aro sosta, terminate hote pare</td><td>ASG min = 2 always → Reserve 2</td></tr>
+    <tr><td>ELB stickiness vs session in ElastiCache</td><td>Stickiness: user ek instance e bandha; instance gele session shesh. ElastiCache: session shared, je kono instance pore</td><td>Truly stateless web tier → ElastiCache / DynamoDB</td></tr>
+    <tr><td>Cookie e puro cart vs cookie e session_id</td><td>Puro cart: bhari, alter kora jay, &lt; 4 KB. session_id: choto; data server side (ElastiCache) e, secure</td><td>Secure + boro session → session_id + ElastiCache</td></tr>
+    <tr><td>ElastiCache vs DynamoDB (session)</td><td>Duitai session store. ElastiCache: sub-ms in-memory; DynamoDB: course e alternative</td><td>Question e duitai thakle "Choose 2" → duitai</td></tr>
+    <tr><td>Read Replica vs Lazy loading cache</td><td>Read replica: RDS level, replication, max 15. Lazy loading: app code cache check kore, miss e RDS theke ene cache e rakhe; cache maintenance lage</td><td>Duitai read scale ar RDS load komay</td></tr>
+    <tr><td>RDS Multi-AZ vs Read Replica</td><td>Multi-AZ: standby, disaster e take over (HA). Read replica: read scale</td><td>"Survive disaster" → Multi-AZ. "Read beshi" → replica</td></tr>
+    <tr><td>EBS vs EFS (WordPress)</td><td>EBS: ek instance, ek AZ, sosta. EFS: NFS, sob instance + sob AZ share, ENI proti AZ, beshi dami</td><td>Single instance → EBS. Distributed / shared upload → EFS</td></tr>
+    <tr><td>Golden AMI vs User Data</td><td>Golden AMI: age install, sobcheye druto boot. User Data: boot e script, install korle slow; dynamic config er jonno</td><td>Long install → Golden AMI. DB URL/password → User Data. Duitai → hybrid (Beanstalk)</td></tr>
+    <tr><td>Beanstalk vs CloudFormation</td><td>Beanstalk: developer-centric, code + environment, web app pattern. CloudFormation: jekono infra er IaC stack</td><td>"Developer code deploy, AWS baki handle" → Beanstalk</td></tr>
+    <tr><td>Web tier vs Worker tier</td><td>Web: ELB → EC2, client request. Worker: SQS → EC2 pull, message count e scale</td><td>Background job / queue → Worker</td></tr>
+    <tr><td>Single instance vs High availability mode</td><td>Single: 1 EC2 + EIP, dev, sosta. HA: ALB + ASG multi-AZ (+ RDS Multi-AZ), prod</td><td>Minimal cost → Single instance. Prod → HA</td></tr>
+    <tr><td>Application vs Version vs Environment</td><td>Application: sob er collection. Version: code iteration. Environment: resource je ek version chalay</td><td>Ek environment e ek somoy ek version</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="changes">
+  <h2>Course er por ki bodlalo</h2>
+  <ul>
+    <li><b>Beanstalk platform list choto hoyeche:</b> 18 July 2022 e sob <b>Amazon Linux AMI (AL1)</b> platform branch retired, tar moddhe <b>Multicontainer Docker</b> ar <b>Preconfigured Docker (GlassFish)</b>. Custom platform (Packer diye) o retired; docs bole "Elastic Beanstalk doesn't support custom platforms". Ekhon list: <b>Docker (+ ECS-based Docker), Go, Java SE, Tomcat, .NET Core on Linux, .NET on Windows Server, Node.js, PHP, Python, Ruby</b>. Exam er jonno idea same: Beanstalk e prai sob language ar Docker cholbe. <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/relnotes/release-2022-07-18-linux-al1-retire.html">AL1 retirement</a>, <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/custom-platforms.html">Custom platforms (retired)</a>, <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/platforms/platforms-supported.html">Supported platforms</a></li>
+    <li><b>Amazon Linux 2 Beanstalk platform retired (6 Aug 2026):</b> sob AL2 branch retired; <b>AL2023</b> e migrate korte bole. <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/platforms/platforms-retiring.html">Platforms scheduled for retirement</a></li>
+    <li><b>Launch Configuration → Launch Template:</b> hands-on e CloudFormation resource e <b>LaunchConfiguration</b> dekha gechilo. Beanstalk docs: 1 Oct 2024 theke notun account e EC2 Auto Scaling launch configuration support kore na; environment ke <b>launch template</b> e migrate korte recommend kore (Section 08 er change er sathe mile). <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environments-cfg-autoscaling-launch-templates.html">Migrating Beanstalk to launch templates</a></li>
+    <li><b>Application Composer → Infrastructure Composer (Oct 2024):</b> hands-on e template visual dekhar tool er nam bodleche. <a href="https://aws.amazon.com/about-aws/whats-new/2024/10/aws-application-composer-infrastructure-composer/">What's New</a></li>
+    <li><b>OpsWorks (B5-Q16 er distractor):</b> AWS OpsWorks Stacks ekhon AWS er "full shutdown" service list e (2024). <a href="https://docs.aws.amazon.com/general/latest/gr/full_shutdown_services.html">Services in full shutdown</a></li>
+    <li>Elastic IP er public IPv4 charge (1 Feb 2024) ar ElastiCache <b>Valkey</b> engine ager note e ache (Section 06, Section 09); ei section er logic e kono bodol nai.</li>
+  </ul>
+</section>
+
+<section class="card exam-box" id="exam">
+  <h2>Exam e ki mone rakhbo</h2>
+  <h3>WhatIsTheTime.com (stateless)</h3>
+  <ul>
+    <li>Journey: EC2 + <b>EIP</b> → vertical (<b>downtime</b>) → horizontal + onek EIP (limit <b>5/region</b>) → Route 53 <b>A record</b> (TTL 1 h) → <b>ELB + health check + Alias</b> → <b>ASG</b> → <b>Multi-AZ</b> → <b>Reserved</b> min capacity.</li>
+    <li>A record + TTL + instance remove = user <b>dead IP</b> e atke thake. LB er IP bodlay → Route 53 <b>Alias</b>, A record na.</li>
+    <li>EC2 private, ELB public; EC2 SG source = <b>LB SG</b>.</li>
+    <li>ASG min 2 (HA), aro cost komao → <b>2 ta Reserved Instance</b>; min 1/0 ba ALB bad diye EIP bhul (U11-Q1).</li>
+    <li>Scale-out instance: On-Demand; aro sosta Spot (terminate risk).</li>
+  </ul>
+  <h3>MyClothes.com (stateful)</h3>
+  <ul>
+    <li>Cart harano → <b>ELB stickiness</b> (instance gele harabe) → <b>cookie</b> (stateless, bhari, alter, validate, <b>&lt; 4 KB</b>) → <b>session_id + ElastiCache</b> (sub-ms, secure; alternative <b>DynamoDB</b>).</li>
+    <li>Stateless session store → <b>ElastiCache + DynamoDB</b> (B1-Q50: key EC2+S3 bhul, thik B+D). Session <b>EBS</b> e = stateless e help kore na (U11-Q2).</li>
+    <li>User data (address, name) → <b>RDS</b>. Read beshi → <b>Read Replica</b> (max <b>15</b>) ba <b>lazy loading ElastiCache</b> (RDS CPU kome; cache maintenance, app side).</li>
+    <li>Disaster: Route 53 already HA; ELB, ASG multi-AZ; <b>RDS Multi-AZ standby</b>; <b>ElastiCache Multi-AZ (Redis)</b>.</li>
+    <li>SG chain: ALB 0.0.0.0/0 HTTP/HTTPS → EC2 from LB SG → ElastiCache ar RDS from EC2 SG.</li>
+    <li>3-tier: public subnet (ELB), private subnet (EC2/ASG), data subnet (ElastiCache, RDS).</li>
+  </ul>
+  <h3>MyWordPress.com</h3>
+  <ul>
+    <li>MySQL, kom ops, Multi-AZ + read replica → <b>Aurora MySQL</b>.</li>
+    <li>Upload image sob instance/AZ e chai → <b>EFS</b> (NFS, ENI proti AZ). EBS shudhu single instance; EBS sosta, EFS dami.</li>
+    <li>100s Linux EC2, shared software update, startup e mount → <b>EFS</b> (U11-Q3).</li>
+    <li>Fixed monthly price, preconfigured WordPress, code chara → <b>Lightsail</b>, Beanstalk na (S3-Q49) <span class="pill">amar jana, course e nai</span>.</li>
+  </ul>
+  <h3>Instantiating quickly</h3>
+  <ul>
+    <li>Long install, scale-out druto → <b>Golden AMI</b>; User Data te install o slow (U11-Q4).</li>
+    <li>Beanstalk e protibar dependency resolve → <b>Golden AMI</b> dependency soho (U11-Q6).</li>
+    <li>Static install + dynamic file, &lt; 2 min → <b>Golden AMI (static) + User Data (dynamic)</b> (S4-Q1). "Beanstalk deployment caching" course e nai, distractor.</li>
+    <li>Golden image = <b>customized AMI</b> (B5-Q39).</li>
+    <li>RDS: snapshot restore = schema + data ready. EBS: snapshot restore = formatted + data.</li>
+  </ul>
+  <h3>Elastic Beanstalk</h3>
+  <ul>
+    <li>"Developer shudhu code, AWS capacity/LB/scaling/health" → <b>Beanstalk</b> (B3-Q23, B5-Q16); CloudFormation = IaC, OpsWorks = config management (ekhon shutdown).</li>
+    <li>Docker/MEAN web app easily AWS e → <b>Beanstalk</b> (B6-Q48).</li>
+    <li>Underlying infra access + package maintenance → <b>EC2 + Beanstalk</b> (B1-Q55); RDS, DynamoDB na.</li>
+    <li>Beanstalk <b>free</b>, resource er dam. Full config control thake.</li>
+    <li>Application → Version → Environment; ek environment e <b>ek version</b>; dev/test/prod alada environment.</li>
+    <li>Web tier (ELB + ASG) vs <b>Worker tier</b> (SQS pull, <b>message count e scale</b>; web tier SQS e push korte pare).</li>
+    <li>Minimal cost / dev → <b>Single Instance</b> (1 EC2 + EIP) (U11-Q5). Prod → <b>High Availability</b> (ALB + ASG multi-AZ, RDS master + standby).</li>
+    <li>App version + log → <b>S3</b> bucket (B6-Q62). Pichone <b>CloudFormation</b> stack banay.</li>
+  </ul>
+</section>
+
+<section class="card qz-part" id="part-a"><div class="qz-part-head"><h2>Part A: Udemy course quiz (6)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">The instructor's own section quiz: warm-up, direct questions. Answer first, then press Check.</p><article class="qz" id="U11-Q1" data-qid="U11-Q1" data-n="1"><div class="qz-top"><span class="qz-num">A1</span><span class="qz-id">U11-Q1</span><span class="pill">Udemy quiz · sec 11 · Q1</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Your website <strong>TriangleSunglasses.com</strong> is hosted on a fleet of EC2 instances managed by an Auto Scaling Group and fronted by an Application Load Balancer. Your ASG has been configured to scale on-demand based on the traffic going to your website. To reduce costs, you have configured the ASG to scale based on the traffic going through the ALB. To make the solution highly available, you have updated your ASG and set the minimum capacity to 2. How can you further reduce the costs while respecting the requirements?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U11-Q1" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Remove the ALB and use an Elastic IP instead</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U11-Q1" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Reserve two EC2 instances</p></span></label></li><li data-i="2"><label><input type="radio" name="U11-Q1" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Reduce the minimum capacity to 1</p></span></label></li><li data-i="3"><label><input type="radio" name="U11-Q1" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Reduce the minimum capacity to 0</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>ASG er <b>minimum capacity 2</b> mane ei 2 ta instance <b>sob somoy</b> cholbe (protita AZ e ekta, HA er jonno). Je instance sara bochor cholbe, segulo <b>Reserved Instance</b> korle On-Demand er cheye onek sosta (<a class="pg" href="11-slides-p228-267.pdf#page=12" target="_blank" rel="noopener">PDF p. 239</a> <span class="pg-part">(part p. 12)</span>, WhatIsTheTime.com er shesh dhap).</p><p>Scale-out e je extra instance ashe, segulo temporary, On-Demand e thakuk. Ei bhabe cost kome, kintu HA ar scaling duita-i thake.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> ALB soriye Elastic IP dile ek IP ek instance e bandha; load balancing, health check ar ASG er scaling er subidha harabe. HA ar scaling duita-i bhange.</li><li><b>C.</b> Min 1 korle ek AZ e ekta instance thakbe; oi instance ba AZ gele app down. Requirement (highly available) bhange.</li><li><b>D.</b> Min 0 korle traffic kom thakle kono instance-i thakbe na, app downtime pabe. HA to durer kotha.</li></ul><p><b>Keyword:</b> <b>minimum capacity 2</b> (sob somoy chole) + <b>further reduce costs</b> + HA rakhte hobe → oi 2 ta <b>Reserve</b> koro</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> This is not efficient for scaling purposes.</p><p><b>B:</b> This is the way to save further costs as we will run 2 EC2 instances no matter what.</p><p><b>C:</b> Our solution won't be highly available anymore.</p><p><b>D:</b> Our solution will experience downtime.</p></details></div></article><article class="qz" id="U11-Q2" data-qid="U11-Q2" data-n="1"><div class="qz-top"><span class="qz-num">A2</span><span class="qz-id">U11-Q2</span><span class="pill">Udemy quiz · sec 11 · Q2</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Which of the following will <strong>NOT</strong> help us while designing a <strong>STATELESS</strong> application tier?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U11-Q2" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Store session data in Amazon RDS</p></span></label></li><li data-i="1"><label><input type="radio" name="U11-Q2" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Store session data in Amazon ElastiCache</p></span></label></li><li data-i="2"><label><input type="radio" name="U11-Q2" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Store session data in the client HTTP cookies</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U11-Q2" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Store session data on EBS volumes</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p>Prosno ta <b>NOT</b> chay. Stateless tier mane je kono EC2 je kono request serve korte parbe, tai session data <b>shared</b> jaygay ba client er kache rakhte hobe.</p><p><b>EBS volume</b> ek AZ e bandha ar sadharonoto ek somoy ek instance e attach thake. Session EBS e rakhle shudhu oi instance session jane; onno instance pay na. Tai eta stateless design e help kore na (MyClothes.com, <a class="pg" href="11-slides-p228-267.pdf#page=18" target="_blank" rel="noopener">PDF p. 245</a> <span class="pg-part">(part p. 18)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> RDS e session rakhle sob EC2 same database theke porte pare, tai web tier stateless thake. Eta help kore, NOT er uttor na.</li><li><b>B.</b> ElastiCache course er main session store: cookie te session_id, data ElastiCache e, je kono EC2 pore (<a class="pg" href="11-slides-p228-267.pdf#page=18" target="_blank" rel="noopener">PDF p. 245</a> <span class="pg-part">(part p. 18)</span>). Help kore.</li><li><b>C.</b> Client cookie te session rakhle EC2 ke kichu mone rakhte hoy na, tai stateless (<a class="pg" href="11-slides-p228-267.pdf#page=17" target="_blank" rel="noopener">PDF p. 244</a> <span class="pg-part">(part p. 17)</span>). Help kore (cookie 4 KB limit, validate lage).</li></ul><p><b>Keyword:</b> <b>STATELESS</b> + <b>NOT help</b> → session <b>EBS</b> e (ek instance/AZ e bandha, share hoy na)</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> This will help as the data can be accessed from multiple EC2 instances.</p><p><b>B:</b> This will help as the data can be accessed from multiple EC2 instances.</p><p><b>C:</b> This will help as the clients send their session data so that our EC2 instances don't need to remember/store session data.</p><p><b>D:</b> EBS volumes are created in a specific AZ and can only be attached to one EC2 instance at a time.</p></details></div></article><article class="qz" id="U11-Q3" data-qid="U11-Q3" data-n="1"><div class="qz-top"><span class="qz-num">A3</span><span class="qz-id">U11-Q3</span><span class="pill">Udemy quiz · sec 11 · Q3</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You want to install software updates on 100s of Linux EC2 instances that you manage. You want to store these updates on shared storage which should be dynamically loaded on the EC2 instances and shouldn't require heavy operations. What do you suggest?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U11-Q3" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Store the software updates on EBS and sync them using data replication software from one master in each AZ</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U11-Q3" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Store the software updates on EFS and mount EFS as a network drive at startup</p></span></label></li><li data-i="2"><label><input type="radio" name="U11-Q3" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Package the software updates as an EBS snapshot and create EBS volumes for each new software update</p></span></label></li><li data-i="3"><label><input type="radio" name="U11-Q3" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Store the software updates on Amazon RDS</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>EFS</b> holo managed <b>NFS network file system</b>. Onek (100s) Linux EC2 eki file system ekshathe mount korte pare, onek AZ theke-o (<a class="pg" href="../07.%20EC2%20Instance%20Storage/07-slides-p094-118.pdf#page=20" target="_blank" rel="noopener">PDF p. 113</a> <span class="pg-part">(Section 07 part p. 20)</span>, MyWordPress.com <a class="pg" href="11-slides-p228-267.pdf#page=30" target="_blank" rel="noopener">PDF p. 257</a> <span class="pg-part">(part p. 30)</span>).</p><p>Update gulo EFS e rakho, protita instance startup e EFS mount kore update pore nibe. Kono sync ba copy er jhamela nai = kom operation.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> EBS share hoy na, tai protita AZ e master ar replication software lagbe. Eta native AWS feature na, ar heavy operation.</li><li><b>C.</b> Protita update er jonno snapshot theke notun EBS volume banano kaj korbe, kintu onek manual kaj; ar EBS share hoy na. Heavy operation.</li><li><b>D.</b> RDS relational data er jonno, software update er moto boro binary file rakhar ba mount korar jonno na.</li></ul><p><b>Keyword:</b> <b>100s of Linux EC2</b> + <b>shared storage</b> + <b>no heavy operations</b> → <b>EFS</b> mount</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> This requires too many operations and is not a native AWS feature.</p><p><b>B:</b> EFS is a network file system (NFS) that allows you to mount the same file system to 100s of EC2 instances. Storing software updates on an EFS allows each EC2 instance to access them.</p><p><b>C:</b> This requires too many operations although it would work.</p><p><b>D:</b> RDS is meant to store relational data, not big binary files.</p></details></div></article><article class="qz" id="U11-Q4" data-qid="U11-Q4" data-n="1"><div class="qz-top"><span class="qz-num">A4</span><span class="qz-id">U11-Q4</span><span class="pill">Udemy quiz · sec 11 · Q4</span><span class="qz-badge"></span></div><div class="qz-stem"><p>As a Solutions Architect, you're planning to migrate a complex ERP software suite to AWS Cloud. You're planning to host the software on a set of Linux EC2 instances managed by an Auto Scaling Group. The software traditionally takes over an hour to set up on a Linux machine. How do you recommend you speed up the installation process when there's a scale-out event?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U11-Q4" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Use a Golden AMI</p></span></label></li><li data-i="1"><label><input type="radio" name="U11-Q4" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Bootstrap using EC2 User Data</p></span></label></li><li data-i="2"><label><input type="radio" name="U11-Q4" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Store the application in Amazon RDS</p></span></label></li><li data-i="3"><label><input type="radio" name="U11-Q4" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Retrieve the application setup files from EFS</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Golden AMI</b> = software age theke install ar configure kore banano AMI. ASG scale-out e notun EC2 oi AMI theke boot kore, tai 1 ghontar install ar lage na; sobcheye druto start (<a class="pg" href="11-slides-p228-267.pdf#page=33" target="_blank" rel="noopener">PDF p. 260</a> <span class="pg-part">(part p. 33)</span>).</p><p>Course er niyom: slow, ek-i rokom install AMI te; shudhu dynamic config User Data te.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> User Data install ta automate kore, kintu install protita notun instance e boot er somoy ghote, tai ekhono 1 ghonta lagbe.</li><li><b>C.</b> RDS relational data rakhe, application install rakhe na ba chalay na.</li><li><b>D.</b> Setup file EFS theke anle download hoyto shohoj, kintu install ar configure korte ekhono 1 ghonta lagbe.</li></ul><p><b>Keyword:</b> <b>over an hour to set up</b> + <b>speed up</b> scale-out → <b>Golden AMI</b></p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Golden AMI is an image that contains all your software installed and configured so that future EC2 instances can boot up quickly from that AMI.</p><p><b>B:</b> EC2 User Data allows you to automate the installation steps, but the installation would still take one hour to complete.</p><p><b>C:</b> RDS is used to store relational data, not applications.</p><p><b>D:</b> Retrieving application setup files from EFS won't help speed up the installation and configuration time.</p></details></div></article><article class="qz" id="U11-Q5" data-qid="U11-Q5" data-n="1"><div class="qz-top"><span class="qz-num">A5</span><span class="qz-id">U11-Q5</span><span class="pill">Udemy quiz · sec 11 · Q5</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You're developing an application and would like to deploy it to Elastic Beanstalk with minimal cost. You should run it in ..................</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U11-Q5" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Single Instance Mode</p></span></label></li><li data-i="1"><label><input type="radio" name="U11-Q5" value="1"><span class="qz-l">B</span><span class="qz-o"><p>High Availability Mode</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Beanstalk er <b>Single Instance</b> mode e ekta EC2 + Elastic IP (load balancer nai), optional RDS. Course bole eta <b>dev er jonno great</b> (<a class="pg" href="11-slides-p228-267.pdf#page=40" target="_blank" rel="noopener">PDF p. 267</a> <span class="pg-part">(part p. 40)</span>).</p><p>Development stage + <b>minimal cost</b> → Single Instance. Beanstalk nije free, tumi shudhu resource er dam dao, tai kom resource = kom dam.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> High Availability mode ALB + ASG e multi-AZ e onek EC2 (ar RDS Multi-AZ) banay. Production er jonno bhalo, kintu load balancer ar beshi instance er jonno beshi dam.</li></ul><p><b>Keyword:</b> <b>developing</b> + <b>minimal cost</b> → <b>Single Instance</b> mode</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> The question mentions that you're still in the development stage and you want to reduce costs. Single Instance Mode will create one EC2 instance and one Elastic IP.</p><p><b>B:</b> This will create one or more EC2 instances and one Elastic Load Balancer (this costs more).</p></details></div></article><article class="qz" id="U11-Q6" data-qid="U11-Q6" data-n="1"><div class="qz-top"><span class="qz-num">A6</span><span class="qz-id">U11-Q6</span><span class="pill">Udemy quiz · sec 11 · Q6</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You're deploying your application to an Elastic Beanstalk environment but you notice that the deployment process is painfully slow. After reviewing the logs, you found that your dependencies are resolved on each EC2 instance each time you deploy. How can you speed up the deployment process with minimal impact?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U11-Q6" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Remove some dependencies in your code</p></span></label></li><li data-i="1"><label><input type="radio" name="U11-Q6" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Place the dependencies in Amazon EFS</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U11-Q6" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Create a Golden AMI that contains the dependencies and use that image to launch the EC2 instances</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Problem: protita deploy e protita EC2 te dependency <b>resolve/download</b> hocche. Dependency gulo <b>Golden AMI</b> te age theke install kore rakho, Beanstalk ke oi custom AMI diye EC2 launch korte dao. Tahole deploy e shudhu code jay, dependency step bad (<a class="pg" href="11-slides-p228-267.pdf#page=33" target="_blank" rel="noopener">PDF p. 260</a> <span class="pg-part">(part p. 33)</span>).</p><p>Code e kono change lage na = <b>minimal impact</b>. Beanstalk nijei Golden AMI + User Data hybrid principle use kore.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Dependency soriye dile app bhenge jete pare; code change lage. Minimal impact na.</li><li><b>B.</b> EFS e rakhle file shared hoy, kintu dependency resolve/install er step protita instance e ekhono chole; ar network drive theke load slow hote pare.</li></ul><p><b>Keyword:</b> <b>dependencies resolved on each EC2 each deploy</b> + <b>minimal impact</b> → dependency soho <b>Golden AMI</b></p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>C:</b> Golden AMI is an image that contains all your software, dependencies, and configurations, so that future EC2 instances can boot up quickly from that AMI.</p></details></div></article></section>
+<section class="card qz-part" id="part-b"><div class="qz-part-head"><h2>Part B: Practice exam questions (9)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">Everything these questions need is covered up to this section (in your study order). Answer first, ~2 min per question. Then read every explanation, also for the ones you got right.</p><article class="qz" id="B5-Q39" data-qid="B5-Q39" data-n="1"><div class="qz-top"><span class="qz-num">B1</span><span class="qz-id">B5-Q39</span><span class="pill">Bonso set 5 · Q39</span><span class="pill">AMI</span><span class="qz-badge"></span></div><div class="qz-stem">In Amazon Machine Image (AMI), what does a 'Golden Image' mean?</div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="B5-Q39" value="0"><span class="qz-l">A</span><span class="qz-o">It is basically a customized AMI.</span></label></li><li data-i="1"><label><input type="radio" name="B5-Q39" value="1"><span class="qz-l">B</span><span class="qz-o">It is a standard AMI which is available in AWS.</span></label></li><li data-i="2"><label><input type="radio" name="B5-Q39" value="2"><span class="qz-l">C</span><span class="qz-o">This is a type of AMI that cannot be updated.</span></label></li><li data-i="3"><label><input type="radio" name="B5-Q39" value="3"><span class="qz-l">D</span><span class="qz-o">This refers to a type of AMI that are in Enterprise Edition.</span></label></li><li data-i="4"><label><input type="radio" name="B5-Q39" value="4"><span class="qz-l">E</span><span class="qz-o">These are Amazon Machine Images that are offered in AWS Marketplace.</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Golden AMI</b> = <b>customized AMI</b>: tumi nije latest patch, software, config, agent install kore AMI banao (<a class="pg" href="../07.%20EC2%20Instance%20Storage/07-slides-p094-118.pdf#page=8" target="_blank" rel="noopener">PDF p. 101</a> <span class="pg-part">(Section 07 part p. 8)</span>: AMI are a customization of an EC2 instance; <a class="pg" href="11-slides-p228-267.pdf#page=33" target="_blank" rel="noopener">PDF p. 260</a> <span class="pg-part">(part p. 33)</span>: Golden AMI).</p><p>Er theke notun instance druto boot kore, karon sob age theke ready.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Standard AMI AWS er deya public AMI (ex: Amazon Linux). Golden AMI tomar nijer customized image, standard na.</li><li><b>C.</b> Golden AMI update kora jay ar korte-i hoy: notun vulnerability ashle notun patch diye abar golden AMI banate hoy.</li><li><b>D.</b> 'Enterprise Edition' namer kono AMI type nai; distractor.</li><li><b>E.</b> Marketplace AMI onno keu banay (ar bikri kore). Golden AMI tomar nijer customized AMI.</li></ul><p><b>Keyword:</b> <b>Golden Image</b> → <b>customized AMI</b> (patch + software age theke)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>A golden AMI is simply a customized Amazon Machine Image that contains the latest security patches, software, configuration and software agents. You can build and deploy golden AMIs in your environment, but the AMIs quickly become dated as new vulnerabilities are discovered.</p><p>References:</p><p><a href="https://aws.amazon.com/blogs/security/how-to-set-up-continuous-golden-ami-vulnerability-assessments-with-amazon-inspector/" target="_blank" rel="noopener">https://aws.amazon.com/blogs/security/how-to-set-up-continuous-golden-ami-vulnerability-assessments-with-amazon-inspector/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/blogs/security/how-to-set-up-continuous-golden-ami-vulnerability-assessments-with-amazon-inspector/" target="_blank" rel="noopener">https://aws.amazon.com/blogs/security/how-to-set-up-continuous-golden-ami-vulnerability-assessments-with-amazon-inspector/</a></p></div></article><article class="qz" id="S4-Q1" data-qid="S4-Q1" data-n="2"><div class="qz-top"><span class="qz-num">B2</span><span class="qz-id">S4-Q1</span><span class="pill">Stephane set 4 · Q1</span><span class="pill">Design Resilient Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Your company is deploying a website running on Elastic Beanstalk. That website takes over 45 minutes to install and contains both static and dynamic files that must be generated during the installation process. As a Solutions Architect, you would like to bring the time to create a new Instance in your Elastic Beanstalk deployment to being less than 2 minutes. What do you recommend? (select two)</p></div><p class="qz-need">Choose 2 answers</p><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="checkbox" name="S4-Q1" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Use EC2 User Data to customize the dynamic installation parts at boot time</p></span></label></li><li data-i="1" data-c="1"><label><input type="checkbox" name="S4-Q1" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Create a Golden AMI with the static installation components already setup</p></span></label></li><li data-i="2"><label><input type="checkbox" name="S4-Q1" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Store the installation files in S3 so they can be quickly retrieved</p></span></label></li><li data-i="3"><label><input type="checkbox" name="S4-Q1" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Use EC2 User Data to install the application at boot time</p></span></label></li><li data-i="4"><label><input type="checkbox" name="S4-Q1" value="4"><span class="qz-l">E</span><span class="qz-o"><p>Use Elastic Beanstalk deployment caching feature</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A, B. Why it is right</h4><div class="qz-bn"><p>Course er <b>hybrid</b> pattern: Golden AMI + User Data; Elastic Beanstalk ei principle use kore (<a class="pg" href="11-slides-p228-267.pdf#page=33" target="_blank" rel="noopener">PDF p. 260</a> <span class="pg-part">(part p. 33)</span>).</p><ul><li><b>Golden AMI</b>: 45 min er static install age theke AMI te; boot e reinstall lage na.</li><li><b>User Data</b>: boot er somoy shudhu choto <b>dynamic</b> part (generate korte hoy emon file) toiri kore.</li></ul><p>Duita mile 2 minute er moddhe instance ready. Beanstalk e custom AMI dewa jay.</p></div><h4>Why the other options are wrong</h4><ul><li><b>C.</b> S3 theke file druto download hote pare, kintu install ekhono boot e chole, 45 min lagbe.</li><li><b>D.</b> Puro install User Data te dile protita instance e boot e 45 min install chole; 2 min target hobe na.</li><li><b>E.</b> Beanstalk e 'deployment caching' namer kono feature nai; distractor.</li></ul><p><b>Keyword:</b> <b>static + dynamic</b> files + 45 min theke <b>&lt; 2 min</b> → <b>Golden AMI</b> (static) + <b>User Data</b> (dynamic)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>When you create an AWS Elastic Beanstalk environment, you can specify an Amazon Machine Image (AMI) to use instead of the standard Elastic Beanstalk AMI included in your platform version. A custom AMI can improve provisioning times when instances are launched in your environment if you need to install a lot of software that isn't included in the standard AMIs. Read more here: https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.customenv.html</p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.customenv.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.customenv.html</a></p><p class="qz-rel">Related: <a href="../07.%20EC2%20Instance%20Storage/07-notes.html">Section 07 EC2 Instance Storage</a></p></div></article><article class="qz" id="B6-Q62" data-qid="B6-Q62" data-n="1"><div class="qz-top"><span class="qz-num">B3</span><span class="qz-id">B6-Q62</span><span class="pill">Bonso set 6 · Q62</span><span class="pill">Elastic Beanstalk</span><span class="qz-badge"></span></div><div class="qz-stem">In AWS beanstalk, where does it store the application files and server log files?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B6-Q62" value="0"><span class="qz-l">A</span><span class="qz-o">Amazon Redshift</span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="B6-Q62" value="1"><span class="qz-l">B</span><span class="qz-o">AWS S3</span></label></li><li data-i="2"><label><input type="radio" name="B6-Q62" value="2"><span class="qz-l">C</span><span class="qz-o">AWS Cloudtrail</span></label></li><li data-i="3"><label><input type="radio" name="B6-Q62" value="3"><span class="qz-l">D</span><span class="qz-o">AWS DynamoDB</span></label></li><li data-i="4"><label><input type="radio" name="B6-Q62" value="4"><span class="qz-l">E</span><span class="qz-o">Amazon RDS</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>Beanstalk tomar account e ekta <b>S3 bucket</b> banay. Upload kora <b>application version</b> (code) S3 e copy hoy, ar chaile <b>server log</b> o S3 e rotate kore pathano jay (AWS Beanstalk docs: Using Elastic Beanstalk with Amazon S3).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Redshift analytics data warehouse; app file ba log rakhe na.</li><li><b>C.</b> CloudTrail AWS API call er audit record rakhe, app er server log na.</li><li><b>D.</b> DynamoDB NoSQL database; app er code file ba log file rakhe na.</li><li><b>E.</b> RDS relational database; app bundle ba log file er jayga na.</li></ul><p><b>Keyword:</b> Beanstalk <b>application files + server logs</b> → <b>S3</b></p><details class="qz-orig"><summary>Original explanation (English)</summary><p>AWS Elastic Beanstalk stores your application files and optionally, server log files in Amazon S3. If you are using the AWS Management Console, the AWS Toolkit for Visual Studio, or AWS Toolkit for Eclipse, an Amazon S3 bucket will be created in your account and the files you upload will be automatically copied from your local client to Amazon S3. Optionally, you may configure Elastic Beanstalk to copy your server log files every hour to Amazon S3. You do this by editing the environment configuration settings.</p><p>References:</p><p><a href="https://aws.amazon.com/elasticbeanstalk/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/elasticbeanstalk/faqs/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/elasticbeanstalk/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/elasticbeanstalk/faqs/</a></p><p class="qz-rel">Related: <a href="../12.%20Amazon%20S3%20Introduction/12-notes.html">Section 12 Amazon S3 Introduction</a></p></div></article><article class="qz" id="B1-Q55" data-qid="B1-Q55" data-n="2"><div class="qz-top"><span class="qz-num">B4</span><span class="qz-id">B1-Q55</span><span class="pill">Bonso set 1 · Q55</span><span class="pill">Elastic Beanstalk</span><span class="qz-badge"></span></div><div class="qz-stem">Your team is planning to migrate a web application from your on-premise infrastructure to AWS cloud. Your team lead wants to ensure that even though the application will be in AWS, you can still manage the service and implement ongoing maintenance of packages. <br><br>Which of the following AWS services can you use, which allows access to its underlying infrastructure? (Choose 2)</div><p class="qz-need">Choose 2 answers</p><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="checkbox" name="B1-Q55" value="0"><span class="qz-l">A</span><span class="qz-o">Elastic Beanstalk</span></label></li><li data-i="1" data-c="1"><label><input type="checkbox" name="B1-Q55" value="1"><span class="qz-l">B</span><span class="qz-o">EC2</span></label></li><li data-i="2"><label><input type="checkbox" name="B1-Q55" value="2"><span class="qz-l">C</span><span class="qz-o">DynamoDB</span></label></li><li data-i="3"><label><input type="checkbox" name="B1-Q55" value="3"><span class="qz-l">D</span><span class="qz-o">RDS</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A, B. Why it is right</h4><div class="qz-bn"><ul><li><b>EC2</b>: puro OS tomar; SSH kore package install, patch, maintenance sob nije korte paro.</li><li><b>Elastic Beanstalk</b>: pichone normal EC2 instance banay (ASG, ELB soho). Oi EC2 gulo console e dekha jay, access kora jay, regular instance er moto manage kora jay (<a class="pg" href="11-slides-p228-267.pdf#page=36" target="_blank" rel="noopener">PDF p. 263</a> <span class="pg-part">(part p. 36)</span>: configuration er upor full control).</li></ul><p>Tai duita-i <b>underlying infrastructure</b> e access dey.</p></div><h4>Why the other options are wrong</h4><ul><li><b>C.</b> DynamoDB fully managed serverless NoSQL; kono server ba OS e access nai.</li><li><b>D.</b> RDS managed database; AWS OS patch kore, tumi underlying instance e SSH korte paro na (course: RDS e SSH nai).</li></ul><p><b>Keyword:</b> <b>access to underlying infrastructure</b> + <b>maintenance of packages</b> → <b>EC2 + Elastic Beanstalk</b></p><details class="qz-orig"><summary>Original explanation (English)</summary><p>You can connect and manage the EC2 instance so Option 2 is correct. You can install new packages and perform changes on the underlying infrastructure of the EC2 instance such as Enhanced Networking, Encryption, and so forth.</p><p>Elastic Beanstalk is a service that allows you to quickly deploy and manage your application in AWS. What it does is it automatically creates EC2 instances for your application, which you can also manage just like a regular instance. Hence, Option 1 is correct.</p><p>Resources:</p><p><a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html</a></p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html</a></p><p class="qz-rel">Related: <a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html">Section 19 Serverless Overview</a></p></div></article><article class="qz" id="B3-Q23" data-qid="B3-Q23" data-n="1"><div class="qz-top"><span class="qz-num">B5</span><span class="qz-id">B3-Q23</span><span class="pill">Bonso set 3 · Q23</span><span class="pill">Elastic Beanstalk</span><span class="qz-badge"></span></div><div class="qz-stem">Your company is planning to deploy their new web application written in NodeJS to AWS. Which AWS service will you use to easily deploy the new web application?</div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="B3-Q23" value="0"><span class="qz-l">A</span><span class="qz-o">AWS Elastic Beanstalk</span></label></li><li data-i="1"><label><input type="radio" name="B3-Q23" value="1"><span class="qz-l">B</span><span class="qz-o">AWS Cloudfront</span></label></li><li data-i="2"><label><input type="radio" name="B3-Q23" value="2"><span class="qz-l">C</span><span class="qz-o">AWS Cloudformation</span></label></li><li data-i="3"><label><input type="radio" name="B3-Q23" value="3"><span class="qz-l">D</span><span class="qz-o">AWS DevOps</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Elastic Beanstalk</b> developer-centric service: shudhu code upload koro, capacity, load balancing, scaling, health monitoring Beanstalk nije kore (<a class="pg" href="11-slides-p228-267.pdf#page=36" target="_blank" rel="noopener">PDF p. 263</a> <span class="pg-part">(part p. 36)</span>). <b>Node.js</b> Beanstalk er supported platform (<a class="pg" href="11-slides-p228-267.pdf#page=38" target="_blank" rel="noopener">PDF p. 265</a> <span class="pg-part">(part p. 38)</span>).</p><p>'Easily deploy' web app → Beanstalk.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> CloudFront CDN: edge location e content cache kore. App deploy ba run kore na.</li><li><b>C.</b> CloudFormation infrastructure as code: template likhe je kono resource banao. Kaj kore, kintu Beanstalk er moto 'shudhu code dao' easy na.</li><li><b>D.</b> 'AWS DevOps' namer kono deploy service nai; distractor.</li></ul><p><b>Keyword:</b> <b>NodeJS web application</b> + <b>easily deploy</b> → <b>Elastic Beanstalk</b></p><details class="qz-orig"><summary>Original explanation (English)</summary><p>With Elastic Beanstalk, you can quickly deploy and manage applications in the AWS Cloud without worrying about the infrastructure that runs those applications. AWS Elastic Beanstalk reduces management complexity without restricting choice or control. You simply upload your application, and Elastic Beanstalk automatically handles the details of capacity provisioning, load balancing, scaling, and application health monitoring.</p><p>References:&nbsp;</p><p><a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html</a></p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html</a></p><p class="qz-rel">Related: <a href="../30.%20Other%20Services/30-notes.html">Section 30 Other Services</a></p></div></article><article class="qz" id="B5-Q16" data-qid="B5-Q16" data-n="1"><div class="qz-top"><span class="qz-num">B6</span><span class="qz-id">B5-Q16</span><span class="pill">Bonso set 5 · Q16</span><span class="pill">Elastic Beanstalk</span><span class="qz-badge"></span></div><div class="qz-stem">Which AWS service allows developers to quickly deploy and manage their applications on the cloud?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B5-Q16" value="0"><span class="qz-l">A</span><span class="qz-o">CloudFormation</span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="B5-Q16" value="1"><span class="qz-l">B</span><span class="qz-o">Elastic Beanstalk</span></label></li><li data-i="2"><label><input type="radio" name="B5-Q16" value="2"><span class="qz-l">C</span><span class="qz-o">Opswork</span></label></li><li data-i="3"><label><input type="radio" name="B5-Q16" value="3"><span class="qz-l">D</span><span class="qz-o">Container service</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p><b>Elastic Beanstalk</b> = developer der jonno app deploy ar manage er easy upay. Developer shudhu code dey; capacity provisioning, load balancing, auto-scaling, health monitoring Beanstalk handle kore (<a class="pg" href="11-slides-p228-267.pdf#page=36" target="_blank" rel="noopener">PDF p. 263</a> <span class="pg-part">(part p. 36)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> CloudFormation infrastructure as code; tumi template e resource define koro. Developer-centric 'code upload, baki AWS' service na.</li><li><b>C.</b> OpsWorks configuration management (Chef/Puppet) chilo, app deploy er easy upay na. Ar AWS OpsWorks ekhon full shutdown service list e.</li><li><b>D.</b> Container service (ECS) container chalay, kintu cluster, task definition nije setup korte hoy. 'Quickly deploy and manage apps' er classic uttor Beanstalk.</li></ul><p><b>Keyword:</b> <b>developers</b> + <b>quickly deploy and manage applications</b> → <b>Elastic Beanstalk</b></p><details class="qz-orig"><summary>Original explanation (English)</summary><p>AWS Elastic Beanstalk makes it easier for developers to quickly deploy and manage applications in the AWS Cloud. Developers simply upload their application and Elastic Beanstalk automatically handles the deployment details of capacity provisioning, load balancing, auto-scaling, and application health monitoring.</p><p>References:&nbsp;</p><p><a href="https://aws.amazon.com/elasticbeanstalk/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/elasticbeanstalk/faqs/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/elasticbeanstalk/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/elasticbeanstalk/faqs/</a></p><p class="qz-rel">Related: <a href="../30.%20Other%20Services/30-notes.html">Section 30 Other Services</a></p></div></article><article class="qz" id="B6-Q48" data-qid="B6-Q48" data-n="1"><div class="qz-top"><span class="qz-num">B7</span><span class="qz-id">B6-Q48</span><span class="pill">Bonso set 6 · Q48</span><span class="pill">Elastic Beanstalk</span><span class="qz-badge"></span></div><div class="qz-stem">Your company has developed a financial analytics web application hosted in a Docker container using MEAN (MongoDB, Express.js, AngularJS, and Node.js) stack. You want to easily port that web application to AWS Cloud. <br><br>Which of the following services can be used to fulfill this requirement?</div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="B6-Q48" value="0"><span class="qz-l">A</span><span class="qz-o">AWS Elastic Load Balancer</span></label></li><li data-i="1"><label><input type="radio" name="B6-Q48" value="1"><span class="qz-l">B</span><span class="qz-o">AWS SNS</span></label></li><li data-i="2"><label><input type="radio" name="B6-Q48" value="2"><span class="qz-l">C</span><span class="qz-o">AWS SQS</span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="B6-Q48" value="3"><span class="qz-l">D</span><span class="qz-o">AWS Elastic Beanstalk</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p><b>Elastic Beanstalk</b> <b>Docker</b> platform support kore (<a class="pg" href="11-slides-p228-267.pdf#page=38" target="_blank" rel="noopener">PDF p. 265</a> <span class="pg-part">(part p. 38)</span>). Docker container e app (MEAN stack) thakle Beanstalk e deploy koro; capacity, load balancing, scaling, health monitoring Beanstalk handle kore.</p><p>Tai 'easily port' web app → Beanstalk.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> ELB shudhu traffic onek instance e bhag kore; app host ba run kore na.</li><li><b>B.</b> SNS pub/sub notification service; web app host kore na.</li><li><b>C.</b> SQS message queue; app decouple kore, kintu web app host kore na.</li></ul><p><b>Keyword:</b> <b>web application in Docker container</b> + <b>easily port</b> → <b>Elastic Beanstalk</b> (Docker platform)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Elastic Beanstalk supports the deployment of web applications from Docker containers. With Docker containers, you can define your own runtime environment. You can choose your own platform, programming language, and any application dependencies (such as package managers or tools), that aren't supported by other platforms. Docker containers are self-contained and include all the configuration information and software your web application requires to run.</p><p>By using Docker with Elastic Beanstalk, you have an infrastructure that automatically handles the details of capacity provisioning, load balancing, scaling, and application health monitoring. You can manage your web application in an environment that supports the range of services that are integrated with Elastic Beanstalk, including but not limited to VPC, RDS, and IAM.</p><p>References:</p><p><a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_docker.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_docker.html</a></p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_docker.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_docker.html</a></p><p class="qz-rel">Related: <a href="../18.%20Containers%20on%20AWS%20ECS%2C%20Fargate%2C%20ECR%20%26%20EKS/18-notes.html">Section 18 Containers: ECS, Fargate, ECR, EKS</a></p></div></article><article class="qz" id="B1-Q50" data-qid="B1-Q50" data-n="2" data-alt="1,3"><div class="qz-top"><span class="qz-num">B8</span><span class="qz-id">B1-Q50</span><span class="pill">Bonso set 1 · Q50</span><span class="pill bad">⚠ key doubtful</span><span class="qz-badge"></span></div><div class="qz-stem">You are working for a large financial company as an IT consultant. Your role is to help their development team to build a highly available web application using stateless web servers. In this scenario, which AWS services are suitable for storing session state data? (Choose 2)</div><p class="qz-need">Choose 2 answers</p><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="checkbox" name="B1-Q50" value="0"><span class="qz-l">A</span><span class="qz-o">EC2</span></label></li><li data-i="1"><label><input type="checkbox" name="B1-Q50" value="1"><span class="qz-l">B</span><span class="qz-o">DynamoDB</span></label></li><li data-i="2" data-c="1"><label><input type="checkbox" name="B1-Q50" value="2"><span class="qz-l">C</span><span class="qz-o">S3</span></label></li><li data-i="3"><label><input type="checkbox" name="B1-Q50" value="3"><span class="qz-l">D</span><span class="qz-o">ElastiCache</span></label></li><li data-i="4"><label><input type="checkbox" name="B1-Q50" value="4"><span class="qz-l">E</span><span class="qz-o">Glacier</span></label></li><li data-i="5"><label><input type="checkbox" name="B1-Q50" value="5"><span class="qz-l">F</span><span class="qz-o">Redshift</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note bad"><b>⚠ Answer key doubtful.</b> Key says: A, C; verified answer: B, D. Key e EC2 ar S3 deya, kintu original explanation nijei bole session state rakhar jonno DynamoDB ar ElastiCache. Course (MyClothes.com) o ElastiCache ba DynamoDB bole. Tai thik answer B ar D. Link: https://aws.amazon.com/caching/session-management/</div><h4>Correct: A, C. Why it is right</h4><div class="qz-bn"><p>Key bole <b>A (EC2) ar C (S3)</b>, kintu eta bhul key. Original explanation nijei bole session state rakho <b>DynamoDB ar ElastiCache</b> e. Tai thik answer <b>B ar D</b>.</p><ul><li><b>ElastiCache</b>: course er MyClothes.com e cookie te shudhu session_id, session data ElastiCache e; sub-millisecond, je kono EC2 pore (<a class="pg" href="11-slides-p228-267.pdf#page=18" target="_blank" rel="noopener">PDF p. 245</a> <span class="pg-part">(part p. 18)</span>).</li><li><b>DynamoDB</b>: course e session store er alternative hisebe deya (<a class="pg" href="11-slides-p228-267.pdf#page=18" target="_blank" rel="noopener">PDF p. 245</a> <span class="pg-part">(part p. 18)</span>); fast key-value store.</li></ul><p>Stateless web server mane session EC2 te thakbe na; EC2 te rakhle instance gele session jay. Exam e ei prosno ashle B + D mone rakho.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Asole eta thik answer: DynamoDB fast key-value store, course e session data er alternative store (<a class="pg" href="11-slides-p228-267.pdf#page=18" target="_blank" rel="noopener">PDF p. 245</a> <span class="pg-part">(part p. 18)</span>). Key e bhul kore EC2 deya.</li><li><b>D.</b> Asole eta thik answer: ElastiCache course er main session store, sub-millisecond, sob EC2 share kore (<a class="pg" href="11-slides-p228-267.pdf#page=18" target="_blank" rel="noopener">PDF p. 245</a> <span class="pg-part">(part p. 18)</span>). Key e bhul kore S3 deya.</li><li><b>E.</b> Glacier archive er jonno; retrieval minute-ghonta lage, session er moto bar bar read-write data er jonno na.</li><li><b>F.</b> Redshift analytics data warehouse (OLAP); choto, fast session read-write er jonno na.</li></ul><p><b>Keyword:</b> <b>stateless web servers</b> + <b>session state</b> → <b>ElastiCache + DynamoDB</b> (key e EC2 + S3, sheta bhul)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>You can store session state data on both DynamoDB and ElastiCache. These AWS services provide high performance storage of key-value pairs which can be used to build a highly available web application.</p>&nbsp;<p>References:&nbsp;</p><p><a href="https://aws.amazon.com/caching/database-caching/" target="_blank" rel="noopener">https://aws.amazon.com/caching/database-caching/</a></p><p><a href="https://aws.amazon.com/caching/session-management/" target="_blank" rel="noopener">https://aws.amazon.com/caching/session-management/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/caching/database-caching/" target="_blank" rel="noopener">https://aws.amazon.com/caching/database-caching/</a> · <a href="https://aws.amazon.com/caching/session-management/" target="_blank" rel="noopener">https://aws.amazon.com/caching/session-management/</a></p><p class="qz-rel">Related: <a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html">Section 19 Serverless Overview</a></p></div></article><article class="qz" id="S3-Q49" data-qid="S3-Q49" data-n="1"><div class="qz-top"><span class="qz-num">B9</span><span class="qz-id">S3-Q49</span><span class="pill">Stephane set 3 · Q49</span><span class="pill">Design Cost-Optimized Architectures</span><span class="pill acc">not in course</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A fashion blogger is looking at starting a Wordpress blog on AWS Cloud. He estimates the blog traffic to be a few thousand users a month, wants the infrastructure fee to be a fixed price per month and the Wordpress blog should be offered as a preconfigured deployment option as he does not want to deal with code. Which AWS service is the BEST fit for the given use-case?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="S3-Q49" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Lightsail</p></span></label></li><li data-i="1"><label><input type="radio" name="S3-Q49" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Lambda</p></span></label></li><li data-i="2"><label><input type="radio" name="S3-Q49" value="2"><span class="qz-l">C</span><span class="qz-o"><p>EC2 instance</p></span></label></li><li data-i="3"><label><input type="radio" name="S3-Q49" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Elastic Beanstalk</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>Not in the course:</b> Amazon Lightsail course e nai.</div><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>Amazon Lightsail</b> (course e nai): easy cloud platform, <b>fixed monthly plan</b>, ar <b>preconfigured one-click</b> app, WordPress soho. Code nije lekha ba manage lage na.</p><p>Choto traffic (kichu hajar user/mash) + fixed dam + WordPress ready → Lightsail.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Lambda code run kore (pay per compute time); WordPress blog Lambda function e host kora jay na.</li><li><b>C.</b> EC2 er dam variable, ar WordPress nije install o manage korte hobe. Fixed price, preconfigured na.</li><li><b>D.</b> Beanstalk e nijer code upload korte hoy; blogger code deal korte chay na. Dam-o fixed na (resource er dam).</li></ul><p><b>Keyword:</b> <b>fixed price per month</b> + <b>preconfigured WordPress</b> + no code → <b>Lightsail</b></p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:
+"Lightsail"</p>
+
+<p>Lightsail is an easy-to-use cloud platform that offers you everything needed to build an application or website, plus a cost-effective, monthly plan. Lightsail offers several preconfigured, one-click-to-launch operating systems, development stacks, and web applications, including Linux, Windows OS, and WordPress.
+Therefore, this is the best fit for the given use-case.</p>
+
+<p>Incorrect options:
+"Lambda" - AWS Lambda lets you run code without provisioning or managing servers. You pay only for the compute time you consume. You cannot set up a Wordpress blog on a Lambda function.</p>
+
+<p>"EC2 instance" - An EC2 instance is a virtual server in Amazon's Elastic Compute Cloud (EC2) for running applications on the Amazon Web Services (AWS) infrastructure. EC2 instances come with variable pricing. Additionally, the blog would need to be installed manually on the underlying virtual server. Therefore, this option is not correct.</p>
+
+<p>"Elastic Beanstalk" - AWS Elastic Beanstalk is an easy-to-use service for deploying and scaling web applications and services developed with Java, .NET, PHP, Node.js, Python, Ruby, Go, and Docker on familiar servers such as Apache, Nginx, Passenger, and IIS.
+You can simply upload your code and Elastic Beanstalk automatically handles the deployment, from capacity provisioning, load balancing, auto-scaling to application health monitoring. As the blogger does not want to deal with code, this option is not correct.</p>
+
+<p>Reference:
+https://aws.amazon.com/lightsail/</p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/lightsail/" target="_blank" rel="noopener">https://aws.amazon.com/lightsail/</a></p><p class="qz-rel">Related: <a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html">Section 19 Serverless Overview</a></p></div></article><details class="rel-list"><summary>Related questions in other sections (5)</summary><ul><li><a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html#S4-Q60">S4-Q60</a> · Section 19 Serverless Overview · SQS: As a buffer to database writes</li><li><a href="../30.%20Other%20Services/30-notes.html#B2-Q2">B2-Q2</a> · Section 30 Other Services · OpsWorks: Chef</li><li><a href="../30.%20Other%20Services/30-notes.html#B4-Q43">B4-Q43</a> · Section 30 Other Services · CloudFormation: Benefits</li><li><a href="../30.%20Other%20Services/30-notes.html#B4-Q65">B4-Q65</a> · Section 30 Other Services · CloudFormation: Overview</li><li><a href="../19.%20Serverless%20Overviews%20from%20a%20Solution%20Architect%20Perspective/19-notes.html#B5-Q34">B5-Q34</a> · Section 19 Serverless Overview · RDS: Overview</li></ul></details></section>
+</main>
+</body>
+</html>

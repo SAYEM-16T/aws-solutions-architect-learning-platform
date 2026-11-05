@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Section 18 Containers: ECS, Fargate, ECR, EKS</title>
+<link rel="stylesheet" href="../assets/saa.css">
+<script src="../assets/saa.js"></script>
+<script src="../assets/quiz.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <nav><a href="../index.html">← Index</a> <a href="../mistakes.html">Mistakes</a> <a href="../16.%20AWS%20Storage%20Extras/16-notes.html">‹ Sec 16</a> <a href="../17.%20Decoupling%20applications%20SQS%2C%20SNS%2C%20Kinesis%2C%20Active%20MQ/17-notes.html">Sec 17 ›</a></nav>
+    <button class="btn" type="button" data-theme-toggle>Theme</button>
+  </div>
+  <header>
+    <p class="eyebrow">Section 18 · study order #18</p>
+    <h1>Containers: ECS, Fargate, ECR, EKS</h1>
+    <p class="sub">Slides: <a href="18-slides-p416-440.pdf" target="_blank" rel="noopener">18-slides-p416-440.pdf</a> (full PDF p416-440). Page reference <code>PDF p. 359 (part p. 8)</code> = page 359 of the full slide PDF = page 8 of this section's PDF part; click to open the PDF at that page.</p>
+    <p class="sub">Loop: note → PDF part → exam points → Part A → Part B → mistakes again after 2 days.</p>
+  </header>
+  <nav class="card toc noprint" aria-label="On this page">
+    <h2>On this page</h2>
+    <ol><li><a href="#overview">Containers on AWS: Docker app ke AWS e kothay, kivabe chalabo</a></li><li><a href="#l1">Docker: container ki, image kothay thake, VM theke parthokko</a></li><li><a href="#l2">Amazon ECS: launch type, IAM role, load balancer, data volume</a></li><li><a href="#l4">ECS cluster banano: infrastructure option ar capacity provider</a></li><li><a href="#l5">Task definition → Service → ALB: Fargate e nginx chalano</a></li><li><a href="#l6">ECS Service Auto Scaling (task) vs EC2 scaling (Capacity Provider)</a></li><li><a href="#l7">ECS architecture: EventBridge, schedule, SQS, stopped task alert</a></li><li><a href="#l8">ECS clean up: service, cluster, task definition</a></li><li><a href="#l9">Amazon ECR: AWS er Docker image registry</a></li><li><a href="#l10">Amazon EKS: AWS e managed Kubernetes</a></li><li><a href="#l12">AWS App Runner: code ba image dao, URL pao</a></li><li><a href="#l14">AWS App2Container (A2C): purono Java / .NET app container e</a></li><li><a href="#pairs">Confusing pairs</a></li><li><a href="#changes">Course er por ki bodlalo</a></li><li><a href="#exam">Exam e ki mone rakhbo</a></li><li><a href="#part-a">Part A: Udemy quiz (8)</a></li><li><a href="#part-b">Part B: Practice (4)</a></li></ol>
+  </nav>
+<section class="card" id="overview">
+  <p class="num">Age ek nojore</p>
+  <h2>Containers on AWS: Docker app ke AWS e kothay, kivabe chalabo</h2>
+  <p>Tumi DevOps e Docker chalao, tai concept notun na. Exam e prosno gulo mainly <b>"kon service / kon option?"</b> type:</p>
+  <ul>
+    <li><b>Container kothay chalabo?</b> ECS (AWS er nijer), EKS (Kubernetes), App Runner (shob kichu managed).</li>
+    <li><b>Server manage korbo ki na?</b> EC2 launch type (tumi EC2 manage koro) vs <b>Fargate</b> (serverless). Exam Fargate pochondo kore.</li>
+    <li><b>Permission, load balancer, storage, scaling</b>: Task Role vs Instance Profile, ALB, EFS, Service Auto Scaling vs Capacity Provider.</li>
+    <li><b>Image kothay rakhbo?</b> ECR. <b>Purono Java/.NET app container e?</b> App2Container.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>Service / topic</th><th>Ek line e</th></tr>
+    <tr><td>Docker</td><td>App ke container e package kora; jekono OS/machine e same bhabe chale. Keyword: <b>microservices, lift-and-shift</b></td></tr>
+    <tr><td>Amazon ECS</td><td>AWS er nijer container orchestration: <b>ECS Cluster</b> e <b>ECS Task</b> chalay (Docker)</td></tr>
+    <tr><td>ECS EC2 launch type</td><td>Tumi EC2 instance provision + maintain koro; protita instance e <b>ECS Agent</b></td></tr>
+    <tr><td>ECS Fargate launch type</td><td><b>Serverless</b>: EC2 nai, shudhu task definition (CPU/RAM); scale = task barao</td></tr>
+    <tr><td>EC2 Instance Profile vs ECS Task Role</td><td>Instance Profile = <b>ECS agent</b> er (ECR pull, logs). Task Role = <b>container/app</b> er (S3, DynamoDB call), task proti alada</td></tr>
+    <tr><td>ECS + Load Balancer</td><td><b>ALB</b> most use case (Fargate o); NLB high throughput / PrivateLink; CLB not recommended (Fargate na)</td></tr>
+    <tr><td>ECS Data Volume</td><td><b>EFS</b>: EC2 + Fargate duitai, multi-AZ shared persistent storage. Slide e notun: <b>S3 Files</b> (Fargate / Managed Instances)</td></tr>
+    <tr><td>ECS Service Auto Scaling</td><td><b>Application Auto Scaling</b> diye task count: CPU, Memory, ALB Request Count Per Target</td></tr>
+    <tr><td>ECS Cluster Capacity Provider</td><td>EC2 launch type e task er jonno jayga na thakle <b>ASG ke auto scale</b> kore (ASG scaling er cheye smart)</td></tr>
+    <tr><td>ECS solution architectures</td><td>EventBridge rule / schedule → ECS task; SQS queue → ECS service auto scaling; task stopped → EventBridge → SNS</td></tr>
+    <tr><td>Amazon ECR</td><td>Docker image <b>store</b> (private + public gallery), S3 backed, IAM protected, vulnerability scan</td></tr>
+    <tr><td>Amazon EKS</td><td><b>Managed Kubernetes</b>: on-prem/onno cloud e Kubernetes already → EKS. Node: Managed Node Group, Self-Managed, Fargate</td></tr>
+    <tr><td>EKS Data Volumes</td><td>StorageClass + <b>CSI driver</b>: EBS, <b>EFS (Fargate e shudhu eta)</b>, FSx Lustre, FSx NetApp ONTAP</td></tr>
+    <tr><td>AWS App Runner</td><td>Source code / container image dao → URL pao. Infra janar dorkar nai. Notun customer der jonno bondho (niche dekho)</td></tr>
+    <tr><td>AWS App2Container (A2C)</td><td>CLI: <b>Java / .NET</b> web app ke code change chara container e (lift-and-shift) → ECR → ECS / EKS / App Runner</td></tr>
+  </table></div>
+  <p class="sub">Note: App Runner ar App2Container ekhon <b>notun customer der jonno bondho</b> ("Course er por ki bodlalo"). Exam/course er answer tobu egulo-i.</p>
+</section>
+
+<section class="card" id="l1">
+  <p class="num">Lecture 1 · Docker Introduction · <a class="pg" href="18-slides-p416-440.pdf#page=2" target="_blank" rel="noopener">PDF p. 417-422</a> <span class="pg-part">(part p. 2-7)</span></p>
+  <h2>Docker: container ki, image kothay thake, VM theke parthokko</h2>
+  <div class="idea"><p><b>Shohoj kore (tiffin box):</b> Tomar app + tar shob dependency ekta box e bhora (container). Box ta je table ei rakho (laptop, EC2, on-prem server), bhitorer khabar same. "Amar machine e cholche, server e na" somossa shesh.</p></div>
+
+  <h3>Docker ki (<a class="pg" href="18-slides-p416-440.pdf#page=2" target="_blank" rel="noopener">PDF p. 417</a> <span class="pg-part">(part p. 2)</span>)</h3>
+  <ul>
+    <li><b>Software development platform</b> app deploy korar jonno; app <b>container</b> e package hoy, jekono OS e chale.</li>
+    <li>App same bhabe chale: any machine, no compatibility issue, predictable behavior, kom kaj, maintain/deploy shohoj, jekono language/OS/technology.</li>
+    <li><b>Use case:</b> <b>microservices architecture</b>, on-premises theke AWS e <b>lift-and-shift</b>, ar jekhanei container chalate chao.</li>
+  </ul>
+
+  <h3>Docker on an OS (<a class="pg" href="18-slides-p416-440.pdf#page=3" target="_blank" rel="noopener">PDF p. 418</a> <span class="pg-part">(part p. 3)</span>)</h3>
+  <ul>
+    <li>Server (jemon EC2 instance) e <b>Docker agent</b> chale, tar upor container.</li>
+    <li>Ek server e Java app, Node.js app, MySQL database: shob container. Same app er <b>onek copy</b> o chalano jay.</li>
+  </ul>
+
+  <h3>Image kothay store hoy (<a class="pg" href="18-slides-p416-440.pdf#page=4" target="_blank" rel="noopener">PDF p. 419</a> <span class="pg-part">(part p. 4)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Repository</th><th>Type</th><th>Ki</th></tr>
+    <tr><td><b>Docker Hub</b></td><td>Public</td><td>Base image (Ubuntu, MySQL ...) paoa jay, khub popular</td></tr>
+    <tr><td><b>Amazon ECR</b></td><td>Private</td><td>Tomar nijer private image</td></tr>
+    <tr><td><b>Amazon ECR Public Gallery</b></td><td>Public</td><td>AWS er public repository (gallery.ecr.aws)</td></tr>
+  </table></div>
+
+  <h3>Docker vs Virtual Machine (<a class="pg" href="18-slides-p416-440.pdf#page=5" target="_blank" rel="noopener">PDF p. 420</a> <span class="pg-part">(part p. 5)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th></th><th>Virtual Machine</th><th>Docker container</th></tr>
+    <tr><td>Stack</td><td>Infrastructure → Host OS → <b>Hypervisor</b> → protita VM e nijer <b>Guest OS</b> + app</td><td>Infrastructure → Host OS (EC2 instance) → <b>Docker Daemon</b> → onek container</td></tr>
+    <tr><td>Resource</td><td>Alada, isolated, share kore na (EC2 nije ekta VM)</td><td>Host er sathe <b>share</b> (networking, data); <b>lightweight</b></td></tr>
+    <tr><td>Fol</td><td>Beshi isolated</td><td>Ek server e <b>onek container</b>; instructor: VM er cheye "ektu kom secure"</td></tr>
+  </table></div>
+
+  <h3>Getting started flow (<a class="pg" href="18-slides-p416-440.pdf#page=6" target="_blank" rel="noopener">PDF p. 421</a> <span class="pg-part">(part p. 6)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Dockerfile theke running container</span>
+    <div class="flow">
+      <span class="b">Dockerfile</span><span class="a">→ <small>build</small></span>
+      <span class="b">Image</span><span class="a">→ <small>push</small></span>
+      <span class="b hl">Repository<small>Docker Hub / ECR</small></span><span class="a">→ <small>pull</small></span>
+      <span class="b">Image</span><span class="a">→ <small>run</small></span>
+      <span class="b">Container</span>
+    </div>
+  </div>
+  <p class="cap">Image run korle seta container hoy.</p>
+
+  <h3>AWS e container management (<a class="pg" href="18-slides-p416-440.pdf#page=7" target="_blank" rel="noopener">PDF p. 422</a> <span class="pg-part">(part p. 7)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Service</th><th>Ki</th></tr>
+    <tr><td><b>Amazon ECS</b> (Elastic Container Service)</td><td>Amazon er <b>nijer</b> container platform</td></tr>
+    <tr><td><b>Amazon EKS</b> (Elastic Kubernetes Service)</td><td>Amazon er <b>managed Kubernetes</b> (open source)</td></tr>
+    <tr><td><b>AWS Fargate</b></td><td>Amazon er nijer <b>serverless</b> container platform; <b>ECS ar EKS duitar sathe</b> kaj kore</td></tr>
+    <tr><td><b>Amazon ECR</b> (Elastic Container Registry)</td><td>Container <b>image store</b></td></tr>
+  </table></div>
+  <div class="exam"><b>Exam:</b>
+    <ul>
+      <li>"Microservices", "lift-and-shift", "containerized / Docker" → container service (ECS / EKS / Fargate).</li>
+      <li>Fargate alada "orchestrator" na: ECS ba EKS er <b>serverless compute</b> option.</li>
+      <li>ECR = <b>store</b>, run kore na. Docker Hub er AWS alternative → ECR (U18-Q6).</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card" id="l2">
+  <p class="num">Lecture 2 · Amazon ECS · <a class="pg" href="18-slides-p416-440.pdf#page=8" target="_blank" rel="noopener">PDF p. 423-428</a> <span class="pg-part">(part p. 8-13)</span></p>
+  <h2>Amazon ECS: launch type, IAM role, load balancer, data volume</h2>
+  <div class="idea"><p><b>Shohoj kore (restaurant kitchen):</b> <b>ECS Cluster</b> holo kitchen, <b>ECS Task</b> holo ekta dish ranna (container chalano). <b>EC2 launch type</b> e chula (EC2) tumi kino, poriskar koro. <b>Fargate</b> e chula AWS er: tumi shudhu bolo "2 ta chula, eto gas (CPU/RAM)", baki AWS dekhe.</p></div>
+  <p><b>Mul shobdo:</b> AWS e Docker container chalano = <b>ECS Cluster e ECS Task launch kora</b>. Task kemon hobe ta likha thake <b>task definition</b> e (image, CPU, memory, port, role).</p>
+
+  <h3>EC2 Launch Type (<a class="pg" href="18-slides-p416-440.pdf#page=8" target="_blank" rel="noopener">PDF p. 423</a> <span class="pg-part">(part p. 8)</span>)</h3>
+  <ul>
+    <li>Infrastructure (EC2 instances) <b>tumi provision ar maintain</b> koro.</li>
+    <li>Protita EC2 instance e <b>ECS Agent</b> chalate hoy; agent instance ke ECS service er nirdishto <b>ECS Cluster</b> e register kore.</li>
+    <li>Tarpor container <b>start / stop</b> AWS kore: notun task ashle kon instance e boshbe AWS thik kore (placement).</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">EC2 launch type</span>
+    <div class="flow">
+      <span class="b">Notun Docker container</span><span class="a">→ <small>AWS place kore</small></span>
+      <span class="b hl">ECS Cluster<small>EC2 ×3, protita te ECS Agent</small></span>
+    </div>
+  </div>
+
+  <h3>Fargate Launch Type (<a class="pg" href="18-slides-p416-440.pdf#page=9" target="_blank" rel="noopener">PDF p. 424</a> <span class="pg-part">(part p. 9)</span>)</h3>
+  <ul>
+    <li>Infrastructure provision <b>korte hoy na</b>: kono EC2 manage nai. <b>Sob serverless</b> (pichone server ache, tumi dekho na).</li>
+    <li>Tumi shudhu <b>task definition</b> banao; AWS tomar dorkar moto <b>CPU / RAM</b> diye ECS Task chalay.</li>
+    <li><b>Scale</b> korte shudhu <b>task er shonkha barao</b>. EC2 er jhamela nai.</li>
+    <li>Instructor: exam <b>Fargate</b> bolte bhalobashe, karon serverless ar EC2 launch type er cheye manage kora onek shohoj.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th></th><th>EC2 launch type</th><th>Fargate launch type</th></tr>
+    <tr><td>Server</td><td>Tumi EC2 provision + patch + scale</td><td>Nai (serverless)</td></tr>
+    <tr><td>Agent</td><td>Protita instance e ECS Agent</td><td>Dorkar nai</td></tr>
+    <tr><td>Scale</td><td>Task + EC2 instance duitai (ASG / Capacity Provider)</td><td>Shudhu task count</td></tr>
+    <tr><td>IAM</td><td>EC2 Instance Profile + Task Role</td><td>Task Role (instance profile nai)</td></tr>
+    <tr><td>Pricing <span class="pill">AWS pricing page</span></td><td>ECS er alada charge nai; EC2 instance, EBS volume er dam</td><td>Task je <b>vCPU ar memory</b> chay tar dam</td></tr>
+  </table></div>
+  <p class="sub">Pricing row ta course e nai, <a href="https://aws.amazon.com/ecs/pricing/">Amazon ECS pricing</a> page theke (S1-Q14).</p>
+
+  <h3>IAM Roles for ECS (<a class="pg" href="18-slides-p416-440.pdf#page=10" target="_blank" rel="noopener">PDF p. 425</a> <span class="pg-part">(part p. 10)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Role</th><th>Kar jonno</th><th>Ki kore</th></tr>
+    <tr><td><b>EC2 Instance Profile</b></td><td><b>Shudhu EC2 launch type</b>; use kore <b>ECS Agent</b></td><td>ECS service e API call (instance register), container log <b>CloudWatch Logs</b> e pathano, <b>ECR theke image pull</b>, <b>Secrets Manager / SSM Parameter Store</b> er sensitive data reference</td></tr>
+    <tr><td><b>ECS Task Role</b></td><td><b>EC2 ar Fargate duitai</b>; protita task er nijer role</td><td>Container er app je AWS API call kore (jemon Task A → S3, Task B → DynamoDB). Alada ECS service e <b>alada role</b>. Role define hoy <b>task definition</b> e</td></tr>
+  </table></div>
+  <div class="fig">
+    <span class="lbl">Ek EC2 instance, duita role layer</span>
+    <div class="flow">
+      <span class="b hl">ECS Agent<small>EC2 Instance Profile</small></span><span class="a">→</span>
+      <span class="b">ECS, ECR, CloudWatch Logs</span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Task A<small>Task A Role</small></span><span class="a">→</span>
+      <span class="b">S3</span>
+    </div>
+    <div class="flow">
+      <span class="b hl">Task B<small>Task B Role</small></span><span class="a">→</span>
+      <span class="b">DynamoDB</span>
+    </div>
+  </div>
+  <p class="cap">Agent er permission instance profile e, app er permission task role e. Duita mix korbe na.</p>
+  <p class="sub">Hands-on e (Lecture 5) <b>task execution role</b> o dekha jay: ECS nije default ta banay. Fargate e EC2 instance profile nai, tai image pull / log pathanor kaj ei execution role kore <span class="pill">amar jana, course e nai</span>.</p>
+
+  <h3>Load Balancer Integrations (<a class="pg" href="18-slides-p416-440.pdf#page=11" target="_blank" rel="noopener">PDF p. 426</a> <span class="pg-part">(part p. 11)</span>)</h3>
+  <ul>
+    <li>Task gulo ke HTTP/HTTPS endpoint hishebe expose korte samne <b>Application Load Balancer</b>: users → ALB (80/443) → ECS tasks. EC2 ba Fargate duitai.</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>Load balancer</th><th>ECS er sathe</th></tr>
+    <tr><td><b>ALB</b></td><td>Supported, <b>most use case</b> e bhalo choice; Fargate e kaj kore</td></tr>
+    <tr><td><b>NLB</b></td><td>Recommended shudhu <b>very high throughput / high performance</b> ba <b>AWS PrivateLink</b> er sathe (pore course e)</td></tr>
+    <tr><td><b>CLB</b></td><td>Supported kintu <b>not recommended</b>: advanced feature nai, <b>Fargate e link hoy na</b></td></tr>
+  </table></div>
+  <h3>ALB + dynamic port mapping (Section 8 theke, <a class="pg" href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-slides-p119-160.pdf#page=15" target="_blank" rel="noopener">PDF p. 133</a> <span class="pg-part">(Section 08 part p. 15)</span>)</h3>
+  <ul>
+    <li>Section 8 er slide: ALB er <b>port mapping feature</b> ache, ECS e <b>dynamic port</b> e redirect kore. Ek ALB onek app (microservice) er samne bosh te pare; CLB hole app proti alada CLB lagto.</li>
+    <li>Kivabe kaj kore <span class="pill">amar jana, course e nai</span>: EC2 launch type e container er host port fixed na dile ECS protita task ke instance er <b>random host port</b> dey. Tai <b>same container ek EC2 e onekbar</b> chalano jay (port clash hoy na). ALB target group e "instance + port" register hoy, ALB thik port e pathay. Instance er security group e ALB theke oi port range allow korte hoy.</li>
+    <li>ALB host/path routing (checkout.mycorp.com, /profile, /search) + dynamic port mapping = microservice ECS e, kom maintenance (S4-Q57). Reverse proxy nije chalano = beshi kaj. <a href="https://aws.amazon.com/premiumsupport/knowledge-center/dynamic-port-mapping-ecs/">AWS Knowledge Center: dynamic port mapping in ECS</a></li>
+  </ul>
+
+  <h3>Data Volumes: EFS (<a class="pg" href="18-slides-p416-440.pdf#page=12" target="_blank" rel="noopener">PDF p. 427</a> <span class="pg-part">(part p. 12)</span>)</h3>
+  <ul>
+    <li>ECS task e <b>EFS file system mount</b> kora jay.</li>
+    <li><b>EC2 ar Fargate duita launch type ei</b> kaj kore (EFS network file system).</li>
+    <li>Je kono <b>AZ</b> er task same EFS e <b>same data</b> dekhe; file system diye nijeder moddhe communicate o korte pare.</li>
+    <li><b>Fargate + EFS = puro serverless</b> (EFS o serverless, pay as you go). Instructor er "ultimate combo".</li>
+    <li>Use case: container er jonno <b>persistent multi-AZ shared storage</b>.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">EFS shared storage</span>
+    <div class="flow">
+      <span class="b">Task on EC2<small>AZ-a</small></span><span class="a">→ <small>mount</small></span>
+      <span class="b hl">Amazon EFS<small>same data</small></span><span class="a">← <small>mount</small></span>
+      <span class="b">Task on Fargate<small>AZ-b</small></span>
+    </div>
+  </div>
+  <p class="cap">EBS ekta instance/AZ e bandha, instance store ephemeral; shared content (WordPress files) → EFS.</p>
+
+  <h3>Data Volumes: S3 Files (<a class="pg" href="18-slides-p416-440.pdf#page=13" target="_blank" rel="noopener">PDF p. 428</a> <span class="pg-part">(part p. 13)</span>, slide e notun)</h3>
+  <ul>
+    <li><b>S3 Files</b> file system ECS task e mount: <b>S3 bucket ke file system</b> hishebe dekhay.</li>
+    <li>Kaj kore <b>Fargate</b> ar <b>ECS Managed Instances</b> e; <b>EC2 launch type e NA</b>.</li>
+    <li>File e change <b>automatically S3 bucket e sync</b> hoy.</li>
+    <li>Use case: container er shared file access dorkar, ar data <b>already S3 e</b> ache.</li>
+  </ul>
+  <p class="sub">Ei slide ta lecture video te nai (video purono); slide e add kora. Detail "Course er por ki bodlalo" te.</p>
+
+  <div class="exam"><b>Exam:</b>
+    <ul>
+      <li>"Don't want to provision / manage infrastructure", "serverless containers" → <b>Fargate</b> (U18-Q1). EC2 launch type na.</li>
+      <li>ECS er launch type: <b>EC2 ar Fargate</b>; "EKS launch type" bole kichu nai (U18-Q2).</li>
+      <li>Container theke S3 / DynamoDB call → <b>ECS Task Role</b>, instance profile na (U18-Q3). Notun app e authorization error → oi app er jonno <b>notun task role</b>; instance role e S3 dile shob task S3 pabe = least privilege bhange (U18-Q5).</li>
+      <li>Shared website content, multi-AZ, persistent → <b>EFS</b>; EBS / instance store na (U18-Q4).</li>
+      <li>ECS + microservice + host/path routing + same container ek EC2 e onekbar → <b>ALB + dynamic port mapping</b> (S4-Q57).</li>
+      <li>Pricing: EC2 launch type = EC2 + EBS er dam; Fargate = requested <b>vCPU + memory</b> (S1-Q14).</li>
+      <li>ECS chalay <b>Docker</b> container; Kubernetes = EKS (B5-Q11).</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card" id="l4">
+  <p class="num">Course page 3 (ECS UI changes) + Lecture 4 · Creating ECS Cluster - Hands On · <a class="pg" href="18-slides-p416-440.pdf#page=8" target="_blank" rel="noopener">PDF p. 423-424</a> <span class="pg-part">(part p. 8-9)</span></p>
+  <h2>ECS cluster banano: infrastructure option ar capacity provider</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Cluster holo khali ekta "ghor". Ghore kaj chalanor jayga (capacity) tin bhabe ashe: AWS er Fargate, tomar EC2 (ASG diye), ba tomar nijer data center (ECS Anywhere).</p></div>
+  <h3>Course page: IMPORTANT ECS UI CHANGES</h3>
+  <ul>
+    <li>Cluster banate giye jodi purono interface dekho, tahole ECS home page er <b>upore bame</b> theke <b>notun interface e switch</b> koro; tahole instructor er moto UI pabe.</li>
+    <li>Ekhon notun console-i default ("Course er por ki bodlalo").</li>
+  </ul>
+  <h3>Cluster create (DemoCluster)</h3>
+  <div class="scroll"><table>
+    <tr><th>Infrastructure option</th><th>Ki</th></tr>
+    <tr><td><b>AWS Fargate</b></td><td>Serverless: container dao, AWS on-demand compute dey, tumi compute dekho-o na</td></tr>
+    <tr><td><b>Amazon EC2 instances</b></td><td>Nijer EC2 diye compute. Console <b>notun ASG</b> banay (OS: Amazon Linux 2 / 2023, t2.micro, min 0 max 5, default VPC 3 subnet, default SG)</td></tr>
+    <tr><td><b>External instances (ECS Anywhere)</b></td><td>Nijer <b>data center</b> er server e ECS container</td></tr>
+  </table></div>
+  <ul>
+    <li>EC2 option dile cluster nije ekta ASG banay (<code>Infra-ECS-Cluster...</code>, desired 0, min 0, max 5), 3 AZ e.</li>
+  </ul>
+  <h3>Cluster er Infrastructure tab: 3 capacity provider</h3>
+  <div class="scroll"><table>
+    <tr><th>Capacity provider</th><th>Mane</th></tr>
+    <tr><td><b>FARGATE</b></td><td>Fargate e task launch</td></tr>
+    <tr><td><b>FARGATE_SPOT</b></td><td>Fargate task <b>spot mode</b> e (EC2 Spot er moto, shosta)</td></tr>
+    <tr><td><b>ASGProvider</b></td><td>ASG er EC2 instance e task; <b>managed scaling</b></td></tr>
+  </table></div>
+  <ul>
+    <li>ASG desired capacity 1 korle EC2 (t2.micro) uthe cluster e <b>container instance</b> hishebe register hoy: dekhay <b>1,024 CPU</b> ar <b>982 memory</b> available. Capacity shesh na howa porjonto task boshano jay.</li>
+    <li>Tai task launch hote pare FARGATE / FARGATE_SPOT e ba ASG er container instance e.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "On-premises server e ECS" → <b>ECS Anywhere</b> (External). "Shosta Fargate, interruption cholbe" → <b>FARGATE_SPOT</b>. Capacity provider + ASG = EC2 launch type er infra auto scale (Lecture 6).</div>
+</section>
+
+<section class="card" id="l5">
+  <p class="num">Lecture 5 · Creating ECS Service - Hands On · <a class="pg" href="18-slides-p416-440.pdf#page=9" target="_blank" rel="noopener">PDF p. 424-426</a> <span class="pg-part">(part p. 9-11)</span></p>
+  <h2>Task definition → Service → ALB: Fargate e nginx chalano</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> <b>Task definition</b> = recipe (image, CPU, RAM, port, role). <b>Service</b> = "ei recipe er N ta copy shob shomoy chalu rakho, ALB er pichone". <b>Task</b> (standalone) = ekbar chaliye shesh (batch job).</p></div>
+  <h3>Task definition (nginxdemos-hello)</h3>
+  <div class="scroll"><table>
+    <tr><th>Setting</th><th>Ki dilen / mane</th></tr>
+    <tr><td>Infrastructure</td><td>Fargate (EC2 o tick kora jay)</td></tr>
+    <tr><td>OS / architecture</td><td>Linux</td></tr>
+    <tr><td>Task size</td><td>Fargate e <b>0.5 vCPU theke 16 vCPU</b>, memory <b>120 GB</b> porjonto; demo te 0.5 vCPU, 1 GB</td></tr>
+    <tr><td><b>Task role</b></td><td>Container AWS API call korle eta lagbe ("utmost importance"). Demo te dorkar nai</td></tr>
+    <tr><td><b>Task execution role</b></td><td>Default; na thakle ECS nije banay</td></tr>
+    <tr><td>Container</td><td>Image <code>nginxdemos/hello</code> (Docker Hub theke pull), <b>essential container</b>, port mapping <b>80 → 80</b></td></tr>
+    <tr><td>Onnano</td><td>Resource limit, environment variable (file / manual), logging; Fargate e kichu <b>ephemeral storage</b> default</td></tr>
+  </table></div>
+  <p>Task definition er <b>revision</b> (version) thake: abar create korle version 2, 3 ...</p>
+  <h3>Service create (DemoCluster e)</h3>
+  <div class="scroll"><table>
+    <tr><th>Setting</th><th>Ki</th></tr>
+    <tr><td>Compute option</td><td>Launch type: <b>Fargate</b>, platform version latest</td></tr>
+    <tr><td>Application type</td><td><b>Service</b> = long running (web app). <b>Task</b> = chole shesh hoy (batch job)</td></tr>
+    <tr><td>Service type</td><td><b>Replica</b>, desired 1 task</td></tr>
+    <tr><td>Networking</td><td>VPC, 3 subnet, notun SG (HTTP 80 anywhere), public IP on</td></tr>
+    <tr><td>Load balancing</td><td>Notun <b>ALB</b> (DemoALBForECS), listener HTTP 80, target group <code>tg-nginxdemos-hello</code>, health check path <code>/</code>; health check grace period e container start howar shomoy dao</td></tr>
+    <tr><td>Service auto scaling, task placement</td><td>Available, demo te chhoyni</td></tr>
+  </table></div>
+  <ul>
+    <li>Deploy er por: target group e ekta <b>IP address</b> target (container er private IP). ALB DNS kholle nginx page.</li>
+    <li>Task er detail: configuration, revision, private IP, <b>logs</b>. Service <b>Events</b>: task start → target group e register → steady state.</li>
+    <li>Service update kore desired <b>3</b> (protita AZ e ekta) → Fargate nije resource provision kore, task pending → running. Refresh korle IP bodlay = ALB load distribute korche.</li>
+    <li>Cost bachate: desired task <b>0</b> (service thake, container chale na) ar ASG desired capacity 0.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> Long running web app → ECS <b>Service</b> (desired count + ALB). Ekbar chole shesh (batch) → <b>Task</b>. Container er AWS permission → <b>task role</b> in task definition.</div>
+</section>
+
+<section class="card" id="l6">
+  <p class="num">Lecture 6 · Amazon ECS - Auto Scaling · <a class="pg" href="18-slides-p416-440.pdf#page=14" target="_blank" rel="noopener">PDF p. 429-431</a> <span class="pg-part">(part p. 14-16)</span></p>
+  <h2>ECS Service Auto Scaling (task) vs EC2 scaling (Capacity Provider)</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Duita alada level. <b>Task level</b>: koyta container chalabo (Service Auto Scaling). <b>Instance level</b>: oi container boshanor jonno koyta EC2 (shudhu EC2 launch type e). Fargate e dwitiyo level nai, tai shohoj.</p></div>
+  <h3>ECS Service Auto Scaling (<a class="pg" href="18-slides-p416-440.pdf#page=14" target="_blank" rel="noopener">PDF p. 429</a> <span class="pg-part">(part p. 14)</span>)</h3>
+  <ul>
+    <li>ECS task er <b>desired number</b> automatically barano/komano.</li>
+    <li>Use kore <b>AWS Application Auto Scaling</b>. Metric <b>3 ta</b> (mone rakho):</li>
+  </ul>
+  <div class="scroll"><table>
+    <tr><th>Metric</th><th>Mane</th></tr>
+    <tr><td>ECS Service Average <b>CPU Utilization</b></td><td>Service er CPU</td></tr>
+    <tr><td>ECS Service Average <b>Memory Utilization</b></td><td>RAM e scale</td></tr>
+    <tr><td><b>ALB Request Count Per Target</b></td><td>ALB theke asha metric</td></tr>
+  </table></div>
+  <div class="scroll"><table>
+    <tr><th>Scaling type</th><th>Kokhon</th></tr>
+    <tr><td><b>Target Tracking</b></td><td>Ekta CloudWatch metric er target value dhore rakho</td></tr>
+    <tr><td><b>Step Scaling</b></td><td>Nirdishto CloudWatch Alarm e scale</td></tr>
+    <tr><td><b>Scheduled Scaling</b></td><td>Nirdishto date/time e, <b>predictable</b> change er age</td></tr>
+  </table></div>
+  <ul>
+    <li><b>ECS Service Auto Scaling (task level) ≠ EC2 Auto Scaling (instance level)</b>.</li>
+    <li><b>Fargate</b> e auto scaling setup onek shohoj (serverless, EC2 nai). Exam Fargate e push kore.</li>
+  </ul>
+  <h3>EC2 launch type: EC2 instance scale (<a class="pg" href="18-slides-p416-440.pdf#page=15" target="_blank" rel="noopener">PDF p. 430</a> <span class="pg-part">(part p. 15)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Option</th><th>Kivabe</th><th>Instructor</th></tr>
+    <tr><td><b>Auto Scaling Group Scaling</b></td><td>ASG ke (jemon) CPU Utilization e scale; time er sathe EC2 add</td><td>Kaj kore</td></tr>
+    <tr><td><b>ECS Cluster Capacity Provider</b></td><td>Task er jonno infrastructure auto provision + scale; <b>ASG er sathe paired</b>; capacity (CPU, RAM) kom porle EC2 add</td><td><b>Newer, smarter</b>: duitar moddhe eta choose koro</td></tr>
+  </table></div>
+  <h3>Example: Service CPU usage (<a class="pg" href="18-slides-p416-440.pdf#page=16" target="_blank" rel="noopener">PDF p. 431</a> <span class="pg-part">(part p. 16)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Scale out flow</span>
+    <div class="flow">
+      <span class="b">Service A CPU ↑<small>Task 1, 2</small></span><span class="a">→</span>
+      <span class="b">CloudWatch Metric<small>ECS Service CPU</small></span><span class="a">→</span>
+      <span class="b">CloudWatch Alarm</span><span class="a">→ <small>trigger</small></span>
+      <span class="b hl">Application Auto Scaling<small>desired ↑</small></span><span class="a">→</span>
+      <span class="b">Task 3 (new)</span>
+    </div>
+  </div>
+  <p class="cap">EC2 launch type hole optionally ECS Capacity Provider ASG ke scale kore jate Task 3 er jayga hoy.</p>
+  <div class="exam"><b>Exam:</b> ECS task auto scale metric = <b>CPU, Memory, ALB RequestCountPerTarget</b>. EC2 launch type e "task boshanor jayga nai, EC2 auto add" → <b>ECS Cluster Capacity Provider</b> (ASG scaling er cheye better). Predictable traffic → <b>Scheduled Scaling</b>. Fargate = shudhu service auto scaling.</div>
+</section>
+
+<section class="card" id="l7">
+  <p class="num">Lecture 7 · Amazon ECS - Solutions Architectures · <a class="pg" href="18-slides-p416-440.pdf#page=17" target="_blank" rel="noopener">PDF p. 432-435</a> <span class="pg-part">(part p. 17-20)</span></p>
+  <h2>ECS architecture: EventBridge, schedule, SQS, stopped task alert</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Container shob shomoy chalu rakhte hobe emon na. Kono ghotona (file upload, protti ghonta, queue e message) holei <b>Fargate task</b> uthe kaj kore chole jay. EventBridge, SQS, SNS pore detail e (Section 17, 19+); ekhane shudhu pattern.</p></div>
+  <h3>1. S3 upload → EventBridge → ECS task (<a class="pg" href="18-slides-p416-440.pdf#page=17" target="_blank" rel="noopener">PDF p. 432</a> <span class="pg-part">(part p. 17)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Serverless object processing</span>
+    <div class="flow">
+      <span class="b">Client<small>upload object</small></span><span class="a">→</span>
+      <span class="b">S3 bucket</span><span class="a">→ <small>event</small></span>
+      <span class="b">EventBridge<small>Rule: Run ECS Task</small></span><span class="a">→</span>
+      <span class="b hl">Fargate Task (new)<small>Task Role: S3 + DynamoDB</small></span><span class="a">→ <small>result save</small></span>
+      <span class="b">DynamoDB</span>
+    </div>
+  </div>
+  <p class="cap">Task S3 theke object ney, process kore, DynamoDB te likhe; permission ashe ECS task role theke. Puro serverless.</p>
+  <h3>2. EventBridge Schedule → ECS task (<a class="pg" href="18-slides-p416-440.pdf#page=18" target="_blank" rel="noopener">PDF p. 433</a> <span class="pg-part">(part p. 18)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Scheduled batch</span>
+    <div class="flow">
+      <span class="b">EventBridge<small>every 1 hour</small></span><span class="a">→ <small>Rule: Run ECS Task</small></span>
+      <span class="b hl">Fargate Task (new)<small>Task Role: S3</small></span><span class="a">→ <small>batch processing</small></span>
+      <span class="b">Amazon S3</span>
+    </div>
+  </div>
+  <h3>3. SQS queue → ECS service (<a class="pg" href="18-slides-p416-440.pdf#page=19" target="_blank" rel="noopener">PDF p. 434</a> <span class="pg-part">(part p. 19)</span>)</h3>
+  <ul>
+    <li>ECS service (Task 1, 2) <b>SQS queue theke message poll</b> kore process kore.</li>
+    <li>Service e <b>ECS Service Auto Scaling</b>: queue e message beshi → task beshi (Task 3).</li>
+  </ul>
+  <h3>4. Stopped task intercept: EventBridge → SNS (<a class="pg" href="18-slides-p416-440.pdf#page=20" target="_blank" rel="noopener">PDF p. 435</a> <span class="pg-part">(part p. 20)</span>)</h3>
+  <div class="fig">
+    <span class="lbl">Container lifecycle alert</span>
+    <div class="flow">
+      <span class="b">ECS Task<small>exited</small></span><span class="a">→ <small>event</small></span>
+      <span class="b hl">EventBridge<small>event pattern</small></span><span class="a">→ <small>trigger</small></span>
+      <span class="b">SNS</span><span class="a">→ <small>email</small></span>
+      <span class="b">Administrator</span>
+    </div>
+  </div>
+  <p class="cap">Event e "ECS Task State Change", status STOPPED ar stopped reason thake. EventBridge diye container er lifecycle bujha jay.</p>
+  <div class="exam"><b>Exam:</b> "S3 e file ashlei container e process, serverless" → <b>S3 → EventBridge → ECS task (Fargate) + task role</b>. "Protti ghonta batch job container e" → <b>EventBridge schedule → ECS task</b>. "Queue length onujayi container scale" → <b>SQS + ECS Service Auto Scaling</b>. "Task stop hole admin ke email" → <b>EventBridge + SNS</b>.</div>
+</section>
+
+<section class="card" id="l8">
+  <p class="num">Lecture 8 · Amazon ECS - Clean Up - Hands On</p>
+  <h2>ECS clean up: service, cluster, task definition</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Console e ECS banale pichone <b>CloudFormation</b> stack toiri hoy; delete korleo CloudFormation-i shob muche.</p></div>
+  <ol>
+    <li><b>Service</b>: age desired task 0, tarpor Delete Service. CloudFormation delete kore: ECS service, LB listener, load balancer, security group, target group.</li>
+    <li>Service puro delete hole <b>Cluster</b> delete: CloudFormation muche capacity provider, ASG, cluster, launch template.</li>
+    <li><b>Task definition</b> rekhe dile <b>kono dam nai</b> (shudhu definition); chaile <b>deregister</b>.</li>
+  </ol>
+  <div class="exam"><b>Exam:</b> Task definition e cost nai; cost ashe running task (Fargate) ba EC2/ALB theke.</div>
+</section>
+
+<section class="card" id="l9">
+  <p class="num">Lecture 9 · Amazon ECR · <a class="pg" href="18-slides-p416-440.pdf#page=21" target="_blank" rel="noopener">PDF p. 436</a> <span class="pg-part">(part p. 21)</span></p>
+  <h2>Amazon ECR: AWS er Docker image registry</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Docker Hub er AWS version, kintu tomar account er bhitore, IAM diye talabondho.</p></div>
+  <ul>
+    <li><b>ECR = Elastic Container Registry</b>: AWS e Docker image <b>store ar manage</b>.</li>
+    <li><b>Private</b> repository (tomar account / accounts) ar <b>Public</b> repository (<b>Amazon ECR Public Gallery</b>).</li>
+    <li><b>ECS er sathe fully integrated</b>; pichone image thake <b>Amazon S3</b> e.</li>
+    <li>Access <b>IAM</b> diye: ECS cluster er EC2 instance er <b>IAM role</b> image pull er permission dey. <b>Permission error → policy check koro</b>.</li>
+    <li>Extra: <b>image vulnerability scanning</b>, <b>versioning</b>, <b>image tags</b>, <b>image lifecycle</b>.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">ECS + ECR</span>
+    <div class="flow">
+      <span class="b">ECR Repository<small>Image A, Image B</small></span><span class="a">→ <small>pull (IAM role)</small></span>
+      <span class="b hl">EC2 Instance<small>ECS Cluster</small></span><span class="a">→</span>
+      <span class="b">Container start</span>
+    </div>
+  </div>
+  <div class="exam"><b>Exam:</b> "Storing Docker images" / "Docker Hub er alternative, ECS e integrated" → <b>ECR</b> (U18-Q6). ECR e pull fail → <b>IAM policy</b>. Fargate, EKS, EC2 image store kore na.</div>
+</section>
+
+<section class="card" id="l10">
+  <p class="num">Lecture 10 + 11 (hands-on) · Amazon EKS · <a class="pg" href="18-slides-p416-440.pdf#page=22" target="_blank" rel="noopener">PDF p. 437-440</a> <span class="pg-part">(part p. 22-25)</span></p>
+  <h2>Amazon EKS: AWS e managed Kubernetes</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Company already Kubernetes chalay (on-prem ba Azure/GCP)? Same Kubernetes API rekhe AWS e ashte chay → <b>EKS</b>. ECS er kaj same (container chalano), kintu API alada ar ECS open source na.</p></div>
+  <h3>Overview (<a class="pg" href="18-slides-p416-440.pdf#page=22" target="_blank" rel="noopener">PDF p. 437</a> <span class="pg-part">(part p. 22)</span>)</h3>
+  <ul>
+    <li><b>EKS = Elastic Kubernetes Service</b>: AWS e <b>managed Kubernetes cluster</b> launch ar manage.</li>
+    <li><b>Kubernetes</b>: open-source system, containerized (usually Docker) app er automatic deployment, scaling, management.</li>
+    <li>ECS er <b>alternative</b>: goal same, <b>API alada</b>. ECS open source na; Kubernetes open source, onek cloud provider use kore (standardization).</li>
+    <li>Duita mode: <b>EC2</b> (worker node deploy) ba <b>Fargate</b> (serverless container).</li>
+    <li><b>Use case:</b> company <b>already Kubernetes</b> use kore on-premises ba onno cloud e, Kubernetes diyei AWS e migrate korte chay.</li>
+    <li>Kubernetes <b>cloud-agnostic</b> (Azure, GCP ...): cloud er moddhe migration shohoj.</li>
+    <li><b>Multiple region</b>: region proti <b>ekta EKS cluster</b>.</li>
+    <li>Log ar metric: <b>CloudWatch Container Insights</b>.</li>
+  </ul>
+  <h3>Diagram (<a class="pg" href="18-slides-p416-440.pdf#page=23" target="_blank" rel="noopener">PDF p. 438</a> <span class="pg-part">(part p. 23)</span>)</h3>
+  <ul>
+    <li>VPC, 3 AZ, public + private subnet. Private subnet e <b>EKS Worker Nodes</b> (EC2), ASG manage kore.</li>
+    <li>Node er upor <b>EKS Pods</b> chale (ECS task er moto). <b>"Pod" dekhle Kubernetes/EKS</b>.</li>
+    <li>Service expose: <b>public</b> ba <b>private</b> load balancer (EKS Public / Private Service LB).</li>
+  </ul>
+  <h3>Node types (<a class="pg" href="18-slides-p416-440.pdf#page=24" target="_blank" rel="noopener">PDF p. 439</a> <span class="pg-part">(part p. 24)</span>)</h3>
+  <div class="scroll"><table>
+    <tr><th>Node type</th><th>Ke manage kore</th><th>Detail</th></tr>
+    <tr><td><b>Managed Node Groups</b></td><td>EKS node (EC2) <b>create + manage</b> kore</td><td>Node gulo EKS-managed <b>ASG</b> er part; <b>On-Demand / Spot</b></td></tr>
+    <tr><td><b>Self-Managed Nodes</b></td><td>Tumi</td><td>Nije node banao, cluster e register, nijer ASG; beshi customization/control. <b>EKS Optimized AMI</b> (prebuilt) ba nijer AMI; On-Demand / Spot</td></tr>
+    <tr><td><b>AWS Fargate</b></td><td>AWS</td><td><b>Kono node nai</b>, maintenance nai</td></tr>
+  </table></div>
+  <h3>Data Volumes (<a class="pg" href="18-slides-p416-440.pdf#page=25" target="_blank" rel="noopener">PDF p. 440</a> <span class="pg-part">(part p. 25)</span>)</h3>
+  <ul>
+    <li>EKS cluster e <b>StorageClass manifest</b> dite hoy.</li>
+    <li><b>Container Storage Interface (CSI)</b> compliant driver use kore (exam keyword).</li>
+    <li>Support: <b>Amazon EBS</b>, <b>Amazon EFS (Fargate e kaj kore, Fargate er jonno eta-i ekmatro)</b>, <b>FSx for Lustre</b>, <b>FSx for NetApp ONTAP</b>.</li>
+  </ul>
+  <h3>Hands-on (dekhar jonno, free na)</h3>
+  <ul>
+    <li>Cluster create: Kubernetes version, <b>cluster service role</b> (IAM → EKS → "EKS cluster" use case), secrets <b>KMS</b> encryption option, VPC/subnet, SG, cluster endpoint access <b>public</b>, control plane logging option.</li>
+    <li>Cluster ready hole compute add: <b>managed node group</b> ba <b>Fargate profile</b>.</li>
+    <li>Node group er <b>node IAM role</b> (EC2 er jonno): <code>AmazonEKSWorkerNodePolicy</code> + <code>AmazonEC2ContainerRegistryReadOnly</code>. Tarpor AMI (Amazon Linux 2), <b>On-Demand / Spot</b>, instance type (t3.medium ...), disk, scaling (min/max/desired = ASG setting), update config (koyta node ek shathe down cholbe).</li>
+    <li><b>Add-ons</b>: jemon <b>Amazon EBS CSI driver</b> (EBS use korte); EFS er jonnoo CSI driver ache.</li>
+    <li>Delete: age node group, tarpor cluster.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b>
+    <ul>
+      <li>"Already Kubernetes on-prem / multi-cloud / cloud-agnostic / open source" → <b>EKS</b>. "Pod" → EKS.</li>
+      <li>EKS node type: Managed Node Groups, Self-Managed Nodes, Fargate; <b>Lambda na</b> (U18-Q7).</li>
+      <li>EKS + Fargate e persistent storage → <b>EFS</b> (CSI driver). "StorageClass", "CSI" → EKS volume.</li>
+      <li>Multi-region → region proti ekta cluster. Monitoring → CloudWatch Container Insights.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card" id="l12">
+  <p class="num">Lecture 12 + 13 (hands-on) · AWS App Runner</p>
+  <h2>AWS App Runner: code ba image dao, URL pao</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Notun developer, AWS er kichu jane na. Shudhu container image (ba GitHub er code) dey, CPU/RAM bole, ar App Runner build + deploy kore ekta <b>URL</b> dey. Pichone ASG, load balancer, scaling AWS nije banay; tumi dekho-o na.</p></div>
+  <h3>Ki (Lecture 12)</h3>
+  <ul>
+    <li><b>Fully managed</b> service: web application ar API <b>at scale</b> deploy kora shohoj. Infrastructure jante hoy na.</li>
+    <li>Shuru: <b>source code</b> ba <b>container image</b> → setting (vCPU, memory, autoscaling, health check) → App Runner build + deploy → <b>URL</b> e access.</li>
+    <li>Pao: <b>automatic scaling</b>, <b>highly available</b>, <b>load balancing</b>, <b>encryption</b>.</li>
+    <li><b>VPC access</b>: database, cache, message queue te connect korte pare.</li>
+    <li>Use case: web app, API, microservice <b>druto deploy</b>, best practice shoho rapid production deployment.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">App Runner flow</span>
+    <div class="flow">
+      <span class="b">Source code / container image</span><span class="a">→</span>
+      <span class="b">Settings<small>vCPU, RAM, autoscaling, health check</small></span><span class="a">→</span>
+      <span class="b hl">App Runner<small>build + deploy</small></span><span class="a">→</span>
+      <span class="b">URL</span>
+    </div>
+  </div>
+  <h3>Hands-on (Lecture 13, free tier na)</h3>
+  <div class="scroll"><table>
+    <tr><th>Step</th><th>Option</th></tr>
+    <tr><td>Source</td><td><b>Container registry</b> (Amazon ECR private ba <b>ECR Public</b>) ba <b>source code repository</b> (jemon GitHub). Demo: ECR Public Gallery theke <code>httpd</code></td></tr>
+    <tr><td>Deployment</td><td><b>Manual</b> ba <b>automatic</b> (source repo ba ECR hole automatic possible)</td></tr>
+    <tr><td>Service settings</td><td><b>1 vCPU, 2 GB</b> (sobcheye kom), environment variable, port <b>80</b></td></tr>
+    <tr><td>Auto scaling</td><td>Default <b>1 theke 25 instance</b>, instance proti <b>100 concurrent request</b>; custom o hoy</td></tr>
+    <tr><td>Onnano</td><td>Health check, security (container er <b>instance role</b>), networking (public ba <b>custom VPC</b>), <b>AWS X-Ray</b> tracing</td></tr>
+  </table></div>
+  <ul>
+    <li>Pichone App Runner banay: auto scaling group, scaling trigger, load balancer, domain. Ek jaygay logs, activity, metrics, <b>custom domain</b>.</li>
+    <li>Default domain kholle "It works!" (httpd). Concurrent request barle nije scale.</li>
+  </ul>
+  <div class="exam"><b>Exam:</b> "Developer AWS jane na", "easiest way to deploy web app / API from code or container", "no infrastructure knowledge" → <b>App Runner</b> (U18-Q8). ECS / Fargate / EC2 + ALB = beshi config. Real life: notun customer der jonno bondho, AWS ekhon <b>ECS Express Mode</b> recommend kore; exam answer tobu App Runner.</div>
+</section>
+
+<section class="card" id="l14">
+  <p class="num">Lecture 14 · AWS App2Container</p>
+  <h2>AWS App2Container (A2C): purono Java / .NET app container e</h2>
+  <div class="idea"><p><b>Shohoj kore:</b> Office e purono Java / .NET web app VM e cholche. Code chhuye na dekhe ke container banabe? <b>A2C CLI</b> app khuje, container banay, CloudFormation likhe, ECR e image rakhe, ECS/EKS/App Runner e deploy.</p></div>
+  <ul>
+    <li><b>CLI tool</b>: <b>Java ar .NET web application</b> ke Docker container e <b>migrate ar modernize</b>.</li>
+    <li><b>Lift-and-shift</b> migration: on-premises (bare metal, virtual machine) theke AWS. <b>Code change nai</b>; legacy app modernization druto.</li>
+    <li>Generate kore <b>CloudFormation template</b> (compute, network ...), container image <b>ECR e register</b>, deploy <b>ECS, EKS ba App Runner</b> e. <b>Prebuilt CI/CD pipeline</b> support.</li>
+  </ul>
+  <div class="fig">
+    <span class="lbl">A2C er 4 dhap</span>
+    <div class="flow">
+      <span class="b">Discover &amp; analyze<small>CLI, kon app migrate hobe</small></span><span class="a">→</span>
+      <span class="b">Extract &amp; containerize</span><span class="a">→</span>
+      <span class="b">Create deployment artifacts<small>CloudFormation, ECS task / EKS pod def, CI/CD</small></span><span class="a">→</span>
+      <span class="b hl">Deploy to AWS<small>ECR → ECS / EKS / App Runner</small></span>
+    </div>
+  </div>
+  <div class="exam"><b>Exam:</b> "Java ba .NET web app AWS e migrate, containerize, code change chara" → <b>AWS App2Container</b>. Real life: A2C Nov 7, 2025 theke notun customer der jonno bondho (AWS Transform), exam answer tobu A2C.</div>
+</section>
+
+<section class="card" id="pairs">
+  <h2>Confusing pairs</h2>
+  <div class="scroll"><table class="pairs">
+    <tr><th>Pair</th><th>Parthokko</th><th>Kokhon konta</th></tr>
+    <tr><td>ECS EC2 launch type vs Fargate</td><td>EC2: tumi instance manage, ECS Agent, instance profile; pay EC2 + EBS. Fargate: serverless, shudhu task definition; pay requested vCPU + memory</td><td>"No infrastructure to manage / serverless" → Fargate (U18-Q1). Nijer instance er upor control chai → EC2 type (S1-Q14 pricing)</td></tr>
+    <tr><td>EC2 Instance Profile vs ECS Task Role</td><td>Instance Profile: ECS Agent er (ECS API, ECR pull, CloudWatch Logs, Secrets), shudhu EC2 type. Task Role: app er AWS call, task proti, EC2 + Fargate</td><td>"Container S3 / DynamoDB access" → Task Role (U18-Q3, U18-Q5)</td></tr>
+    <tr><td>ECS vs EKS</td><td>ECS: AWS er nijer, open source na, "task". EKS: managed Kubernetes, open source, cloud-agnostic, "pod"</td><td>"Already Kubernetes / multi-cloud" → EKS. AWS native, shohoj → ECS</td></tr>
+    <tr><td>Fargate vs ECS/EKS</td><td>ECS/EKS = orchestrator. Fargate = serverless compute ja ECS ar EKS duitai use kore</td><td>"Launch types of ECS" → EC2 + Fargate (U18-Q2); "EKS launch type" bhul</td></tr>
+    <tr><td>ECR vs Docker Hub</td><td>Docker Hub: public. ECR: AWS e private (+ ECR Public Gallery), IAM, S3 backed, scan</td><td>"AWS alternative to Docker Hub, ECS integrated" → ECR (U18-Q6)</td></tr>
+    <tr><td>ECS Service Auto Scaling vs Capacity Provider</td><td>Service Auto Scaling: task count (Application Auto Scaling; CPU, Memory, ALB req/target). Capacity Provider: EC2 instance (ASG) count</td><td>"Task barao" → Service Auto Scaling. "EC2 launch type e task er jayga nai" → Capacity Provider</td></tr>
+    <tr><td>Capacity Provider vs ASG Scaling</td><td>ASG Scaling: CPU dekhe EC2 add. Capacity Provider: task er capacity (CPU/RAM) kom porle ASG scale, smarter</td><td>Duitar moddhe → Capacity Provider</td></tr>
+    <tr><td>ALB vs NLB vs CLB (ECS)</td><td>ALB: most cases, Fargate, dynamic port, host/path routing. NLB: high throughput / PrivateLink. CLB: not recommended, Fargate na</td><td>Microservice + same container ek EC2 e onekbar → ALB + dynamic port mapping (S4-Q57)</td></tr>
+    <tr><td>EFS vs EBS (container storage)</td><td>EFS: shared, multi-AZ, EC2 + Fargate, onek task. EBS: ekta instance/AZ</td><td>"Shared content across containers" → EFS (U18-Q4). EKS + Fargate → EFS</td></tr>
+    <tr><td>EFS vs S3 Files (ECS)</td><td>EFS: EC2 + Fargate. S3 Files (slide e notun): S3 bucket file system hishebe, Fargate + Managed Instances, EC2 type na</td><td>"Data already S3 e, container e file access" → S3 Files. General shared multi-AZ → EFS</td></tr>
+    <tr><td>EKS Managed Node Group vs Self-Managed vs Fargate</td><td>Managed: EKS EC2 + ASG manage. Self-managed: tumi banao/register, EKS Optimized AMI ba custom. Fargate: node nai</td><td>"Least ops" → Fargate/Managed. "Custom AMI, full control" → Self-managed. Lambda node type na (U18-Q7)</td></tr>
+    <tr><td>App Runner vs ECS/Fargate</td><td>App Runner: code/image → URL, sob managed. ECS/Fargate: tumi task def, service, ALB, scaling config koro</td><td>"Developer AWS jane na, easiest" → App Runner (U18-Q8)</td></tr>
+    <tr><td>App2Container vs App Runner</td><td>A2C: migration CLI (Java/.NET → container, ECR, CloudFormation). App Runner: deploy/run service</td><td>"Legacy Java/.NET containerize, code change nai" → A2C. "Run web app easily" → App Runner</td></tr>
+    <tr><td>ECS Service vs Task</td><td>Service: long running, desired count, ALB. Task: chole shesh (batch)</td><td>Web app → Service. Hourly batch → EventBridge → Task</td></tr>
+  </table></div>
+</section>
+
+<section class="card" id="changes">
+  <h2>Course er por ki bodlalo</h2>
+  <ul>
+    <li><b>AWS App Runner notun customer der jonno bondho (April 30, 2026 theke):</b> AWS docs: "we decided to close AWS App Runner to new customers". Existing customer ra age moto use korte pare (notun resource/service o banate pare); security ar availability te AWS invest korche, kintu <b>notun feature ashbe na</b>. AWS recommend kore <b>Amazon ECS Express Mode</b>: container image + duita IAM role dile ek API call e Fargate e ECS service, <b>ALB</b>, auto scaling, networking banay; Express Mode er alada charge nai, shudhu underlying resource er dam. <b>Course / exam er answer ekhono App Runner</b> ("developer AWS jane na, easiest deploy", U18-Q8). <a href="https://docs.aws.amazon.com/apprunner/latest/dg/apprunner-availability-change.html">AWS App Runner availability change</a> · <a href="https://aws.amazon.com/apprunner/">AWS App Runner product page (date)</a> · <a href="https://aws.amazon.com/about-aws/whats-new/2025/11/announcing-amazon-ecs-express-mode/">Announcing Amazon ECS Express Mode (Nov 2025)</a></li>
+    <li><b>AWS App2Container notun customer der jonno bondho (Nov 7, 2025 theke):</b> AWS .NET Modernization Tools (Porting Assistant, <b>App2Container</b>, ...) ar notun customer ney na; existing customer ra cholti project shesh korte pare, notun feature nai, security update chalu. Notun modernization project er jonno AWS recommend kore <b>AWS Transform</b>. Exam answer ekhono A2C ("Java / .NET app containerize, code change chara"). <a href="https://docs.aws.amazon.com/app2container/latest/UserGuide/dotnet-modernization-tools-availability-change.html">AWS .NET Modernization Tools availability change</a></li>
+    <li><b>ECS e launch type / capacity barche:</b> course bole 2 ta launch type (EC2, Fargate). Ekhon docs e launch type: <b>EC2, Fargate, External</b> (ECS Anywhere, Lecture 4 e dekha), ar <b>Amazon ECS Managed Instances</b> (AWS-managed EC2 compute, "Fargate er simplicity + EC2 er flexibility"). AWS ekhon <b>capacity provider</b> (FARGATE, FARGATE_SPOT, ASG, Managed Instances) diye launch kora recommend kore. Exam/Udemy prosno te "EC2 + Fargate" answer-i dhoro (U18-Q2). <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/capacity-launch-type-comparison.html">Amazon ECS launch types and capacity providers</a></li>
+    <li><b>ECS data volume e S3 Files (slide p. 428, video te nai):</b> docs confirm: S3 Files volume <b>Fargate ar ECS Managed Instances</b> e supported, <b>EC2 launch type e na</b>; transit encryption ar <b>task IAM role mandatory</b>. <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/s3files-volumes.html">Configuring S3 Files for Amazon ECS</a></li>
+    <li><b>ECS task e EBS volume:</b> ekhon ECS task e EBS volume attach kora jay (Fargate Linux o), kintu <b>task proti max ekta, notun volume</b>, service er task shesh hole volume delete hoy. Tai <b>shared</b> storage er jonno EFS-i answer (U18-Q4); purono explanation er "EBS Fargate e cholbe na" kotha ta ar puro thik na. <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ebs-volumes.html">Use Amazon EBS volumes with Amazon ECS</a></li>
+    <li><b>EKS compute option barche:</b> course er 3 ta (Managed Node Groups, Self-Managed, Fargate) chara ekhon <b>EKS Auto Mode</b> (AWS data plane / node o manage kore, alada fee) ar <b>EKS Hybrid Nodes</b> (nijer on-prem machine node hishebe). EKS storage e <b>S3 Files</b> CSI o ache. Lambda ekhono node type na (U18-Q7). <a href="https://docs.aws.amazon.com/eks/latest/userguide/eks-compute.html">Manage compute resources by using nodes (EKS)</a></li>
+    <li><b>ECS console:</b> notun console <b>January 2023</b> theke default; course page er "new interface e switch koro" ekhon ar lagbe na. Classic console ekhon puro bondho kina, official page e exact date confirm korte parini: <b>nishchit na</b>. <a href="https://aws.amazon.com/blogs/containers/announcing-upcoming-changes-to-the-amazon-ecs-console/">AWS Containers Blog: upcoming changes to the ECS console</a></li>
+  </ul>
+</section>
+
+<section class="card exam-box" id="exam">
+  <h2>Exam e ki mone rakhbo</h2>
+  <h3>ECS basics</h3>
+  <ul>
+    <li>Docker = container; use case <b>microservices, lift-and-shift</b>. ECS chalay <b>Docker</b>; Kubernetes = EKS; Mesosphere/OpenShift/Vagrant ECS na (B5-Q11).</li>
+    <li>ECS launch type: <b>EC2</b> (tumi EC2 + ECS Agent) ar <b>Fargate</b> (serverless). "EKS launch type" bhul (U18-Q2). Real life e External + Managed Instances o ache.</li>
+    <li>"Don't provision / manage infrastructure, just run containers" → <b>Fargate on ECS</b>; EC2 launch type ba ECR na (U18-Q1).</li>
+    <li>Pricing: EC2 type = <b>EC2 + EBS</b> er dam, ECS er extra charge nai; Fargate = requested <b>vCPU + memory</b> (S1-Q14). "Duitai same", "ECS per hour" = bhul.</li>
+    <li>Long running web app → <b>Service</b>; batch → <b>Task</b>. Task definition e image, CPU/RAM, port, <b>task role</b>.</li>
+  </ul>
+  <h3>IAM</h3>
+  <ul>
+    <li>Container theke S3/DynamoDB/SQS → <b>ECS Task Role</b> (task definition e) (U18-Q3).</li>
+    <li>Notun app e authorization error, "proper security" → oi app er jonno <b>notun task role</b>; EC2 instance role e S3 add = shob task S3 pabe (least privilege bhange); Fargate on kora ba bucket policy edit = asol fix na (U18-Q5).</li>
+    <li><b>EC2 Instance Profile</b> = ECS Agent: ECS API, <b>ECR pull</b>, CloudWatch Logs, Secrets Manager / SSM. Shudhu EC2 launch type.</li>
+  </ul>
+  <h3>Load balancer, storage</h3>
+  <ul>
+    <li><b>ALB</b> = default (Fargate o). NLB = high throughput / PrivateLink. CLB = not recommended, <b>Fargate na</b>.</li>
+    <li>Microservice, host/path based URL, same container ek EC2 e onekbar, minimal maintenance → <b>ALB + dynamic port mapping</b>; CLB/NLB + dynamic port, reverse proxy = bhul (S4-Q57).</li>
+    <li>Shared content (WordPress files), multi-AZ, persistent, EC2 + Fargate → <b>EFS</b>; EBS (ek instance/AZ, task proti ekta notun), instance store (ephemeral) na (U18-Q4). <b>Fargate + EFS = serverless</b>.</li>
+    <li>Slide e notun: <b>S3 Files</b> = S3 bucket file system hishebe, Fargate / Managed Instances, <b>EC2 type na</b>.</li>
+  </ul>
+  <h3>Scaling, architectures</h3>
+  <ul>
+    <li>ECS Service Auto Scaling = <b>Application Auto Scaling</b>; metric: <b>CPU, Memory, ALB RequestCountPerTarget</b>; Target Tracking / Step / Scheduled.</li>
+    <li>Task scaling ≠ EC2 scaling. EC2 type e instance add → <b>ECS Cluster Capacity Provider</b> (ASG er sathe paired), ASG scaling er cheye smart. Fargate e shudhu task scale.</li>
+    <li>S3 upload → <b>EventBridge rule → ECS task (Fargate) + task role</b> → DynamoDB. Hourly batch → <b>EventBridge schedule</b>. SQS queue → ECS service + <b>Service Auto Scaling</b>. Task stopped → <b>EventBridge → SNS</b> email.</li>
+    <li>Static SPA, serverless, HTTPS, low latency, cheap → <b>S3 + CloudFront</b>; Fargate/EC2 overkill (S5-Q60).</li>
+  </ul>
+  <h3>ECR, EKS, App Runner, A2C</h3>
+  <ul>
+    <li>"Store Docker images", Docker Hub alternative, ECS integrated → <b>ECR</b> (U18-Q6). Private + Public Gallery, <b>S3 backed</b>, IAM (pull error → policy), vulnerability scan, lifecycle.</li>
+    <li>"Already Kubernetes on-prem / other cloud", "cloud-agnostic", "pods" → <b>EKS</b>. Region proti ekta cluster; CloudWatch Container Insights.</li>
+    <li>EKS node: <b>Managed Node Groups, Self-Managed Nodes, Fargate</b>; <b>Lambda na</b> (U18-Q7).</li>
+    <li>EKS storage: StorageClass + <b>CSI driver</b>; EBS, <b>EFS (Fargate e shudhu eta)</b>, FSx Lustre, FSx NetApp ONTAP.</li>
+    <li>"Developer new to AWS, website + API container, easiest" → <b>App Runner</b>; EC2 + ALB, ECS, Fargate = beshi kaj (U18-Q8). Real life: notun customer bondho → ECS Express Mode.</li>
+    <li>"Java / .NET web app, containerize, no code change, lift-and-shift" → <b>App2Container</b> (→ ECR → ECS/EKS/App Runner, CloudFormation).</li>
+  </ul>
+</section>
+
+<section class="card qz-part" id="part-a"><div class="qz-part-head"><h2>Part A: Udemy course quiz (8)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">The instructor's own section quiz: warm-up, direct questions. Answer first, then press Check.</p><article class="qz" id="U18-Q1" data-qid="U18-Q1" data-n="1"><div class="qz-top"><span class="qz-num">A1</span><span class="qz-id">U18-Q1</span><span class="pill">Udemy quiz · sec 18 · Q1</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have multiple Docker-based applications hosted on-premises that you want to migrate to AWS. You don't want to provision or manage any infrastructure; you just want to run your containers on AWS. Which AWS service should you choose?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U18-Q1" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Elastic Container Service (ECS) in EC2 Launch Mode</p></span></label></li><li data-i="1"><label><input type="radio" name="U18-Q1" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Elastic Container Registry (ECR)</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="U18-Q1" value="2"><span class="qz-l">C</span><span class="qz-o"><p>AWS Fargate on ECS</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Shorto: <b>infrastructure provision ba manage korbo na</b>, shudhu container chalabo. Eta-i <b>Fargate</b> er definition: kono EC2 instance nai, tumi shudhu task definition e CPU/RAM bolo, AWS task chalay (<a class="pg" href="18-slides-p416-440.pdf#page=9" target="_blank" rel="noopener">PDF p. 424</a> <span class="pg-part">(part p. 9)</span>).</p><p>Scale korte shudhu task er shonkha barao. Course e instructor bolechen exam Fargate pochondo kore, karon serverless ar manage kora shohoj.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> ECS EC2 launch type e EC2 instance gulo tumi-i provision ar maintain koro (ECS Agent, patching, scaling), ja 'manage korbo na' shorto bhange.</li><li><b>B.</b> ECR shudhu Docker image store kore; container run kore na.</li></ul><p><b>Keyword:</b> <b>don't want to provision or manage any infrastructure</b> + run containers → <b>Fargate on ECS</b></p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> Amazon ECS allows you to run your containers on AWS but you must provision and maintain the EC2 instances where your containers will be run on.</p><p><b>B:</b> Amazon ECR is a fully managed container registry that makes it easy to store, manage, share, and deploy your container images. It won't help in running your Docker-based applications.</p><p><b>C:</b> AWS Fargate allows you to run your containers on AWS without managing any servers.</p></details></div></article><article class="qz" id="U18-Q2" data-qid="U18-Q2" data-n="1"><div class="qz-top"><span class="qz-num">A2</span><span class="qz-id">U18-Q2</span><span class="pill">Udemy quiz · sec 18 · Q2</span><span class="pill warn">⚠ outdated</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Amazon Elastic Container Service (ECS) has two Launch Types: .................. and ..................</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U18-Q2" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Amazon EC2 Launch Type and Fargate Launch Type</p></span></label></li><li data-i="1"><label><input type="radio" name="U18-Q2" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Amazon EC2 Launch Type and EKS Launch Type</p></span></label></li><li data-i="2"><label><input type="radio" name="U18-Q2" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Fargate Launch Type and EKS Launch Type</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>⚠ Outdated:</b> Course/exam e ECS er 2 ta launch type (EC2, Fargate) - ei answer-i dhoro. Kintu ekhon ECS e EXTERNAL launch type (ECS Anywhere, on-prem server) ar ECS Managed Instances o ache, tai 'shudhu 2 ta' kotha ta ar puro thik na. <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/capacity-launch-type-comparison.html" target="_blank" rel="noopener">source</a></div><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Course e ECS er duita launch type: <b>EC2 launch type</b> (tumi EC2 instance provision kore, protita te ECS Agent) ar <b>Fargate launch type</b> (serverless, instance nai) (<a class="pg" href="18-slides-p416-440.pdf#page=8" target="_blank" rel="noopener">PDF p. 423-424</a> <span class="pg-part">(part p. 8-9)</span>).</p><p>Aajker din e ECS docs e <b>External</b> (ECS Anywhere) ar <b>ECS Managed Instances</b> o ache, tai 'shudhu 2 ta' kotha ta ar puro thik na; tobu ei option gulor moddhe A-i ekmatro thik.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> EKS alada service (managed Kubernetes), ECS er launch type na.</li><li><b>C.</b> Fargate thik, kintu EKS ECS er launch type na; EKS nije ekta orchestrator jeta Fargate use korte pare.</li></ul><p><b>Keyword:</b> <b>ECS launch types</b> → <b>EC2 + Fargate</b> (EKS kokhono ECS launch type na)</p></div></article><article class="qz" id="U18-Q3" data-qid="U18-Q3" data-n="1"><div class="qz-top"><span class="qz-num">A3</span><span class="qz-id">U18-Q3</span><span class="pill">Udemy quiz · sec 18 · Q3</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You have an application hosted on an ECS Cluster (EC2 Launch Type) where you want your ECS tasks to upload files to an S3 bucket. Which IAM Role for your ECS Tasks should you modify?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U18-Q3" value="0"><span class="qz-l">A</span><span class="qz-o"><p>EC2 Instance Profile</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U18-Q3" value="1"><span class="qz-l">B</span><span class="qz-o"><p>ECS Task Role</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>Container er bhitorer app je AWS API call kore (ekhane S3 e upload), tar permission ashe <b>ECS Task Role</b> theke. Task Role task definition e define hoy, EC2 ar Fargate duitai te kaj kore (<a class="pg" href="18-slides-p416-440.pdf#page=10" target="_blank" rel="noopener">PDF p. 425</a> <span class="pg-part">(part p. 10)</span>).</p><p>EC2 launch type holeo app er permission instance profile e dewa thik na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> EC2 Instance Profile use kore ECS Agent: ECS API call, ECR theke image pull, CloudWatch Logs e log pathano. Task er app er S3 access er jonno na.</li></ul><p><b>Keyword:</b> <b>ECS tasks upload files to S3</b> → <b>ECS Task Role</b></p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> EC2 Instance Profile is the IAM Role used by the ECS Agent on the EC2 instance to execute ECS-specific actions such as pulling Docker images from ECR and storing the container logs into CloudWatch Logs.</p><p><b>B:</b> ECS Task Role is the IAM Role used by the ECS task itself. Use when your container wants to call other AWS services like S3, SQS, etc.</p></details></div></article><article class="qz" id="U18-Q4" data-qid="U18-Q4" data-n="1"><div class="qz-top"><span class="qz-num">A4</span><span class="qz-id">U18-Q4</span><span class="pill">Udemy quiz · sec 18 · Q4</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You're planning to migrate a WordPress website running on Docker containers from on-premises to AWS. You have decided to run the application in an ECS Cluster, but you want your docker containers to access the same WordPress website content such as website files, images, videos, etc. What do you recommend to achieve this?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U18-Q4" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Mount an EFS volume</p></span></label></li><li data-i="1"><label><input type="radio" name="U18-Q4" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Mount an EBS volume</p></span></label></li><li data-i="2"><label><input type="radio" name="U18-Q4" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Use an EC2 Instance Store</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Shob container ke <b>same</b> WordPress content (files, images, videos) dekhte hobe = <b>shared</b> storage. <b>EFS</b> ECS task e mount kora jay, <b>EC2 ar Fargate duitai</b> e kaj kore, ar je kono AZ er task same data dekhe (<a class="pg" href="18-slides-p416-440.pdf#page=12" target="_blank" rel="noopener">PDF p. 427</a> <span class="pg-part">(part p. 12)</span>).</p><p>Course: EFS = container er jonno <b>persistent multi-AZ shared storage</b>.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> EBS volume ek AZ e bandha, sadharonoto ek instance e attach; onek task/instance jure same content share er jonno na. ECS e EBS ekhon task e attach hoy, kintu task proti alada notun volume, shared na.</li><li><b>C.</b> Instance store ephemeral (instance stop/terminate hole data jay) ar shudhu oi ek EC2 er; share ba Fargate e use hoy na.</li></ul><p><b>Keyword:</b> <b>docker containers access the same website content</b> → shared storage → <b>EFS</b></p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> EFS volume can be shared between different EC2 instances and different ECS Tasks. It can be used as a persistent multi-AZ shared storage for your containers.</p><p><b>B:</b> This can be used when all your ECS tasks run on the same EC2 instance. It's not suitable when your tasks are spread across multiple EC2 instances and can't be used with AWS Fargate.</p><p><b>C:</b> EC2 Instance Store can't be shared between different EC2 instances.</p></details></div></article><article class="qz" id="U18-Q5" data-qid="U18-Q5" data-n="1"><div class="qz-top"><span class="qz-num">A5</span><span class="qz-id">U18-Q5</span><span class="pill">Udemy quiz · sec 18 · Q5</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You are deploying an application on an ECS Cluster made of EC2 instances. Currently, the cluster is hosting one application that is issuing API calls to DynamoDB successfully. Upon adding a second application, which issues API calls to S3, you are getting authorization issues. What should you do to resolve the problem and ensure proper security?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U18-Q5" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Edit the EC2 instance role to add permissions to S3</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U18-Q5" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Create an IAM task role for the new application</p></span></label></li><li data-i="2"><label><input type="radio" name="U18-Q5" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Enable the Fargate mode</p></span></label></li><li data-i="3"><label><input type="radio" name="U18-Q5" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Edit the S3 bucket policy to allow the ECS task</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>Notun app S3 call kore kintu permission nai. Fix: oi app er jonno <b>alada IAM task role</b> (S3 permission shoho) baniye task definition e dao. Course: alada ECS service er jonno alada task role (<a class="pg" href="18-slides-p416-440.pdf#page=10" target="_blank" rel="noopener">PDF p. 425</a> <span class="pg-part">(part p. 10)</span>).</p><p>Constraint word: <b>ensure proper security</b> = least privilege: shudhu notun app S3 pabe, DynamoDB app pabe na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Instance role e S3 dile oi EC2 er shob task (DynamoDB app o) S3 access pabe; least privilege bhange, security risk.</li><li><b>C.</b> Fargate e gele o permission ashe task role theke; launch type bodlale authorization problem solve hoy na, ar Fargate e instance role-i thake na.</li><li><b>D.</b> Bucket policy te ECS task ke allow korte holeo task er ekta IAM identity (task role) lagbe; ar AWS API call er jonno identity-side permission (task role) i proper fix.</li></ul><p><b>Keyword:</b> <b>second application</b> S3 authorization issue + <b>proper security</b> → <b>notun IAM task role</b> oi app er jonno</p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> This would allow the first application to access S3 as well, which is a security risk.</p></details></div></article><article class="qz" id="U18-Q6" data-qid="U18-Q6" data-n="1"><div class="qz-top"><span class="qz-num">A6</span><span class="qz-id">U18-Q6</span><span class="pill">Udemy quiz · sec 18 · Q6</span><span class="qz-badge"></span></div><div class="qz-stem"><p>You are migrating your on-premises Docker-based applications to Amazon ECS. You were using Docker Hub Container Image Library as your container image repository. Which is an alternative AWS service which is fully integrated with Amazon ECS?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U18-Q6" value="0"><span class="qz-l">A</span><span class="qz-o"><p>AWS Fargate</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="U18-Q6" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Elastic Container Registry (ECR)</p></span></label></li><li data-i="2"><label><input type="radio" name="U18-Q6" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Elastic Kubernetes Service (EKS)</p></span></label></li><li data-i="3"><label><input type="radio" name="U18-Q6" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Amazon EC2</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><p>Docker Hub er bodole AWS er container image registry = <b>Amazon ECR</b>. ECR Docker image store ar manage kore (private + ECR Public Gallery), <b>ECS er sathe fully integrated</b>, pichone S3, access IAM diye (<a class="pg" href="18-slides-p416-440.pdf#page=21" target="_blank" rel="noopener">PDF p. 436</a> <span class="pg-part">(part p. 21)</span>).</p><p>Course: 'storing Docker images' dekhlei ECR.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Fargate container <b>chalay</b> (serverless compute), image store kore na.</li><li><b>C.</b> EKS managed Kubernetes, container chalanor orchestrator; image registry na.</li><li><b>D.</b> EC2 virtual server; container image repository service na.</li></ul><p><b>Keyword:</b> <b>Docker Hub</b> alternative, <b>fully integrated with ECS</b> → <b>ECR</b></p><details class="qz-orig"><summary>Instructor feedback (English)</summary><p><b>A:</b> AWS Fargate allows you to run your containers on AWS without managing any servers.</p><p><b>B:</b> Amazon ECR is a fully managed container registry that makes it easy to store, manage, share, and deploy your container images. ECR is fully integrated with Amazon ECS, allowing easy retrieval of container images from ECR while managing and running containers using ECS.</p><p><b>C:</b> Amazon EKS allows you to start, run, and scale Kubernetes applications in AWS or on-premises and run fully-managed EKS clusters on AWS.</p><p><b>D:</b> Amazon EC2 can't be used to store Docker container images.</p></details></div></article><article class="qz" id="U18-Q7" data-qid="U18-Q7" data-n="1"><div class="qz-top"><span class="qz-num">A7</span><span class="qz-id">U18-Q7</span><span class="pill">Udemy quiz · sec 18 · Q7</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Amazon EKS supports the following node types, EXCEPT ………………..</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="U18-Q7" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Managed Node Groups</p></span></label></li><li data-i="1"><label><input type="radio" name="U18-Q7" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Self-Managed Nodes</p></span></label></li><li data-i="2"><label><input type="radio" name="U18-Q7" value="2"><span class="qz-l">C</span><span class="qz-o"><p>AWS Fargate</p></span></label></li><li data-i="3" data-c="1"><label><input type="radio" name="U18-Q7" value="3"><span class="qz-l">D</span><span class="qz-o"><p>AWS Lambda</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: D. Why it is right</h4><div class="qz-bn"><p>Course e EKS er node type 3 ta: <b>Managed Node Groups</b> (EKS EC2 + ASG manage kore), <b>Self-Managed Nodes</b> (tumi banao, register koro), ar <b>AWS Fargate</b> (kono node nai) (<a class="pg" href="18-slides-p416-440.pdf#page=24" target="_blank" rel="noopener">PDF p. 439</a> <span class="pg-part">(part p. 24)</span>).</p><p><b>Lambda</b> function, Kubernetes node na; tai EXCEPT er answer Lambda. (Aajker din e EKS Auto Mode ar Hybrid Nodes o ache, kintu Lambda kokhono na.)</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> Managed Node Groups EKS er node type: EKS EC2 node create ar manage kore, On-Demand/Spot.</li><li><b>B.</b> Self-Managed Nodes EKS er node type: tumi node banao, cluster e register koro, EKS Optimized AMI use korte paro.</li><li><b>C.</b> Fargate EKS e supported: serverless, node manage korte hoy na.</li></ul><p><b>Keyword:</b> <b>EKS node types EXCEPT</b> → Managed / Self-Managed / Fargate ache, <b>Lambda</b> nai</p></div></article><article class="qz" id="U18-Q8" data-qid="U18-Q8" data-n="1"><div class="qz-top"><span class="qz-num">A8</span><span class="qz-id">U18-Q8</span><span class="pill">Udemy quiz · sec 18 · Q8</span><span class="pill warn">⚠ outdated</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A developer has a running website and APIs on his local machine using containers and he wants to deploy both of them on AWS. The developer is new to AWS and doesn’t know much about different AWS services. Which of the following AWS services allows the developer to build and deploy the website and the APIs in the easiest way according to AWS best practices?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="U18-Q8" value="0"><span class="qz-l">A</span><span class="qz-o"><p>AWS App Runner</p></span></label></li><li data-i="1"><label><input type="radio" name="U18-Q8" value="1"><span class="qz-l">B</span><span class="qz-o"><p>EC2 Instances + Application Load Balancer</p></span></label></li><li data-i="2"><label><input type="radio" name="U18-Q8" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon ECS</p></span></label></li><li data-i="3"><label><input type="radio" name="U18-Q8" value="3"><span class="qz-l">D</span><span class="qz-o"><p>AWS Fargate</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><div class="qz-note warn"><b>⚠ Outdated:</b> AWS App Runner 2026 theke new customer der jonno bondho (existing customer ra use korte pare); new user der jonno AWS ekhon Amazon ECS Express Mode recommend kore. Course/exam er answer ekhono App Runner. <a href="https://docs.aws.amazon.com/apprunner/latest/dg/apprunner-availability-change.html" target="_blank" rel="noopener">source</a></div><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Developer <b>AWS e notun</b>, website + API container e ache, chay <b>easiest</b> deploy. <b>App Runner</b> fully managed: source code ba container image dao, vCPU/RAM bolo, App Runner build + deploy kore URL dey; auto scaling, load balancing, HA, encryption nije kore. Infrastructure jante hoy na (Lecture 12).</p><p>Aajker din: App Runner April 30, 2026 theke notun customer der jonno bondho, AWS ekhon <b>ECS Express Mode</b> recommend kore. Kintu course/exam er answer ekhono App Runner.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> EC2 + ALB e instance, AMI, ASG, load balancer, deploy sob nije set up korte hoy; notun developer er jonno sobcheye kothin.</li><li><b>C.</b> ECS e cluster, task definition, service, load balancer, scaling configure korte hoy; App Runner er cheye beshi kaj.</li><li><b>D.</b> Fargate serverless compute, kintu ECS/EKS er bhitore task definition, service, ALB, networking tumi-i configure koro; 'easiest, kichu jane na' er jonno App Runner.</li></ul><p><b>Keyword:</b> <b>new to AWS</b>, <b>website + APIs</b> in containers, <b>easiest way</b> → <b>App Runner</b></p></div></article></section>
+<section class="card qz-part" id="part-b"><div class="qz-part-head"><h2>Part B: Practice exam questions (4)</h2><div class="qz-filter noprint"><button class="btn" type="button" data-qz-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-qz-filter="new">Not done</button><button class="btn" type="button" data-qz-filter="bad">Mistakes only</button></div></div><p class="qz-score"></p><p class="cap">Everything these questions need is covered up to this section (in your study order). Answer first, ~2 min per question. Then read every explanation, also for the ones you got right.</p><article class="qz" id="S1-Q14" data-qid="S1-Q14" data-n="1"><div class="qz-top"><span class="qz-num">B1</span><span class="qz-id">S1-Q14</span><span class="pill">Stephane set 1 · Q14</span><span class="pill">Design Cost-Optimized Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A leading social media analytics company is contemplating moving its dockerized application stack into AWS Cloud. The company is not sure about the pricing for using Elastic Container Service (ECS) with EC2 launch type compared to the Elastic Container Service (ECS) with Fargate launch type. Which of the following is correct regarding the pricing for these two services?</p></div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="S1-Q14" value="0"><span class="qz-l">A</span><span class="qz-o"><p>ECS with EC2 launch type is charged on the basis of EC2 instances and EBS volumes used. ECS with Fargate launch type is charged on the basis of vCPU and memory resources that the containerized application requests</p></span></label></li><li data-i="1"><label><input type="radio" name="S1-Q14" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Both ECS with EC2 launch type and ECS with Fargate launch type are just charged on the basis of Elastic Container Service used per hour</p></span></label></li><li data-i="2"><label><input type="radio" name="S1-Q14" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Both ECS with EC2 launch type and ECS with Fargate launch type are charged on the basis of vCPU and memory resources that the containerized application requests</p></span></label></li><li data-i="3"><label><input type="radio" name="S1-Q14" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Both ECS with EC2 launch type and ECS with Fargate launch type are charged on the basis of EC2 instances and EBS volumes used</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p><b>EC2 launch type</b>: ECS er nijer kono extra charge nai; tumi dam dao je AWS resource banao tar jonno, jemon <b>EC2 instance ar EBS volume</b>.</p><p><b>Fargate</b>: container app je <b>vCPU ar memory</b> request kore tar jonno dam (per second, minimum 1 minute) (AWS ECS pricing page, aws.amazon.com/ecs/pricing; course e nai).</p><p>Logic course theke: EC2 type e EC2 tomar, tai EC2 er bill; Fargate e EC2 nai, tai task er CPU/RAM er bill (<a class="pg" href="18-slides-p416-440.pdf#page=8" target="_blank" rel="noopener">PDF p. 423-424</a> <span class="pg-part">(part p. 8-9)</span>).</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> ECS er kono 'per hour service' charge nai; EC2 type e resource er dam, Fargate e vCPU/memory er dam.</li><li><b>C.</b> vCPU/memory billing shudhu Fargate er; EC2 type e EC2 instance er puro dam dite hoy (task koto chay ta na).</li><li><b>D.</b> Fargate e kono EC2 instance tomar account e thake na, tai EC2 + EBS billing Fargate er jonno bhul.</li></ul><p><b>Keyword:</b> <b>pricing EC2 launch type vs Fargate</b> → EC2 = <b>EC2 + EBS</b>, Fargate = <b>requested vCPU + memory</b></p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Amazon Elastic Container Service (Amazon ECS) is a fully managed container orchestration service. ECS allows you to easily run, scale, and secure Docker container applications on AWS. With Fargate, you pay for the amount of vCPU and memory resources that your containerized application requests. vCPU and memory resources are calculated from the time your container images are pulled until the Amazon ECS Task* terminates, rounded up to the nearest second. There is no additional charge for EC2 launch type. You pay for AWS resources (e.g. EC2 instances or EBS volumes) you create to store and run your application.</p>
+
+<p>References:
+https://aws.amazon.com/ecs/pricing/</p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/ecs/pricing/" target="_blank" rel="noopener">https://aws.amazon.com/ecs/pricing/</a></p></div></article><article class="qz" id="S4-Q57" data-qid="S4-Q57" data-n="1"><div class="qz-top"><span class="qz-num">B2</span><span class="qz-id">S4-Q57</span><span class="pill">Stephane set 4 · Q57</span><span class="pill">Design Resilient Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>Your company is evolving towards a microservice approach for their website and expose their website from the same load balancer, linked to different target groups with different URLs: checkout.mycorp.com, www.mycorp.com, mycorp.com/profile and mycorp.com/search. It would like to use ECS in the backend to manage these micro-services and possibly host the same container of the same application multiple times on the same EC2 instance. Which feature can help you achieve that with minimal maintenance?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S4-Q57" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Classic Load Balancer + dynamic port mapping</p></span></label></li><li data-i="1" data-c="1"><label><input type="radio" name="S4-Q57" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Application Load Balancer + dynamic port mapping</p></span></label></li><li data-i="2"><label><input type="radio" name="S4-Q57" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Network Load Balancer + dynamic port mapping</p></span></label></li><li data-i="3"><label><input type="radio" name="S4-Q57" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Application Load Balancer + Reverse Proxy running as a Docker daemon on each ECS host</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: B. Why it is right</h4><div class="qz-bn"><ul><li><b>ALB</b>: ek load balancer e <b>host-based</b> (checkout.mycorp.com, www.mycorp.com) ar <b>path-based</b> (/profile, /search) routing, alada target group e. Microservice ar container er jonno best (Section 8).</li><li><b>Dynamic port mapping</b>: ALB er port mapping feature ECS e dynamic port e redirect kore (<a class="pg" href="../08.%20High%20Availability%20and%20Scalability%20ELB%20%26%20ASG/08-slides-p119-160.pdf#page=15" target="_blank" rel="noopener">PDF p. 133</a> <span class="pg-part">(Section 08 part p. 15)</span>). Tai <b>same container ek EC2 e onekbar</b> chalano jay, protita alada host port e, ALB thik port e pathay.</li></ul><p>Constraint: <b>minimal maintenance</b> → built-in feature, nijer reverse proxy na.</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> CLB host/path routing kore na ar ECS dynamic port mapping support kore na; app proti alada CLB lagto. Fargate eo kaj kore na.</li><li><b>C.</b> NLB Layer 4: TCP/UDP, host ba URL path dekhe routing korte pare na, tai different URL er target group requirement puron hoy na.</li><li><b>D.</b> Protita ECS host e reverse proxy chalano kaj korte pare, kintu maintain korte hoy (beshi ops); ALB nijei eta built-in kore.</li></ul><p><b>Keyword:</b> <b>same load balancer, different URLs</b> + <b>same container multiple times on same EC2</b> + <b>minimal maintenance</b> → <b>ALB + dynamic port mapping</b></p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Dynamic Port Mapping is available for the Application Load Balancer. A reverse proxy solution would work but would be too much work to manage. Here the ALB has a feature that provides a direct dynamic port mapping feature and integration with the ECS service so we will leverage that. Read more here: https://aws.amazon.com/premiumsupport/knowledge-center/dynamic-port-mapping-ecs/.</p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/premiumsupport/knowledge-center/dynamic-port-mapping-ecs/" target="_blank" rel="noopener">https://aws.amazon.com/premiumsupport/knowledge-center/dynamic-port-mapping-ecs/</a></p><p class="qz-rel">Same question also in: S6-Q27</p></div></article><article class="qz" id="B5-Q11" data-qid="B5-Q11" data-n="1"><div class="qz-top"><span class="qz-num">B3</span><span class="qz-id">B5-Q11</span><span class="pill">Bonso set 5 · Q11</span><span class="pill">ECS</span><span class="qz-badge"></span></div><div class="qz-stem">In AWS Elastic Container Service, which of the following are supported?</div><ol class="qz-opts"><li data-i="0" data-c="1"><label><input type="radio" name="B5-Q11" value="0"><span class="qz-l">A</span><span class="qz-o">Docker</span></label></li><li data-i="1"><label><input type="radio" name="B5-Q11" value="1"><span class="qz-l">B</span><span class="qz-o">Kubernetes</span></label></li><li data-i="2"><label><input type="radio" name="B5-Q11" value="2"><span class="qz-l">C</span><span class="qz-o">Mesosphere</span></label></li><li data-i="3"><label><input type="radio" name="B5-Q11" value="3"><span class="qz-l">D</span><span class="qz-o">OpenShift</span></label></li><li data-i="4"><label><input type="radio" name="B5-Q11" value="4"><span class="qz-l">E</span><span class="qz-o">Vagrant</span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: A. Why it is right</h4><div class="qz-bn"><p>Amazon ECS holo AWS er nijer <b>Docker container</b> management service: ECS Cluster e Docker container (ECS Task) chalay (<a class="pg" href="18-slides-p416-440.pdf#page=7" target="_blank" rel="noopener">PDF p. 422-423</a> <span class="pg-part">(part p. 7-8)</span>).</p><p>Kubernetes chalate chaile AWS e alada service <b>EKS</b>.</p></div><h4>Why the other options are wrong</h4><ul><li><b>B.</b> Kubernetes er jonno AWS e EKS; ECS Kubernetes API support kore na (ECS AWS er nijer, open source na).</li><li><b>C.</b> Mesosphere (DC/OS) alada container orchestration platform; ECS er supported technology na.</li><li><b>D.</b> OpenShift Red Hat er Kubernetes platform; ECS e chale na.</li><li><b>E.</b> Vagrant container technology-i na; eta virtual machine environment build/manage korar tool.</li></ul><p><b>Keyword:</b> <b>ECS supports</b> → <b>Docker</b> (Kubernetes = EKS)</p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Amazon ECS is a highly scalable <strong>Docker</strong> container management service and it allows you to run and manage distributed applications that run in Docker containers. Since Docker is only the container technology supported in ECS, Options B, C, and D are wrong choices.</p><p>Option 5 is incorrect as Vagrant is not a container but rather, a tool for building and managing virtual machine environments.</p><p>Resources:</p><p><a href="https://aws.amazon.com/ecs/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/ecs/faqs/</a></p></details><p class="qz-refs">References: <a href="https://aws.amazon.com/ecs/faqs/" target="_blank" rel="noopener">https://aws.amazon.com/ecs/faqs/</a></p></div></article><article class="qz" id="S5-Q60" data-qid="S5-Q60" data-n="1"><div class="qz-top"><span class="qz-num">B4</span><span class="qz-id">S5-Q60</span><span class="pill">Stephane set 5 · Q60</span><span class="pill">Design High-Performing Architectures</span><span class="qz-badge"></span></div><div class="qz-stem"><p>A solutions architect is tasked with a requirement to design a low-latency solution for a static, single-page application, accessed by users through a custom domain name. The solution must be serverless, provide in-transit data encryption and needs to be cost-effective.</p>
+
+<p>Which AWS services can be combined to build a solution for the company's requirement?</p></div><ol class="qz-opts"><li data-i="0"><label><input type="radio" name="S5-Q60" value="0"><span class="qz-l">A</span><span class="qz-o"><p>Host the application on Amazon EC2 instance with instance store volume for high performance of the application to provide low latency access to users</p></span></label></li><li data-i="1"><label><input type="radio" name="S5-Q60" value="1"><span class="qz-l">B</span><span class="qz-o"><p>Configure Amazon S3 to store the static data and use AWS Fargate for hosting the application on serverless architecture</p></span></label></li><li data-i="2" data-c="1"><label><input type="radio" name="S5-Q60" value="2"><span class="qz-l">C</span><span class="qz-o"><p>Amazon S3 can be used to host the static website. While Amazon CloudFront can be used to distribute the content for low latency access</p></span></label></li><li data-i="3"><label><input type="radio" name="S5-Q60" value="3"><span class="qz-l">D</span><span class="qz-o"><p>Host the application on AWS Fargate and front it with an Elastic Load Balancer for an improved performance</p></span></label></li></ol><div class="qz-act"><button class="btn qz-check" type="button">Check</button><button class="btn qz-again" type="button" hidden>Try again</button><span class="qz-res" aria-live="polite"></span></div><div class="qz-ex" hidden><h4>Correct: C. Why it is right</h4><div class="qz-bn"><p>Static single-page app: server-side compute lage na. <b>S3 static website hosting</b> e file rakho, samne <b>CloudFront</b>: edge location e cache kore <b>low latency</b>, custom domain e <b>HTTPS</b> (S3 website endpoint nije HTTPS dey na). Duitai <b>serverless</b> ar <b>cost-effective</b> (Section 12, 15).</p></div><h4>Why the other options are wrong</h4><ul><li><b>A.</b> EC2 serverless na, ar instance store ephemeral; static site er jonno server chalano beshi cost ar ops.</li><li><b>B.</b> Static content er jonno Fargate container chalano overkill, extra cost; S3 nijei static site serve kore. Low latency (CDN) o nai.</li><li><b>D.</b> Fargate + ELB static SPA er jonno onek beshi jinish ar dam; ELB global low latency o dey na, CloudFront dey.</li></ul><p><b>Keyword:</b> <b>static</b> SPA + <b>serverless</b> + <b>in-transit encryption</b> + <b>low latency</b> + <b>cost-effective</b> → <b>S3 + CloudFront</b></p><details class="qz-orig"><summary>Original explanation (English)</summary><p>Correct option:</p>
+
+<p><strong>Amazon S3 can be used to host the static website. While Amazon CloudFront can be used to distribute the content for low latency access</strong></p>
+
+<p>To host a static website on Amazon S3, you configure an Amazon S3 bucket for website hosting and then upload your website content to the bucket. When you configure a bucket as a static website, you must enable website hosting, set permissions, and create and add an index document. Depending on your website requirements, you can also configure redirects, web traffic logging, and a custom error document.</p>
+
+<p>After you configure your bucket as a static website, you can access the bucket through the AWS Region-specific Amazon S3 website endpoints for your bucket. Website endpoints are different from the endpoints where you send REST API requests. Amazon S3 doesn't support HTTPS access for website endpoints. If you want to use HTTPS, you can use CloudFront to serve a static website hosted on Amazon S3.</p>
+
+<p>You can use Amazon CloudFront to improve the performance of your website. CloudFront makes your website files (such as HTML, images, and video) available from data centers around the world (called edge locations). When a visitor requests a file from your website, CloudFront automatically redirects the request to a copy of the file at the nearest edge location. This results in faster download times than if the visitor had requested the content from a data center that is located farther away.</p>
+
+<p>CloudFront caches content at edge locations for a period of time that you specify. If a visitor requests content that has been cached for longer than the expiration date, CloudFront checks the origin server to see if a newer version of the content is available. If a newer version is available, CloudFront copies the new version to the edge location. Changes that you make to the original content are replicated to edge locations as visitors request the content.</p>
+
+<p>Incorrect options:</p>
+
+<p><strong>Host the application on Amazon EC2 instance with instance store volume for high performance of the application to provide low latency access to users</strong> - Since the use case speaks about a serverless solution, Amazon EC2 cannot be the answer, since EC2 is not serverless.</p>
+
+<p><strong>Host the application on AWS Fargate and front it with an Elastic Load Balancer for an improved performance</strong> - AWS Fargate is a serverless compute engine for containers that works with both Amazon Elastic Container Service (ECS) and Amazon Elastic Kubernetes Service (EKS). Elastic Load Balancer can spread the incoming requests across a fleet of EC2 instances. This added complexity is not needed since we are looking at a static single-page webpage.</p>
+
+<p><strong>Configure Amazon S3 to store the static data and use AWS Fargate for hosting the application on serverless architecture</strong> - Fargate is overkill for hosting a static single-page webpage.</p>
+
+<p>Reference:</p>
+
+<p><a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteHosting.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteHosting.html</a></p></details><p class="qz-refs">References: <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteHosting.html" target="_blank" rel="noopener">https://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteHosting.html</a></p></div></article><details class="rel-list"><summary>Related questions in other sections (2)</summary><ul><li><a href="../12.%20Amazon%20S3%20Introduction/12-notes.html#S4-Q28">S4-Q28</a> · Section 12 Amazon S3 Introduction · S3: Static Website Hosting</li><li><a href="../11.%20Classic%20Solutions%20Architecture%20Discussions/11-notes.html#B6-Q48">B6-Q48</a> · Section 11 Classic Solutions Architecture · Elastic Beanstalk: Supported Platforms</li></ul></details></section>
+</main>
+</body>
+</html>
